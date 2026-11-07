@@ -51,6 +51,10 @@ public sealed class ContractExtractionResult(IMetadataExecutionContext context) 
     [JsonProperty("targets", Required = Required.Always)] public List<TargetOutput> Targets { get; set; } = [];
 
     // Validate the complete response before attaching any output to the persisted analysis.
+    // Response structure (target set, tags, outcomes) is strict and rejects the whole analysis. Individual values,
+    // evidence segments and findings that fail validation are dropped instead, so one stray field cannot discard
+    // every other evidence-anchored finding. Every kept value still needs kept, source-anchored evidence, and each
+    // target's explanation records what was removed.
     public static List<AnalysisTargetResult> Validate(DocumentAnalysis analysis, IReadOnlyList<TargetOutput> output)
     {
         if (analysis.CompletedAt is not null) throw new InvalidDataException("This analysis already has immutable results.");
@@ -64,66 +68,87 @@ public sealed class ContractExtractionResult(IMetadataExecutionContext context) 
             if (!expected.TryGetValue(item.Tag, out var definition)) throw new InvalidDataException("Unknown target tag.");
             var outcome = item.Outcome;
             if (outcome is not ("detected" or "not_found_in_reviewed_text" or "uncertain" or "not_applicable")
-                || string.IsNullOrWhiteSpace(item.Explanation) || item.Explanation.Length > 2000
-                || item.Findings is null || item.Findings.Count > 20 || (outcome == "detected") != (item.Findings.Count > 0))
+                || string.IsNullOrWhiteSpace(item.Explanation) || item.Explanation.Length > 2000)
                 throw new InvalidDataException("Invalid target outcome or findings.");
+            var dropped = new Dropped();
+            var findings = item.Findings ?? [];
+            if (outcome != "detected") { dropped.Findings += findings.Count; findings = []; }
+            if (findings.Count > 20) { dropped.Findings += findings.Count - 20; findings = findings.Take(20).ToList(); }
             var existing = analysis.Targets.Single(t => t.ExtractionType.Tag == item.Tag);
             var stagedTarget = new AnalysisTargetResult { ID = existing.ID, Outcome = outcome, Explanation = item.Explanation };
             var fields = definition.GetProperty("fields").EnumerateArray().Select(x => x.GetString()!).ToHashSet(StringComparer.Ordinal);
-            foreach (var finding in item.Findings)
+            foreach (var finding in findings)
             {
-                if (string.IsNullOrWhiteSpace(finding.Title) || finding.Title.Length > 250 || string.IsNullOrWhiteSpace(finding.Summary)
-                    || finding.Summary.Length > 4000 || finding.Values is null || finding.Evidence is not { Count: > 0 and <= 12 })
-                    throw new InvalidDataException("Finding needs a title, summary, values and evidence.");
-                var values = JObject.FromObject(finding.Values, Newtonsoft.Json.JsonSerializer.Create(new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
-                ValidateValues(values, fields);
-                var extraction = new Extraction { Title = finding.Title, Summary = finding.Summary,
-                    ValuesJson = values.ToString(Formatting.None), SchemaVersion = definition.GetProperty("version").GetInt32() };
-                var supported = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var evidence in finding.Evidence)
-                {
-                    var page = analysis.Pages.SingleOrDefault(p => p.Number == evidence.Page)
-                        ?? throw new InvalidDataException("Evidence page is outside this document.");
-                    if (evidence.Role is not ("primary" or "qualification" or "definition") || evidence.Fields is null
-                        || evidence.Fields.Any(f => !fields.Contains(f) || values[f] is null))
-                        throw new InvalidDataException("Invalid evidence role or supported field.");
-                    var match = EvidenceMatcher.Match(page.Markdown, evidence.Quote, evidence.Occurrence);
-                    extraction.Evidence.Add(new ExtractionEvidence { PageTextRevisionId = page.ID,
-                        StartOffset = match.Start, EndOffset = match.End, Quote = match.SourceQuote,
-                        ModelQuote = evidence.Quote, MatchMethod = match.Method, MatchScore = match.Score,
-                        Role = evidence.Role, SupportedFieldsJson = JsonConvert.SerializeObject(evidence.Fields) });
-                    supported.UnionWith(evidence.Fields);
-                }
-                if (values.Properties().Any(p => !supported.Contains(p.Name)))
-                    throw new InvalidDataException("Every structured value requires field-level evidence.");
-                stagedTarget.Extractions.Add(extraction);
+                var extraction = ValidateFinding(analysis, finding, fields, definition.GetProperty("version").GetInt32(), dropped);
+                if (extraction is null) dropped.Findings++;
+                else stagedTarget.Extractions.Add(extraction);
             }
+            if (outcome == "detected" && stagedTarget.Extractions.Count == 0) stagedTarget.Outcome = "uncertain";
+            if (dropped.Any) stagedTarget.Explanation = $"{item.Explanation} [Validation removed {dropped}.]";
             staged.Add(stagedTarget);
         }
         return staged;
     }
 
+    private sealed class Dropped
+    {
+        public int Values, Evidence, Findings;
+        public bool Any => Values + Evidence + Findings > 0;
+        public override string ToString() => string.Join(", ", new[] { (Values, "unsupported value"), (Evidence, "evidence segment"), (Findings, "finding") }
+            .Where(x => x.Item1 > 0).Select(x => $"{x.Item1} {x.Item2}{(x.Item1 == 1 ? "" : "s")}"));
+    }
+
+    private static Extraction? ValidateFinding(DocumentAnalysis analysis, FindingOutput finding, HashSet<string> fields, int version, Dropped dropped)
+    {
+        if (string.IsNullOrWhiteSpace(finding.Title) || finding.Title.Length > 250 || string.IsNullOrWhiteSpace(finding.Summary)
+            || finding.Summary.Length > 4000 || finding.Values is null || finding.Evidence is not { Count: > 0 })
+            return null;
+        var values = JObject.FromObject(finding.Values, Newtonsoft.Json.JsonSerializer.Create(new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
+        dropped.Values += SanitizeValues(values, fields);
+        var segments = new List<(EvidenceOutput Output, PageTextRevision Page, EvidenceMatch Match, List<string> Fields)>();
+        foreach (var evidence in finding.Evidence.Take(12))
+        {
+            var page = analysis.Pages.SingleOrDefault(p => p.Number == evidence.Page);
+            if (page is null || evidence.Role is not ("primary" or "qualification" or "definition")) { dropped.Evidence++; continue; }
+            EvidenceMatch match;
+            try { match = EvidenceMatcher.Match(page.Markdown, evidence.Quote, evidence.Occurrence); }
+            catch (InvalidDataException) { dropped.Evidence++; continue; }
+            segments.Add((evidence, page, match, (evidence.Fields ?? []).Where(f => values[f] is not null).Distinct(StringComparer.Ordinal).ToList()));
+        }
+        dropped.Evidence += Math.Max(0, finding.Evidence.Count - 12);
+        if (segments.Count == 0) return null;
+        var supported = segments.SelectMany(s => s.Fields).ToHashSet(StringComparer.Ordinal);
+        foreach (var unsupported in values.Properties().Where(p => !supported.Contains(p.Name)).ToList()) { unsupported.Remove(); dropped.Values++; }
+        var extraction = new Extraction { Title = finding.Title, Summary = finding.Summary, ValuesJson = values.ToString(Formatting.None), SchemaVersion = version };
+        foreach (var (evidence, page, match, segmentFields) in segments)
+            extraction.Evidence.Add(new ExtractionEvidence { PageTextRevisionId = page.ID,
+                StartOffset = match.Start, EndOffset = match.End, Quote = match.SourceQuote,
+                ModelQuote = evidence.Quote, MatchMethod = match.Method, MatchScore = match.Score,
+                Role = evidence.Role, SupportedFieldsJson = JsonConvert.SerializeObject(segmentFields) });
+        return extraction;
+    }
+
     public static int ResolveQuote(string text, string quote, int occurrence = -1)
         => EvidenceMatcher.Match(text, quote, occurrence).Start;
 
-    private static void ValidateValues(JObject values, HashSet<string> fields)
+    // Removes values that are not allowed for the target or fail their type rules; returns how many were removed.
+    private static int SanitizeValues(JObject values, HashSet<string> fields)
     {
-        foreach (var property in values.Properties())
-        {
-            if (!fields.Contains(property.Name)) throw new InvalidDataException("Field not allowed for this target.");
-            if (property.Value.Type == JTokenType.String && (string.IsNullOrWhiteSpace(property.Value.Value<string>()) || property.Value.Value<string>()!.Length > 4000))
-                throw new InvalidDataException("Invalid value length.");
-        }
+        var removed = 0;
+        void Drop(string name) { if (values.Remove(name)) removed++; }
+        foreach (var property in values.Properties().ToList())
+            if (!fields.Contains(property.Name) || property.Value.Type == JTokenType.String
+                && (string.IsNullOrWhiteSpace(property.Value.Value<string>()) || property.Value.Value<string>()!.Length > 4000))
+                Drop(property.Name);
         if (values["date"] is { } date && !DateOnly.TryParseExact((string?)date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
-            throw new InvalidDataException("Date must be an ISO calendar date.");
-        if (values["amount"] is { } amount && amount.Value<decimal>() < 0 || values["duration"] is { } duration && duration.Value<decimal>() <= 0)
-            throw new InvalidDataException("Invalid amount/duration.");
-        if (values["unit"] is { } unit && (string?)unit is not ("calendar_days" or "business_days" or "days" or "months" or "years"))
-            throw new InvalidDataException("Unknown duration unit.");
-        if (values["duration"] is not null && values["unit"] is null || values["unit"] is not null && values["duration"] is null)
-            throw new InvalidDataException("Duration and unit must be supplied together.");
+            Drop("date");
+        if (values["amount"] is { } amount && amount.Value<decimal>() < 0) Drop("amount");
+        if (values["duration"] is { } duration && duration.Value<decimal>() <= 0) Drop("duration");
+        if (values["unit"] is { } unit && (string?)unit is not ("calendar_days" or "business_days" or "days" or "months" or "years")) Drop("unit");
+        if ((values["duration"] is null) != (values["unit"] is null)) { Drop("duration"); Drop("unit"); }
         if (values["currency"] is { } currency && !System.Text.RegularExpressions.Regex.IsMatch(currency.Value<string>() ?? "", "^[A-Z]{3}$"))
-            throw new InvalidDataException("Currency must be a three-letter code.");
+            Drop("currency");
+        return removed;
     }
 
     public override bool ConnectTo<T>(T target, IMetadataExecutionContext context)

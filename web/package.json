@@ -5,6 +5,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "test:viewer": "node scripts/test-document-viewer.mjs",
+    "test:processing": "node scripts/test-processing.mjs",
     "preview": "vite preview",
     "design:check": "cd .. && impeccable detect web/src"
   },

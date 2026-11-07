@@ -2,9 +2,9 @@
 
 `EvidenceMatcher` now accepts a 50% word-Dice fallback when exact matching fails. See [matching policy](../docs/evidence-matching.md); preserve page scope, exact source offsets, match metadata and all other extraction validation.
 
-The single `extract-contract-targets` step analyzes all ten seeded CUAD types in each `DocumentAnalysis` using the native worker. See [contract extraction](../docs/contract-extraction.md) for hydration, exact evidence validation, atomic failure semantics, recovery and target snapshots. Applying a split supersedes existing document rows instead of deleting referenced history.
+The single `extract-contract-targets` step analyzes all ten seeded CUAD types in each `DocumentAnalysis` using the native worker. See [contract extraction](../docs/contract-extraction.md) for hydration, exact evidence validation, structural-rejection and per-finding removal semantics, recovery and target snapshots. Applying a split supersedes existing document rows instead of deleting referenced history.
 
-The single `extract-contract-targets` step now analyzes all ten seeded CUAD types in each `DocumentAnalysis` using the native worker. See [contract extraction](../docs/contract-extraction.md) for hydration, exact evidence validation, atomic failure semantics, recovery queues and target snapshots. Split application supersedes existing document rows rather than deleting referenced history.
+The single `extract-contract-targets` step now analyzes all ten seeded CUAD types in each `DocumentAnalysis` using the native worker. See [contract extraction](../docs/contract-extraction.md) for hydration, exact evidence validation, structural-rejection and per-finding removal semantics, recovery queues and target snapshots. Split application supersedes existing document rows rather than deleting referenced history.
 
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
 
