@@ -173,3 +173,7 @@ Meta support: `configure-meta.ps1` imports `META_API_KEY` only with explicit `-I
 ## Configuration seeding
 
 See [the implemented seeding workflow](../docs/configuration-seeding.md). `AIESummit.Configuration` exports the existing step definitions; the bundled Blueshift CLI performs validation, read-only planning and previewed transactional application. `SeedIdentities` and the idempotent `SeedSchema` upgrade support registry provenance. Default exports preserve model/enabled selections and all credentials. No publishers or provider calls run in the seed host. The one-off Docker configuration image and isolated PostgreSQL tests are documented there.
+
+## MongoDB CLI diagnostics
+
+`mongodb-probe.js` runs read-only in the official mongosh with `--nodb --quiet --file scripts/mongodb-probe.js`. It loads credentials from local configuration without printing them or placing the URI in process arguments, verifies the primary, reports the server-observed source IP and counts the latest test run. Use the evaluator `mongo-check` for the actual writer and `replay` for retained telemetry. See [the instrumentation guide](../docs/evaluation-instrumentation.md#connectivity-checks-and-the-resolved-tls-failure) for the resolved destination-dependent NAT/access-list issue.

@@ -12,6 +12,7 @@ public sealed class MongoInstrumentation
     public const int SchemaVersion = 1;
     private readonly IMongoDatabase? db;
     private readonly string folder;
+    private readonly Dictionary<string, ExpectedResultsSnapshot> expectations = new(StringComparer.Ordinal);
     public string RunId { get; }
     public string WorkflowId { get; }
     public bool IsOffline => db is null;
@@ -33,7 +34,7 @@ public sealed class MongoInstrumentation
         return values;
     }
 
-    public static async Task<MongoInstrumentation> OpenAsync(string settingsFile, string outputFolder, object configuration, bool offline = false)
+    public static async Task<MongoInstrumentation> OpenAsync(string settingsFile, string outputFolder, object configuration, bool offline = false, object? workflowDefinition = null)
     {
         var heartbeat = "no heartbeat diagnostic";
         try
@@ -61,7 +62,7 @@ public sealed class MongoInstrumentation
             var client = offline ? null : new MongoClient(settings);
             var database = client?.GetDatabase(env.GetValueOrDefault("MONGODB_DATABASE", url.DatabaseName ?? "aiesummit_evaluation"));
             if (database != null) await client!.GetDatabase("admin").RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1), ReadPreference.Primary);
-            var workflow = new {
+            var workflow = workflowDefinition ?? (object)new {
                 name = "ocr-split-page-sections-contract-extraction", version = 1,
                 nodes = new[] {
                     new { key = "intake", kind = "http", stepTag = "upload", scope = "upload" },
@@ -145,7 +146,7 @@ public sealed class MongoInstrumentation
         foreach (var line in File.ReadLines(file))
         {
             var row = BsonDocument.Parse(line); var collection = row["collection"].AsString;
-            if (!new[] { "evaluation_runs", "evaluation_documents", "evaluation_steps", "evaluation_events", "evaluation_workflows", "evaluation_artifacts" }.Contains(collection))
+            if (!new[] { "evaluation_runs", "evaluation_documents", "evaluation_steps", "evaluation_events", "evaluation_workflows", "evaluation_artifacts", "evaluation_expectations", "evaluation_observations" }.Contains(collection))
                 throw new InvalidDataException("Unknown telemetry collection.");
             var id = row["id"].AsString; var data = row["document"].AsBsonDocument;
             if (row["operation"].AsString == "replace") await db.GetCollection<BsonDocument>(collection).ReplaceOneAsync(new BsonDocument("_id", id), data, new ReplaceOptions { IsUpsert = true });
@@ -166,6 +167,17 @@ public sealed class MongoInstrumentation
         => await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
             { "sourceSha256", sha256 }, { "sourceSizeBytes", sizeBytes } });
 
+    public async Task<string> RegisterExpectedAsync(string documentRunId, string goldPath, string sourceSha256, string partition = "development")
+    {
+        var snapshot = ExpectedResults.Create(await File.ReadAllBytesAsync(goldPath), sourceSha256, partition);
+        expectations[documentRunId] = snapshot;
+        // Content-addressed labels are never overwritten with a different label version.
+        await Upsert("evaluation_expectations", snapshot.Id, snapshot);
+        await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
+            { "expectationId", snapshot.Id }, { "partition", partition }, { "labelSha256", snapshot.LabelSha256 } });
+        return snapshot.Id;
+    }
+
     public async Task CheckpointAsync(string documentRunId, string nodeKey, string state, object details)
         => await Upsert("evaluation_events", Guid.NewGuid().ToString("N"), new { runId = RunId, documentRunId,
             workflowId = WorkflowId, nodeKey, state, occurredAt = DateTime.UtcNow, details });
@@ -177,6 +189,13 @@ public sealed class MongoInstrumentation
         var telemetry = ToBson(payload); telemetry.Remove("prediction");
         await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
             { "status", payload.GetProperty("status").GetString() }, { "completedAt", DateTime.UtcNow }, { "result", telemetry } });
+        if (expectations.TryGetValue(documentRunId, out var expected))
+            await Upsert("evaluation_observations", documentRunId, new {
+                runId = RunId, documentRunId, workflowId = WorkflowId, expectationId = expected.Id,
+                sampleId = expected.SampleId, sourceSha256 = expected.SourceSha256, partition = expected.Partition,
+                status = payload.GetProperty("status").GetString(), targets = ExpectedResults.Observe(expected, payload),
+                matching = "Document/target presence only; gold span counts are not independently matched clause counts.",
+                resultPath = Path.GetFullPath(resultFile) });
         if (metrics is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("prompts", out var prompts))
         {
             var edges = new List<object>();

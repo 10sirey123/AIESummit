@@ -152,3 +152,27 @@ db.evaluation_documents.find({ sourceSha256: "PDF_SHA256" })
 ```
 
 Consumers should read `schemaVersion`, join by explicit IDs, distinguish definitions from graph instances, preserve unknown/null measurements, and label configured model names separately from immutable model revisions. Do not equate successful classification with accepted evidence, native token counters with invoiced usage, or an imported event timestamp with the original processing time.
+
+## Connectivity checks and the resolved TLS failure
+
+Resolved on November 7, 2026. A missing Atlas IP access-list entry caused the primary endpoint to return TLS alert 80 (`TLSV1_ALERT_INTERNAL_ERROR`), while secondary connections authenticated successfully. This machine uses destination-dependent outbound NAT: browser/secondary traffic and primary-node traffic did not always present the same public IP. A browser's “current IP” or a single HTTPS IP-check endpoint therefore did not establish the actual primary connection's source.
+
+The owner approved adding only the additional observed `/32` address. After it became active, official mongosh 2.14.1 and the .NET tester connected to the primary. MongoDB's read-only `whatsmyuri` command confirmed that the primary saw the newly allowed address. The URI, authentication database, credentials and certificate validation were preserved. No system DNS override or application connection workaround was required.
+
+`mongo-check` verified an acknowledged write, and the pending outbox was replayed successfully. Primary read-back confirmed the original 20-file baseline and its graph. This is a retrospective import, not a new inference run. Baseline details and the stored run ID are in [the measured report](extraction-baseline-results.md).
+
+Use the read-only CLI probe from the repository root:
+
+```powershell
+# Use mongosh on PATH, or the portable official tool downloaded for this session.
+$mongosh = (Get-ChildItem artifacts/mongodb-tools -Filter mongosh.exe -Recurse | Select-Object -First 1).FullName
+& $mongosh --nodb --quiet --file scripts/mongodb-probe.js
+
+# Verify the tester's actual write path, then replay retained commands if needed.
+dotnet run --project AIESummit.Evaluation -- mongo-check
+dotnet run --project AIESummit.Evaluation -- replay artifacts/extraction-evaluation/final/telemetry-outbox.ndjson
+```
+
+The probe loads `.env` (or the file named by `MONGODB_ENV_FILE`), lets process settings override the URI/database, and prints primary status, the client address observed by MongoDB, and metadata/counts for the latest document run. It performs no writes and does not print credentials. Download mongosh from [MongoDB's official shell download](https://www.mongodb.com/try/download/shell) when it is absent.
+
+When diagnosing asymmetric node failures, compare all SRV nodes, use primary read preference for the write-path check, and compare source addresses rather than assuming a secondary read proves primary access. Any additional access-list entry requires the owner's explicit authorization; do not broaden the list automatically.

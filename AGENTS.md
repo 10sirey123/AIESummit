@@ -272,3 +272,7 @@ The bundle now includes eight checksummed artifacts, adding `cli-linux-x64.tar.g
 ## Evidence matching extension
 
 Contract evidence uses exact-first anchoring with an inclusive 50% page-local multiset word Dice fallback. Read [the matching specification](docs/evidence-matching.md). Keep stored quotes equal to their source offsets and retain model quote/method/score. Upgrade 004 is additive; do not reset historical analyses or overwrite seed templates for this change.
+
+## MongoDB tester connectivity
+
+The tester now has verified Atlas primary reads/writes, and the saved 20-file baseline has been replayed into the configured database. Read [MongoDB diagnostics](docs/evaluation-instrumentation.md#connectivity-checks-and-the-resolved-tls-failure) before investigating connection failures: this network can use different outbound IPs for different destinations. `scripts/mongodb-probe.js` is the read-only mongosh entrypoint; it never prints the URI or changes access settings.

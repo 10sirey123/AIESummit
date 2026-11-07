@@ -13,6 +13,15 @@ string Option(string name, string fallback) { var i = Array.IndexOf(args, name);
 async Task Write(string file, object value) { Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(file))!); await File.WriteAllTextAsync(file, JsonSerializer.Serialize(value, json)); }
 try
 {
+    if (args.Length > 0 && args[0] == "history")
+    {
+        var history = await MongoHistory.OpenAsync(Option("--env-file", ".env"));
+        var kind = Option("--kind", "runs");
+        var data = kind == "matrix"
+            ? await history.MatrixAsync(Option("--source", ""), Option("--expectation", ""))
+            : await history.QueryAsync(kind, Option("--run", ""), Option("--sample", ""), Option("--source", ""), int.Parse(Option("--limit", "50")));
+        Console.WriteLine(JsonSerializer.Serialize(data, json)); return 0;
+    }
     if (args.Length > 0 && args[0] is "mongo-check" or "replay")
     {
         var root = Path.GetFullPath(Option("--output", "artifacts/mongo-check"));
@@ -36,6 +45,8 @@ try
             var id = sample.GetProperty("id").GetString()!; var file = Path.Combine(root, id + ".json"); if (!File.Exists(file)) continue;
             using var result = JsonDocument.Parse(await File.ReadAllTextAsync(file)); var data = result.RootElement;
             var documentRunId = await store.BeginDocumentAsync(id, sample.GetProperty("pdf").GetString()!, sample.GetProperty("sha256").GetString()!, file);
+            if (sample.TryGetProperty("gold", out var goldPath) && goldPath.ValueKind == JsonValueKind.String)
+                await store.RegisterExpectedAsync(documentRunId, goldPath.GetString()!, sample.GetProperty("sha256").GetString()!, Option("--partition", "development"));
             await store.FinishDocumentAsync(documentRunId, file, data, data.TryGetProperty("metrics", out var metrics) ? metrics : null);
             count++; if (data.GetProperty("status").GetString() != "ready") failures++;
         }
@@ -140,6 +151,8 @@ try
             if (mongo != null) documentRunId = await mongo.BeginDocumentAsync(sample.Id, sample.Pdf, sample.Hash, resultFile);
             var bytes = await File.ReadAllBytesAsync(sample.Pdf);
             if (mongo != null) await mongo.SourceReadAsync(documentRunId!, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), bytes.LongLength);
+            if (mongo != null && sample.Gold != null)
+                await mongo.RegisterExpectedAsync(documentRunId!, sample.Gold, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), Option("--partition", "development"));
             if (sample.Hash != null && !Convert.ToHexString(SHA256.HashData(bytes)).Equals(sample.Hash, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("PDF checksum differs from frozen selection.");
             if (!bytes.AsSpan().StartsWith("%PDF-"u8)) throw new InvalidDataException("Input must be a PDF.");
