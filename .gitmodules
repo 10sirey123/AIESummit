@@ -1,0 +1,4 @@
+[submodule "external/blueshift"]
+	path = external/blueshift
+	url = https://github.com/10123IO/10.Blueshift.123.git
+	branch = net10

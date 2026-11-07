@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T21:03:56.808Z",
+  "title": "Design System for AIESummit",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Near-black ground",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Opaque graphite",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Quiet hairline",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "hairline-2": {
+        "role": "neutral",
+        "displayName": "Defined hairline",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "bright": {
+        "role": "primary",
+        "displayName": "Near-white bright",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "read": {
+        "role": "neutral",
+        "displayName": "Reading gray",
+        "tonalRamp": [
+          "oklch(15% 0.0024 255.5)",
+          "oklch(25% 0.0040 255.5)",
+          "oklch(36% 0.0057 255.5)",
+          "oklch(48% 0.0067 255.5)",
+          "oklch(60% 0.0067 255.5)",
+          "oklch(72% 0.0067 255.5)",
+          "oklch(84% 0.0038 255.5)",
+          "oklch(95% 0.0012 255.5)"
+        ]
+      },
+      "meta": {
+        "role": "neutral",
+        "displayName": "Metadata gray",
+        "tonalRamp": [
+          "oklch(15% 0.0025 255.5)",
+          "oklch(25% 0.0041 255.5)",
+          "oklch(36% 0.0059 255.5)",
+          "oklch(48% 0.0069 255.5)",
+          "oklch(60% 0.0069 255.5)",
+          "oklch(72% 0.0069 255.5)",
+          "oklch(84% 0.0040 255.5)",
+          "oklch(95% 0.0012 255.5)"
+        ]
+      },
+      "live": {
+        "role": "secondary",
+        "displayName": "Mint live signal",
+        "tonalRamp": [
+          "oklch(15% 0.0449 184.6)",
+          "oklch(25% 0.0748 184.6)",
+          "oklch(36% 0.1077 184.6)",
+          "oklch(48% 0.1257 184.6)",
+          "oklch(60% 0.1257 184.6)",
+          "oklch(72% 0.1257 184.6)",
+          "oklch(84% 0.0718 184.6)",
+          "oklch(95% 0.0224 184.6)"
+        ]
+      },
+      "inverse-ink": {
+        "role": "neutral",
+        "displayName": "Dark inverse ink",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "brand-focus": {
+        "role": "primary",
+        "displayName": "Icy blue focus",
+        "tonalRamp": [
+          "oklch(15% 0.0396 225.9)",
+          "oklch(25% 0.0660 225.9)",
+          "oklch(36% 0.0950 225.9)",
+          "oklch(48% 0.1109 225.9)",
+          "oklch(60% 0.1109 225.9)",
+          "oklch(72% 0.1109 225.9)",
+          "oklch(84% 0.0634 225.9)",
+          "oklch(95% 0.0198 225.9)"
+        ]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Soft coral error",
+        "tonalRamp": [
+          "oklch(15% 0.0348 24.0)",
+          "oklch(25% 0.0580 24.0)",
+          "oklch(36% 0.0835 24.0)",
+          "oklch(48% 0.0974 24.0)",
+          "oklch(60% 0.0974 24.0)",
+          "oklch(72% 0.0974 24.0)",
+          "oklch(84% 0.0557 24.0)",
+          "oklch(95% 0.0174 24.0)"
+        ]
+      },
+      "control-border": {
+        "role": "neutral",
+        "displayName": "Neutral control stroke",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "control-border-hover": {
+        "role": "neutral",
+        "displayName": "Hovered control stroke",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "control-fill": {
+        "role": "neutral",
+        "displayName": "Quiet control fill",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.0)",
+          "oklch(25% 0.0000 0.0)",
+          "oklch(36% 0.0000 0.0)",
+          "oklch(48% 0.0000 0.0)",
+          "oklch(60% 0.0000 0.0)",
+          "oklch(72% 0.0000 0.0)",
+          "oklch(84% 0.0000 0.0)",
+          "oklch(95% 0.0000 0.0)"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Cool white hover",
+        "tonalRamp": [
+          "oklch(15% 0.0046 236.6)",
+          "oklch(25% 0.0076 236.6)",
+          "oklch(36% 0.0110 236.6)",
+          "oklch(48% 0.0128 236.6)",
+          "oklch(60% 0.0128 236.6)",
+          "oklch(72% 0.0128 236.6)",
+          "oklch(84% 0.0073 236.6)",
+          "oklch(95% 0.0023 236.6)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Opening statement",
+        "purpose": "Fluid sign-in display headline."
+      },
+      "headline": {
+        "displayName": "Workspace heading",
+        "purpose": "Fluid heading for the document workspace."
+      },
+      "title": {
+        "displayName": "Section title",
+        "purpose": "Headings for sections and forms."
+      },
+      "body": {
+        "displayName": "Reading text",
+        "purpose": "Supporting copy and control input."
+      },
+      "label": {
+        "displayName": "Action label",
+        "purpose": "Primary and secondary button labels."
+      },
+      "metadata": {
+        "displayName": "Technical metadata",
+        "purpose": "Dates, upload metadata, and page ranges."
+      },
+      "markdown": {
+        "displayName": "Literal Markdown",
+        "purpose": "Wrapped document output."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "duration",
+        "value": "120ms",
+        "purpose": "Button background and border changes. Reduced-motion preferences disable the transitions."
+      },
+      {
+        "name": "ease",
+        "value": "ease-out",
+        "purpose": "Easing for button state changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sign-in-stack",
+        "value": "1180px"
+      },
+      {
+        "name": "workflow-two-columns",
+        "value": "900px"
+      },
+      {
+        "name": "workspace-stack",
+        "value": "690px"
+      },
+      {
+        "name": "narrow-shell",
+        "value": "560px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Bright pill for the primary action.",
+      "html": "<button type=\"button\" class=\"ds-button-primary ds-focus\">Upload file<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 17 17 7M7 7h10v10\"/></svg></button>",
+      "css": ".ds-button-primary { display: inline-flex;\n  align-items: center;\n  gap: 10px;\n  min-height: 44px;\n  padding: 9px 17px;\n  border: 1px solid transparent;\n  border-radius: var(--dp-radius-pill, 999px);\n  font-size: .875rem;\n  font-weight: 550;\n  transition: background var(--dp-motion-duration, 120ms) var(--dp-motion-ease, ease-out), border-color var(--dp-motion-duration, 120ms) var(--dp-motion-ease, ease-out); font-family: var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); line-height: 1.55; cursor: pointer; }\n.ds-button-primary { background: var(--dp-color-bright, #f2f2f2); color: var(--dp-color-inverse-ink, #0a0a0a);  }\n.ds-button-primary:hover:not(:disabled) { background: #cfd8de;  }\n.ds-button-primary:disabled { background: #242424; color: var(--dp-color-read, #a6a9ad); border-color: var(--dp-color-hairline-2, #303030);  }\n.ds-focus:focus-visible { outline: 2px solid var(--brand-focus, #70d7ff); outline-offset: 4px; }\n@media (prefers-reduced-motion: reduce) { .ds-button-primary { transition: none; } }"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined graphite pill for secondary actions.",
+      "html": "<button type=\"button\" class=\"ds-button-secondary ds-focus\">Choose file</button>",
+      "css": ".ds-button-secondary { display: inline-flex;\n  align-items: center;\n  gap: 10px;\n  min-height: 44px;\n  padding: 9px 17px;\n  border: 1px solid transparent;\n  border-radius: var(--dp-radius-pill, 999px);\n  font-size: .875rem;\n  font-weight: 550;\n  transition: background var(--dp-motion-duration, 120ms) var(--dp-motion-ease, ease-out), border-color var(--dp-motion-duration, 120ms) var(--dp-motion-ease, ease-out); font-family: var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); line-height: 1.55; cursor: pointer; }\n.ds-button-secondary { color: var(--dp-color-bright, #f2f2f2); background: var(--dp-color-panel, #0e0e0e); border-color: #626262;  }\n.ds-button-secondary:hover:not(:disabled) { background: #242424; border-color: #686868;  }\n.ds-button-secondary:disabled { background: #242424; color: var(--dp-color-read, #a6a9ad); border-color: var(--dp-color-hairline-2, #303030);  }\n.ds-focus:focus-visible { outline: 2px solid var(--brand-focus, #70d7ff); outline-offset: 4px; }\n@media (prefers-reduced-motion: reduce) { .ds-button-secondary { transition: none; } }"
+    },
+    {
+      "name": "Sign-in field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labeled input with a neutral stroke and blue focus outline.",
+      "html": "<label class=\"ds-field\">Email <input class=\"ds-focus\" type=\"email\" placeholder=\"you@example.com\"></label>",
+      "css": ".ds-field { display: grid; gap: 8px; color: var(--dp-color-bright, #f2f2f2); font: 16px/1.55 var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); font-size: .875rem; }\n.ds-field input { width: 100%;\n  min-height: 46px;\n  border: 1px solid #626262;\n  border-radius: var(--dp-radius-panel, 6px);\n  padding: 8px 12px;\n  color: var(--dp-color-bright, #f2f2f2);\n  caret-color: var(--brand-focus, #70d7ff);\n  background: var(--dp-color-ground, #050505); font: 16px/1.55 var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); }\n.ds-field input::placeholder { color: var(--dp-color-meta, #8a8d91);  }\n.ds-focus:focus-visible { outline: 2px solid var(--brand-focus, #70d7ff); outline-offset: 4px; }"
+    },
+    {
+      "name": "Upload panel",
+      "kind": "card",
+      "refersTo": "upload-panel",
+      "description": "Graphite container for the source file controls.",
+      "html": "<section class=\"ds-upload\"><div><h2>Add a source file</h2><p>PDF, PNG or JPEG · Up to 20 MiB</p></div></section>",
+      "css": ".ds-upload { display: flex;\n  align-items: center;\n  gap: var(--dp-spacing-gap, 24px);\n  margin-block: 32px 46px;\n  padding: 24px;\n  border: 1px solid var(--dp-color-hairline-2, #303030);\n  border-radius: var(--dp-radius-panel, 6px);\n  background: var(--dp-color-panel, #0e0e0e); font: 16px/1.55 var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); margin: 0; color: var(--dp-color-bright, #f2f2f2); }\n.ds-upload h2 { margin: 0; font-size: 1.2rem; font-weight: 450; line-height: 1.12; letter-spacing: -.025em; }\n.ds-upload p { margin-top: 5px; margin-bottom: 0; color: var(--dp-color-read, #a6a9ad); }"
+    },
+    {
+      "name": "Upload navigation row",
+      "kind": "nav",
+      "refersTo": "upload-row",
+      "description": "Selectable ruled row with a mint arrow marking the current upload.",
+      "html": "<div class=\"ds-upload-list\"><button type=\"button\" class=\"ds-upload-row ds-focus\" aria-current=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M6 3h8l4 4v14H6zM9 13h6m-6 4h6\"/></svg><span class=\"ds-row-copy\"><strong>source.pdf</strong><span class=\"ds-row-meta\">Nov 6, 2026 · Ready</span></span><span class=\"ds-row-arrow\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 17 17 7M7 7h10v10\"/></svg></span></button></div>",
+      "css": ".ds-upload-list { border-top: 1px solid var(--dp-color-hairline, #222);  }\n.ds-upload-list { border-bottom: 1px solid var(--dp-color-hairline, #222);  }\n.ds-upload-row { display: grid;\n  width: 100%;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 12px;\n  text-align: start;\n  padding: 12px 8px;\n  border: 0;\n  background: transparent;\n  color: var(--dp-color-read, #a6a9ad); font: 16px/1.55 var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); cursor: pointer; }\n.ds-upload-row:hover, .ds-upload-row[aria-current] { background: var(--dp-color-panel, #0e0e0e);  }\n.ds-upload-row[aria-current] .ds-row-arrow { color: var(--dp-color-live, #3fd6c6);  }\n.ds-row-copy { overflow-wrap: anywhere;  }\n.ds-row-copy strong { display: block; color: var(--dp-color-bright, #f2f2f2); font-weight: 500;  }\n.ds-row-meta { font-family: var(--dp-typography-mono, 'Geist Mono', Menlo, monospace); font-size: .8125rem;  }\n.ds-focus:focus-visible { outline: 2px solid var(--brand-focus, #70d7ff); outline-offset: 4px; }"
+    },
+    {
+      "name": "Result status",
+      "kind": "custom",
+      "refersTo": "status",
+      "description": "Text status paired with a small dot for the processing state.",
+      "html": "<p class=\"ds-status\" role=\"status\" data-status=\"ready\">Ready</p>",
+      "css": ".ds-status { display: flex; align-items: center; gap: 8px; font: 16px/1.55 var(--dp-typography-face, Geist, 'Helvetica Neue', Arial, sans-serif); margin: 0; color: var(--dp-color-read, #a6a9ad); }\n.ds-status::before { content: ''; width: 7px; height: 7px; border-radius: var(--dp-radius-pill, 999px); background: currentColor;  }\n.ds-status[data-status=\"ready\"]::before { color: var(--dp-color-live, #3fd6c6);  }\n.ds-status[data-status=\"failed\"]::before { color: var(--error, #ffada7);  }"
+    },
+    {
+      "name": "Markdown block",
+      "kind": "custom",
+      "refersTo": "markdown-block",
+      "description": "Wrapped, literal Markdown on an opaque graphite field.",
+      "html": "<pre class=\"ds-markdown\"># Document title\n\nExtracted text from the source page.</pre>",
+      "css": ".ds-markdown { margin-block: 14px;\n  padding: 18px;\n  background: var(--dp-color-panel, #0e0e0e);\n  border-radius: var(--dp-radius-panel, 6px);\n  color: var(--dp-color-bright, #f2f2f2);\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  font: .875rem/1.65 var(--dp-typography-mono, 'Geist Mono', Menlo, monospace); margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Modern Dark",
+    "overview": "A near-black field gives document content room to breathe. Opaque graphite groups related controls and results. White headlines and primary actions stand forward, while quiet grays keep supporting information legible.",
+    "keyCharacteristics": [
+      "Near-black ground and opaque graphite surfaces",
+      "Regular Geist for reading and Geist Mono for technical content",
+      "White primary actions, icy blue focus, and small mint status signals",
+      "Static light behind the sign-in form and hairlines through reading areas"
+    ],
+    "rules": [
+      {
+        "name": "The Small Signal Rule",
+        "body": "Keep mint to small marks and pair status with readable text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Opaque Surface Rule",
+        "body": "Separate reading and work areas with tonal contrast and one-pixel rules. Keep the form and result surfaces opaque.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reserve the bright fill for the primary action.",
+      "Do show keyboard focus with the offset icy blue outline.",
+      "Do keep generated Markdown readable as literal, wrapping text."
+    ],
+    "donts": [
+      "Don't use colored glows, translucent surfaces, or decorative motion.",
+      "Don't use mint as a general accent or let a status dot stand alone."
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AIESummit App API",
+    "version": "1.0.0",
+    "description": "Upload files and retrieve OCR documents in your own workspace.",
+    "contact": {
+      "name": "AIESummit maintainers"
+    }
+  },
+  "tags": [
+    {
+      "name": "Uploads"
+    }
+  ],
+  "security": [
+    {
+      "FirebaseBearer": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "FirebaseBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Firebase ID token"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

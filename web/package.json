@@ -1,0 +1,25 @@
+{
+  "name": "aiesummit-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "design:check": "cd .. && impeccable detect web/src"
+  },
+  "type": "module",
+  "dependencies": {
+    "geist": "^1.9.2",
+    "lucide-react": "^1.70.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "impeccable": "^4.8.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6"
+  },
+  "private": true
+}

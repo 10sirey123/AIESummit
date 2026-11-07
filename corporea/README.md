@@ -38,6 +38,8 @@ Run `python scripts/download_benchmarks.py` from the repository root to reproduc
 
 The manifest's `complete` field reports whether every pinned payload passed. Partial downloads use `.part` filenames and are never reported as complete. Extraction completion markers are local bookkeeping, not dataset inputs. Do not count them, documentation PDFs, or archives as benchmark documents.
 
+Downloader recovery checks run with `python -m unittest discover -s scripts -p test_download_benchmarks.py -v`. These use a local server to verify that prematurely ended responses retain resumable bytes and that full responses safely replace partial files when the server ignores a requested range.
+
 ## Sources, attribution, and licenses
 
 - **CUAD:** The Atticus Project; Dan Hendrycks, Collin Burns, Anya Chen, and Spencer Ball. *CUAD: An Expert-Annotated NLP Dataset for Legal Contract Review* (2021). [Publisher](https://www.atticusprojectai.org/cuad/), [original data mirror](https://huggingface.co/datasets/theatticusproject/cuad), [authors' code and split archive](https://github.com/The-Atticus-Project/cuad), [paper](https://arxiv.org/abs/2103.06268). Dataset license: **CC BY 4.0**.

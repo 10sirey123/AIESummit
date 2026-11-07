@@ -106,14 +106,19 @@ def fetch(entry, verify_only):
                         raise ValueError("Unexpected download range response")
                     with partial.open("ab" if append else "wb") as out:
                         shutil.copyfileobj(response, out, 4 * 1024 * 1024)
+                if partial.stat().st_size < entry["size"]:
+                    # A server can end a response early without raising an exception.
+                    # Keep the verified-size prefix available for a range retry.
+                    raise OSError(f"Incomplete transfer: {partial.stat().st_size}/{entry['size']} bytes")
                 if not valid(partial, entry):
                     partial.unlink()
                     raise ValueError(f"Download checksum mismatch: {entry['path']}")
                 partial.replace(path)
                 break
-            except Exception:
+            except Exception as error:
                 if attempt == 4:
                     raise
+                print(f"Retry {attempt + 1}/4 {entry['path']}: {error}", flush=True)
                 time.sleep(min(2 ** attempt, 16))
     result = {"path": entry["path"], "bytes": path.stat().st_size,
               "upstream_checksum": entry["checksum"], "sha256": digest(path, "sha256")}

@@ -1,0 +1,136 @@
+name: aiesummit
+
+x-app-environment: &app-environment
+  ConnectionStrings__AIESummitDb: Host=postgres;Database=aiesummit;Username=aiesummit;Password=aiesummit-local
+  Environment__EnvID: dev
+  AzureQueue__Enabled: "true"
+  AzureQueue__VenturePrefix: aiesummit
+  AzureQueue__ConnectionString: Endpoint=sb://emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
+  AgentLog__Enabled: "true"
+  AgentLog__Provider: OpenSearch
+  AgentLog__Endpoint: http://opensearch:9200
+  AgentLog__IndexName: aiesummit-agent-logs
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: aiesummit
+      POSTGRES_USER: aiesummit
+      POSTGRES_PASSWORD: aiesummit-local
+    volumes: [database:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiesummit -d aiesummit"]
+      interval: 4s
+      timeout: 3s
+      retries: 15
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Local-Emulator_Only3!"
+      MSSQL_PID: Developer
+    volumes: [queue-db:/var/opt/mssql]
+  emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:2.0.1
+    environment:
+      ACCEPT_EULA: "Y"
+      SQL_SERVER: sql
+      MSSQL_SA_PASSWORD: "Local-Emulator_Only3!"
+      EMULATOR_HTTP_PORT: "5300"
+      SQL_WAIT_INTERVAL: "15"
+    volumes: [./deploy/servicebus.json:/ServiceBus_Emulator/ConfigFiles/Config.json:ro]
+    depends_on: [sql]
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms384m -Xmx384m"
+    volumes: [telemetry:/usr/share/opensearch/data]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s"]
+      interval: 4s
+      timeout: 3s
+      retries: 30
+  firebase:
+    build:
+      context: deploy
+      dockerfile: Firebase.Dockerfile
+    ports: ["127.0.0.1:19099:9099"]
+    volumes: [firebase:/data]
+    command: ["firebase","emulators:start","--only","auth","--project","demo-aiesummit","--import=/data","--export-on-exit=/data"]
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: api
+    environment:
+      <<: *app-environment
+      ASPNETCORE_ENVIRONMENT: ${AIESUMMIT_API_ENVIRONMENT:-Development}
+      Firebase__Emulator: ${FIREBASE_EMULATOR:-true}
+      Firebase__ProjectId: ${FIREBASE_PROJECT_ID:-demo-aiesummit}
+      Firebase__ApiKey: ${FIREBASE_API_KEY:-demo-key}
+      AZURE_FOUNDRY_ENDPOINT: ${AZURE_FOUNDRY_ENDPOINT:?Set AZURE_FOUNDRY_ENDPOINT in .env}
+      AZURE_FOUNDRY_KEY: ${AZURE_FOUNDRY_KEY:?Set AZURE_FOUNDRY_KEY in .env}
+      OCR_MODEL: ${OCR_MODEL:-mistral-ocr-4-0}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4.1-mini}
+    ports: ["127.0.0.1:18080:8080"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD","curl","-fsS","http://localhost:8080/health"]
+      interval: 4s
+      timeout: 3s
+      retries: 15
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: worker
+    environment:
+      <<: *app-environment
+      AIESUMMIT_QUEUE_RECOVERY: "true"
+    restart: on-failure
+    depends_on:
+      api:
+        condition: service_healthy
+      emulator:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
+  blueshift-admin-api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: admin
+    environment:
+      <<: *app-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      AdminAuth__SettingsFile: /config/admin-auth.json
+      AdminAuth__AuditFile: /audit/admin-audit.jsonl
+      Admin__DomainAssemblyPath: /packs/AIESummit.Domain.dll
+      Admin__AgentAssemblyPath: /packs/AIESummit.Agents.dll
+      Admin__DbContextTypeName: AIESummit.Domain.AIESummitDb
+      Admin__ConnectionStringName: AIESummitDb
+    volumes: [./deploy/admin-auth.local.json:/config/admin-auth.json:ro, audit:/audit]
+    depends_on:
+      api:
+        condition: service_healthy
+  blueshift-admin:
+    build:
+      context: external/blueshift/Blueshift.Admin
+    ports: ["127.0.0.1:13088:80"]
+    depends_on: [blueshift-admin-api]
+
+volumes:
+  database:
+  queue-db:
+  firebase:
+  telemetry:
+  audit:
+

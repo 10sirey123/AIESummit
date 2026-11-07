@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AIESummit · Document workspace</title><link rel="stylesheet" href="/site.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+<header><a href="/">AIESummit</a><span>Document workspace</span><button id="signout" hidden>Sign out</button></header>
+<main>
+  <section class="intro"><p class="eyebrow">DOCUMENT WORKSPACE</p><h1>From scans to documents</h1>
+    <p>Upload a PDF or image. AIESummit extracts the text and groups related pages into individual documents.</p></section>
+  <section class="panel" id="auth" aria-labelledby="auth-title">
+    <h2 id="auth-title">Your account</h2>
+    <form id="auth-form">
+      <label>Email <input type="email" name="email" autocomplete="email" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" minlength="6" required></label>
+      <div class="actions"><button name="action" value="signInWithPassword">Sign in</button><button class="secondary" name="action" value="signUp">Create account</button></div>
+    </form>
+  </section>
+  <div id="workspace" hidden>
+    <section class="panel">
+      <h2>Upload a file</h2><p>PDF, PNG, or JPEG up to 20 MiB. PDFs can contain up to 30 pages.</p>
+      <form id="upload"><label>Choose a file <input name="file" type="file" accept=".pdf,.png,.jpg,.jpeg" required></label><button>Upload and analyze</button></form>
+    </section>
+    <section class="panel"><h2>Recent uploads</h2><ul id="uploads"></ul><button id="more" class="secondary" hidden>Load more</button></section>
+    <section class="panel" id="detail" hidden><h2 id="detail-title">Documents</h2><p id="detail-status"></p><div id="documents"></div></section>
+  </div>
+  <p id="notice" role="status" aria-live="polite"></p>
+</main>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "domainPack": "/packs/AIESummit.Domain.dll",
+  "agentPack": "/packs/AIESummit.Agents.dll",
+  "dbContext": "AIESummit.Domain.AIESummitDb",
+  "connectionStringName": "AIESummitDb",
+  "venturePrefix": "aiesummit",
+  "queueRegexGroup": ["^aiesummit-dev-(uploadedfile|llmprompt)-"]
+}

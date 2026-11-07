@@ -1,0 +1,23 @@
+{
+  "Admin": {
+    "Brand": {"ProductName":"AIESummit Admin","PrimaryColor":"#176256"},
+    "EntityAllowList": ["UploadedFile","OcrPage","Document","PageImage","Image","APIInfo","LLMModel","LLMStep","LLMPrompt","OcrAgentConfig","LLMStepAgentConfig","LLMPromptAgentConfig"],
+    "EntityAccess": {
+      "UploadedFile": {"CanCreate":false,"CanUpdate":false,"CanDelete":false},
+      "OcrPage": {"CanCreate":false,"CanUpdate":false,"CanDelete":false},
+      "Document": {"CanCreate":false,"CanUpdate":false,"CanDelete":false},
+      "PageImage": {"CanCreate":false,"CanUpdate":false,"CanDelete":false},
+      "Image": {"CanCreate":false,"CanUpdate":false,"CanDelete":false},
+      "LLMPrompt": {"CanCreate":false,"CanUpdate":false,"CanDelete":false}
+    },
+    "Nav": {"Menus":[
+      {"Id":"documents","Title":"Documents","EntityTypes":["UploadedFile","OcrPage","Document","PageImage","Image"]},
+      {"Id":"configuration","Title":"Configuration","EntityTypes":["APIInfo","LLMModel","LLMStep","OcrAgentConfig","LLMStepAgentConfig","LLMPromptAgentConfig"]},
+      {"Id":"operations","Title":"Operations","Items":[
+        {"Kind":"entity","EntityType":"LLMPrompt"},
+        {"Kind":"route","Title":"Agent Operations","Path":"/agents"}
+      ]}
+    ]}
+  }
+}
+

@@ -1,0 +1,384 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AIESummit App API",
+    "version": "1.0.0",
+    "description": "Upload files and retrieve OCR documents in your own workspace.",
+    "contact": {
+      "name": "AIESummit maintainers"
+    }
+  },
+  "tags": [
+    {
+      "name": "Uploads"
+    }
+  ],
+  "security": [
+    {
+      "FirebaseBearer": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "FirebaseBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Firebase ID token"
+      }
+    },
+    "schemas": {
+      "AcceptedUpload": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      },
+      "Upload": {
+        "type": "object",
+        "required": [
+          "id",
+          "fileName",
+          "created",
+          "pageCount",
+          "status",
+          "error"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "splitting",
+              "ready",
+              "failed"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UploadDetail": {
+        "type": "object",
+        "required": [
+          "upload",
+          "documents"
+        ],
+        "properties": {
+          "upload": {
+            "$ref": "#/components/schemas/Upload"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "firstPage",
+          "lastPage",
+          "markdown",
+          "images"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "firstPage": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "lastPage": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageReference"
+            }
+          }
+        }
+      },
+      "ImageReference": {
+        "type": "object",
+        "required": [
+          "id",
+          "page",
+          "reference"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "reference": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/v1/uploads": {
+      "get": {
+        "operationId": "listUploads",
+        "summary": "List the signed-in user's uploads, newest first",
+        "tags": [
+          "Uploads"
+        ],
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "description": "List uploads with IDs lower than this cursor",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to 50 uploads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Upload"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Firebase ID token required"
+          }
+        },
+        "description": "Returns a page of up to 50 owned uploads. Pass the last ID as before to retrieve older uploads."
+      },
+      "post": {
+        "operationId": "createUpload",
+        "summary": "Queue a PDF, PNG or JPEG for analysis",
+        "tags": [
+          "Uploads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "A file up to 20 MiB. PDF files can contain up to 30 pages."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Upload queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedUpload"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Upload detail path"
+              }
+            }
+          },
+          "400": {
+            "description": "Missing, empty or oversized file"
+          },
+          "401": {
+            "description": "Firebase ID token required"
+          },
+          "413": {
+            "description": "Request exceeds the body limit"
+          },
+          "415": {
+            "description": "Unsupported file type"
+          }
+        },
+        "description": "Accepts one multipart file and starts background OCR and document splitting."
+      }
+    },
+    "/api/v1/uploads/{id}": {
+      "get": {
+        "operationId": "getUpload",
+        "summary": "Get status and document results for an upload",
+        "tags": [
+          "Uploads"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload and documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Firebase ID token required"
+          },
+          "404": {
+            "description": "Upload or image unavailable for this account"
+          }
+        },
+        "description": "Returns the current processing status, document ranges, Markdown, and image references."
+      }
+    },
+    "/api/v1/uploads/{id}/images/{imageId}": {
+      "get": {
+        "operationId": "getImage",
+        "summary": "Download an OCR image from an owned upload",
+        "tags": [
+          "Uploads"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image bytes",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Firebase ID token required"
+          },
+          "404": {
+            "description": "Upload or image unavailable for this account"
+          }
+        },
+        "description": "Returns an extracted image that belongs to the specified upload."
+      }
+    }
+  }
+}

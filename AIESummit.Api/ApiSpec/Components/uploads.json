@@ -1,0 +1,138 @@
+{
+  "AcceptedUpload": {
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      }
+    }
+  },
+  "Upload": {
+    "type": "object",
+    "required": [
+      "id",
+      "fileName",
+      "created",
+      "pageCount",
+      "status",
+      "error"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      },
+      "fileName": {
+        "type": "string"
+      },
+      "created": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "pageCount": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "splitting",
+          "ready",
+          "failed"
+        ]
+      },
+      "error": {
+        "type": "string",
+        "nullable": true
+      }
+    }
+  },
+  "UploadDetail": {
+    "type": "object",
+    "required": [
+      "upload",
+      "documents"
+    ],
+    "properties": {
+      "upload": {
+        "$ref": "#/components/schemas/Upload"
+      },
+      "documents": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Document"
+        }
+      }
+    }
+  },
+  "Document": {
+    "type": "object",
+    "required": [
+      "id",
+      "title",
+      "firstPage",
+      "lastPage",
+      "markdown",
+      "images"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "firstPage": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      },
+      "lastPage": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      },
+      "markdown": {
+        "type": "string"
+      },
+      "images": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ImageReference"
+        }
+      }
+    }
+  },
+  "ImageReference": {
+    "type": "object",
+    "required": [
+      "id",
+      "page",
+      "reference"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      },
+      "page": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1
+      },
+      "reference": {
+        "type": "string"
+      }
+    }
+  }
+}
