@@ -1,0 +1,51 @@
+# .NET build, test, and package output
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+*.nupkg
+*.snupkg
+
+# IDE and user-specific state
+.vs/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+*.DotSettings.user
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+*.pfx
+*.p12
+secrets.json
+
+# Benchmark payloads and generated verification inventory
+/corporea/*
+!/corporea/README.md
+!/corporea/sources.lock.json
+
+# Generated extraction and model output
+/outputs/
+/logs/
+*.log
+
+# Bootstrap utility caches and operating system files
+__pycache__/
+*.py[cod]
+.venv/
+Thumbs.db
+.DS_Store
