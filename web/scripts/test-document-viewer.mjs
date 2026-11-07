@@ -22,15 +22,15 @@ try {
   assert.deepEqual(documentPages(doc).map(page => page.label), ['Page 4', 'Page 5']);
   assert.deepEqual(documentPages({ ...doc, lastPage: 7 }).map(page => page.label), ['Pages 4–7', 'Page break']);
   const pages = [{id: 8, number: 4, markdown: 'Only this page', analysisStatus:'not_started', sections:[], error:null}];
-  const viewer = renderToStaticMarkup(createElement(DocumentViewer, { documents: [doc], pages, session: {}, uploadId: 7 }));
+  const viewer = renderToStaticMarkup(createElement(DocumentViewer, { initialMode: 'review', documents: [doc], pages, session: {}, uploadId: 7 }));
   assert.match(viewer, /No section analysis yet/);
   assert.match(viewer, /Original PDF/);
   assert.match(viewer, /role="tabpanel"/);
   assert.match(viewer, /Source page navigation/);
-  const completed = renderToStaticMarkup(createElement(DocumentViewer, {documents:[doc], pages:[{...pages[0],analysisStatus:'ready', sections:[{heading:'Term',classification:'renewal',summary:'A factual summary',quote:'Evidence from this page'}]}],session:{},uploadId:7}));
+  const completed = renderToStaticMarkup(createElement(DocumentViewer, { initialMode: 'review',documents:[doc], pages:[{...pages[0],analysisStatus:'ready', sections:[{heading:'Term',classification:'renewal',summary:'A factual summary',quote:'Evidence from this page'}]}],session:{},uploadId:7}));
   assert.match(completed,/A factual summary/);
   assert.match(completed,/Evidence from this page/);
-  assert.equal(renderToStaticMarkup(createElement(DocumentViewer, { documents: [], pages:[], session: {}, uploadId: 7 })), '');
+  assert.equal(renderToStaticMarkup(createElement(DocumentViewer, { initialMode: 'review', documents: [], pages:[], session: {}, uploadId: 7 })), '');
   console.log('Passed Markdown formatting, unsafe-content handling, page provenance and viewer empty-state checks.');
 } finally {
   await server.close();

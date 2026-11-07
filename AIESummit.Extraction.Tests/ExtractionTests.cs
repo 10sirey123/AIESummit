@@ -39,13 +39,20 @@ public sealed class ExtractionTests
         Assert.Equal(0, ContractExtractionResult.ResolveQuote("Notice", "notice"));
         Assert.Throws<InvalidDataException>(() => ContractExtractionResult.ResolveQuote("abc", ""));
     }
-    [Fact] public void EvidenceOutsideDocumentOrAbsentFromPageIsRejectedBeforeMutation()
+    [Fact] public void EvidenceOutsideDocumentOrAbsentFromPageIsDroppedWithItsUnsupportedValues()
     {
         var a = Analysis(); var o = Output(); o.Findings[0].Evidence[1].Page = 3;
-        Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(a, [o]));
+        var target = Assert.Single(ContractExtractionResult.Validate(a, [o]));
         Assert.Equal("not_analyzed", a.Targets.Single().Outcome); Assert.Empty(a.Targets.Single().Extractions);
+        var finding = Assert.Single(target.Extractions); Assert.Single(finding.Evidence);
+        Assert.Contains("2027-12-31", finding.ValuesJson); Assert.DoesNotContain("conditions", finding.ValuesJson);
+        Assert.Contains("Validation removed 1 unsupported value, 1 evidence segment", target.Explanation);
         o = Output(); o.Findings[0].Evidence[0].Quote = "unrelated missing source words";
-        Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(a, [o]));
+        finding = Assert.Single(Assert.Single(ContractExtractionResult.Validate(a, [o])).Extractions);
+        Assert.DoesNotContain("date", finding.ValuesJson); Assert.Contains("conditions", finding.ValuesJson);
+        o = Output(); o.Findings[0].Evidence.ForEach(e => e.Page = 3);
+        target = Assert.Single(ContractExtractionResult.Validate(a, [o]));
+        Assert.Empty(target.Extractions); Assert.Equal("uncertain", target.Outcome);
     }
     [Fact] public void FiftyPercentWordOverlapIsInclusiveAndOffsetsStillSelectActualSource()
     {
@@ -63,14 +70,17 @@ public sealed class ExtractionTests
         Assert.Throws<InvalidDataException>(() => EvidenceMatcher.Match(text, "ALPHA BETA GAMMA DELTA"));
         Assert.True(EvidenceMatcher.Match(text, "ALPHA BETA GAMMA DELTA", 1).Start > 0);
     }
-    [Fact] public void InvalidDatesUnsupportedFieldsAndUnanchoredValuesAreRejected()
+    [Fact] public void InvalidDatesUnsupportedFieldsAndUnanchoredValuesAreRemovedNotPublished()
     {
+        static string Values(TargetOutput o) => Assert.Single(Assert.Single(ContractExtractionResult.Validate(Analysis(), [o])).Extractions).ValuesJson;
         var o = Output(); o.Findings[0].Values.Date = "2027-02-30";
-        Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(Analysis(), [o]));
+        Assert.DoesNotContain("date", Values(o));
         o = Output(); o.Findings[0].Values.Amount = 10;
-        Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(Analysis(), [o]));
+        var json = Values(o); Assert.DoesNotContain("amount", json); Assert.Contains("2027-12-31", json);
         o = Output(); o.Findings[0].Evidence[0].Fields.Clear();
-        Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(Analysis(), [o]));
+        Assert.DoesNotContain("date", Values(o));
+        o = Output(); o.Findings[0].Values.Duration = 3;
+        Assert.DoesNotContain("duration", Values(o));
     }
     [Fact] public void DuplicateUnknownAndMissingTargetsAreRejected()
     {
@@ -82,8 +92,10 @@ public sealed class ExtractionTests
     [Fact] public void NegativeOutcomeHasNoFabricatedFindingAndCompletedRunsCannotBeReplaced()
     {
         var o = Output(); o.Outcome = "not_found_in_reviewed_text";
-        Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(Analysis(), [o]));
+        var negative = Assert.Single(ContractExtractionResult.Validate(Analysis(), [o]));
+        Assert.Empty(negative.Extractions); Assert.Equal("not_found_in_reviewed_text", negative.Outcome);
         o.Findings.Clear(); Assert.Empty(Assert.Single(ContractExtractionResult.Validate(Analysis(), [o])).Extractions);
+        o.Outcome = "invented"; Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(Analysis(), [o]));
         var a = Analysis(); a.CompletedAt = DateTime.UtcNow;
         Assert.Throws<InvalidDataException>(() => ContractExtractionResult.Validate(a, [o]));
     }

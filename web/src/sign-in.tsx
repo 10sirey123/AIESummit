@@ -27,11 +27,11 @@ export function SignIn({ onSignIn }: { onSignIn: (session: Session) => void }) {
     <main className="shell welcome">
       <div className="welcome-copy">
         <h1>Bring order to<br className="desktop-break" /> your documents.</h1>
-        <p>Turn PDFs and scans into organized Markdown. AIESummit reads each page, identifies where documents begin and end, and keeps the original page order.</p>
+        <p>Turn PDFs and scans into organized Markdown. ClauseLens reads each page, identifies where documents begin and end, and keeps the original page order.</p>
       </div>
       <section className="auth-area" aria-labelledby="auth-title">
         <div className="auth-panel">
-          <h2 id="auth-title">{creating ? 'Create your account' : 'Sign in to AIESummit'}</h2>
+          <h2 id="auth-title">{creating ? 'Create your account' : 'Sign in to ClauseLens'}</h2>
           <p>{creating ? 'Start organizing your documents.' : 'Open your document workspace.'}</p>
           <form onSubmit={submit}>
             <label htmlFor="email">Email</label>
@@ -45,7 +45,7 @@ export function SignIn({ onSignIn }: { onSignIn: (session: Session) => void }) {
             </button>
           </form>
           <p className="auth-switch">
-            {creating ? 'Already have an account?' : 'New to AIESummit?'}{' '}
+            {creating ? 'Already have an account?' : 'New to ClauseLens?'}{' '}
             <button type="button" className="text-button" disabled={busy} onClick={() => {
               setError('');
               setMode(creating ? 'signInWithPassword' : 'signUp');
@@ -53,7 +53,7 @@ export function SignIn({ onSignIn }: { onSignIn: (session: Session) => void }) {
           </p>
         </div>
       </section>
-      <ol className="process" aria-label="How AIESummit processes documents">
+      <ol className="process" aria-label="How ClauseLens processes documents">
         <li><Files aria-hidden="true" /><div><strong>Upload a source</strong><span>PDF, PNG or JPEG</span></div></li>
         <li><ScanLine aria-hidden="true" /><div><strong>Identify documents</strong><span>OCR and AI-assisted splitting</span></div></li>
         <li><TextAlignStart aria-hidden="true" /><div><strong>Review the output</strong><span>Markdown and page ranges</span></div></li>
