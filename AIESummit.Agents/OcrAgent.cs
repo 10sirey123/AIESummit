@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 using Blueshift.Agents.Abstract;
 using Blueshift.Agents.Infrastructure.Queue;
 using Blueshift.Domain.Abstract;
@@ -35,6 +37,31 @@ public sealed class OcrAgent(ILogger logger, IBroadcaster broadcaster, IQueueMan
     {
         try
         {
+            var cacheKey = file.OcrCacheKey;
+            if (string.IsNullOrEmpty(cacheKey))
+                cacheKey = file.OcrCacheKey = Convert.ToHexString(SHA256.HashData(file.Source));
+            var cached = repo.Objects.Where(upload => upload.ID != file.ID && upload.OcrCacheKey == cacheKey
+                    && upload.ContentType == file.ContentType && upload.OcrStatus == ProcessedStatus.Processed)
+                .OrderBy(upload => upload.ID).FirstOrDefault();
+            if (cached is not null)
+            {
+                var cachedPageRepo = repo.GetRepository<OcrPage>();
+                var cachedImageRepo = repo.GetRepository<PageImage>();
+                foreach (var source in cachedPageRepo.Objects.Where(page => page.UploadId == cached.ID).OrderBy(page => page.Number).ToArray())
+                {
+                    var page = new OcrPage { UploadId = file.ID, Number = source.Number, Markdown = source.Markdown,
+                        LLMStepStatus = StepProcessingStatus.CheckForPrompts };
+                    cachedPageRepo.Add(page);
+                    foreach (var link in cachedImageRepo.Objects.Include(link => link.Image).Where(link => link.PageId == source.ID).ToArray())
+                        cachedImageRepo.Add(new PageImage { Page = page, Reference = link.Reference,
+                            Image = new Image { FileData = link.Image.FileData?.ToArray() ?? [], FileMimeType = link.Image.FileMimeType, FileSize = link.Image.FileSize } });
+                }
+                file.PageCount = cached.PageCount;
+                file.OcrStatus = ProcessedStatus.Processed;
+                file.LLMStepStatus = StepProcessingStatus.CheckForPrompts;
+                file.Error = null;
+                return (true, file, repo);
+            }
             var browser = GetApiBrowser<MistralOcrBrowser>() ?? throw new InvalidOperationException("OCR APIInfo unavailable.");
             var pages = await browser.ReadAsync(file);
             if (pages.Length is < 1 or > 30 || !pages.Select(p => p.Index).SequenceEqual(Enumerable.Range(0, pages.Length)))

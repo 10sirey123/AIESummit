@@ -2,6 +2,20 @@
 
 The bundled Blueshift CLI runs the framework's `SeedPlanner` and transactional `SeedImporter` against `AIESummitDb`. The small `AIESummit.Configuration` program only exports authored configuration and applies the additive seed-registry schema upgrade; it does not implement a second importer or provider loop. Normal users need no private Blueshift access.
 
+## Definitions and native LLM processing
+
+| Source | Responsibility |
+| --- | --- |
+| [SplitStep.cs](../AIESummit.Agents/SplitStep.cs) | `split-upload` definition; `SplitResult : BaseMetadata` validates page ranges and creates logical documents in `ConnectTo`. `AgentPack` registers both subject/result pairs and the code-step bindings. |
+| [PageSectionsStep.cs](../AIESummit.Agents/PageSectionsStep.cs) | `classify-page-sections` definition; `PageSectionsResult : BaseMetadata` validates exact evidence and stores page sections in `ConnectTo`. |
+| [WorkflowSeeds.cs](../AIESummit.Configuration/WorkflowSeeds.cs) | Calls those definitions and selects the configuration fields to export. |
+| [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs) | Missing-only initial configuration and schema upgrades; preserves existing operator settings. |
+| [admin.ps1](../scripts/admin.ps1) | Local command wrapper around the exporter and the bundled framework CLI. |
+
+At runtime, Blueshift's `LLMStepAgent` creates prompts through `LLMPromptFactory`. The factory generates `ExpectedResponseJsonFormat` from the registered `DTOResponseType`; provider adapters request structured JSON. After resolution, the framework deserializes the response into the registered metadata class with an execution context and invokes its `ConnectTo` method. Seeding changes the persisted step definition used by this pipeline. It does not replace schema generation, metadata deserialization or result application. See [page analysis](page-analysis.md) and [metadata guidance](../AIESummit.Agents/Metadata.AGENTS.md).
+
+For example, change the page-summary instructions in `PageSectionsStep.Definition()`, rebuild/export, inspect the planned `SystemRolePromptTemplate` change, and apply its reviewed token. New prompts then use the updated instructions. A DTO/property or `ConnectTo` implementation change must also be built and deployed to the application/worker; applying configuration cannot install new compiled code. Keep step tags stable when editing existing steps.
+
 ## Use locally
 
 Start the ordinary stack first with `./start.ps1`. From the repository root in PowerShell 7:
@@ -73,3 +87,16 @@ The normal test run checks the export contract and skips the PostgreSQL case whe
 With `-VerifyCli`, it additionally uses the built configuration image for actual CLI export, plan, previewed apply and repeat-plan convergence. No live providers or contract data are used. Docker must be running; the CLI verification image must be built first. Ignored local test exports remain under `artifacts/`.
 
 Maintainers build `cli-linux-x64.tar.gz` from the same revision and compatibility patches as the other bundled hosts. Full refreshes use `scripts/package-blueshift.ps1`; the manifest/verifier now cover eight artifacts, including the CLI. No .NET tool installation or private feed is needed for ordinary operation.
+
+## Troubleshooting and recorded validation
+
+| Observation | Action |
+| --- | --- |
+| Configuration image is missing or exports old instructions | Run `admin.ps1 build`, then export and plan again. |
+| Seed planning reports an absent registry | Start the current API or run `admin.ps1 schema` against the initialized local stack. |
+| Apply rejects a stale preview | Check for manifest, policy or operator changes; generate and review a fresh plan. |
+| A difference is listed but its `Apply` flag is false | Check the record policy. Model/API rows intentionally use keep; merge also preserves nonempty values. |
+| A newly created step does not run | Default export creates it disabled/unbound. Configure it in Admin or review an explicit bindings export, and verify its provider APIInfo separately. |
+| Existing pages show old results after a prompt update | Seeding retains prompt history and outputs. It does not automatically reprocess documents. |
+
+Verified locally on November 7, 2026: the configuration image built; the bundled CLI exported and validated seven records; isolated PostgreSQL tests passed for planning, application, rollback, stale previews, preservation and convergence; actual CLI plan/apply/re-plan passed on the disposable database. The existing local application's seed-registry-only upgrade succeeded and its read-only plan contained seven keep actions. That live plan was not applied. The normal .NET test run passed six tests and skipped the PostgreSQL case; the dedicated PostgreSQL run passed both seeding tests without skips. These are recorded checks, not a requirement to rerun provider calls for documentation changes.

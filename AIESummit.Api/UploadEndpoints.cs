@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Blueshift.Domain.Abstract;
 using Blueshift.Domain.Entities;
 using AIESummit.Domain;
@@ -34,7 +35,7 @@ internal static class UploadEndpoints
         if (mime is null) return Results.Problem("Upload a PDF, PNG or JPEG.", statusCode: 415);
         var filename = Path.GetFileName(file.FileName.Replace('\\', '/'));
         var upload = new UploadedFile { OwnerId = Owner(user), FileName = filename[..Math.Min(filename.Length, 255)],
-            ContentType = mime, Source = bytes };
+            ContentType = mime, Source = bytes, OcrCacheKey = Convert.ToHexString(SHA256.HashData(bytes)) };
         db.Uploads.Add(upload);
         await db.SaveChangesAsync(token);
         return Results.Accepted($"/api/v1/uploads/{upload.ID}", new { id = upload.ID });

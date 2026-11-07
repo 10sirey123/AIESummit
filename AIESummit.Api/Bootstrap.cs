@@ -21,6 +21,10 @@ internal static class Bootstrap
             ?? throw new InvalidOperationException("Page sections upgrade is missing."))
         using (var reader = new StreamReader(migration))
             await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
+        await using (var migration = typeof(Bootstrap).Assembly.GetManifestResourceStream("AIESummit.Api.Migrations.002-ocr-cache.sql")
+            ?? throw new InvalidOperationException("OCR cache upgrade is missing."))
+        using (var reader = new StreamReader(migration))
+            await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
         await AddCredential("mistral-ocr", config["OCR_ENDPOINT"] ?? endpoint + "/providers/mistral/azure/ocr",
             config["OCR_MODEL"] ?? "mistral-ocr-4-0");
         await AddCredential("openai", config["LLM_ENDPOINT"] ?? endpoint, null);
@@ -66,7 +70,7 @@ internal static class Bootstrap
         }
         await SeedAgent<OcrAgentConfig>("Mistral OCR", nameof(OcrAgent));
         await SeedAgent<LLMStepAgentConfig>("Plan document split", "LLMStepAgent");
-        await SeedAgent<LLMPromptAgentConfig>("Run document split", "LlmPromptAgent");
+        await SeedPromptAgent();
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
 
@@ -81,6 +85,15 @@ internal static class Bootstrap
         {
             if (!await db.Set<T>().AnyAsync())
                 db.Add(new T { Name = name, AgentClassName = className, Enabled = true });
+        }
+
+        async Task SeedPromptAgent()
+        {
+            var agent = await db.LLMPromptAgentConfigs.OrderBy(a => a.ID).FirstOrDefaultAsync();
+            if (agent is null)
+                db.LLMPromptAgentConfigs.Add(new LLMPromptAgentConfig { Name = "Run document split", AgentClassName = "LlmPromptAgent", Enabled = true, MD5HashCheck = true });
+            else if (!agent.MD5HashCheck)
+                agent.MD5HashCheck = true;
         }
     }
 }

@@ -15,6 +15,7 @@ The companion files below organize the repository guidance by task. A companion 
 | Work | Start here | Focused companions |
 | --- | --- | --- |
 | Fresh Windows environment and dependencies | [Installation guide](install.md) | Docker checks, PowerShell 7, Git, .NET 10 SDK, Node.js 24, credentials, startup and optional Python |
+| Update persisted workflow configuration from code | [Configuration seeding](docs/configuration-seeding.md) | [Exporter guide](AIESummit.Configuration/AGENTS.md), reviewed CLI plan/apply, policies, registry upgrade and isolated tests |
 | Entity model and Admin presentation | [Domain guide](AIESummit.Domain/AGENTS.md) | `DisplayMetadata.AGENTS.md`, `Relationships.AGENTS.md` |
 | LLM subject and persistence | [Domain guide](AIESummit.Domain/AGENTS.md) | `IAmLLMCapable.AGENTS.md`, `Persistence.AGENTS.md` |
 | Children, stable tags and files | [Domain guide](AIESummit.Domain/AGENTS.md) | `IHaveChildren.AGENTS.md`, `IHaveUniqueTag.AGENTS.md`, `Files.AGENTS.md` |
@@ -51,6 +52,10 @@ Unlinked focused companion filenames in a row are relative to that row's directo
 | `NuGet.Config` | Bundled Blueshift package source plus public NuGet |
 | `scripts/package-blueshift.ps1` | Maintainer-only refresh from a separate authorized source checkout |
 | `scripts/verify-dependencies.ps1` | Verify bundled artifact hashes and sizes |
+| `AIESummit.Configuration/` | Export code-defined workflow configuration and apply the additive seed-registry upgrade |
+| `scripts/admin.ps1` | Build/export/validate/plan/apply/schema commands using the bundled Blueshift CLI |
+| `scripts/test-seeding.ps1` | Disposable PostgreSQL acceptance and optional actual CLI verification |
+| `deploy/compose.cli.yaml`, `deploy/cli/` | One-off operator service and domain-pack overlay |
 | `artifacts` | Ignored local outputs and generated Admin token |
 
 The API references the agent project, which exposes pack configuration and the domain. Runtime worker and Admin hosts come from BlueShift rather than private application host projects. `deploy/Dockerfile` publishes only the application and packs, then extracts the prebuilt Linux hosts and Admin website from the committed bundle. A successful solution build alone does not validate every container target.

@@ -34,6 +34,9 @@ public sealed class UploadedFile : BasePersistenceObject, ILlmCapable
     [Display(Name = "Original file bytes", Description = "Retained source file sent to OCR. Binary content is hidden from the Admin form.")]
     [DisplayMetadata("lucide:Package", IsHidden = true, IsEditable = false)]
     public byte[] Source { get; set; } = [];
+    [Display(Name = "OCR source fingerprint")]
+    [DisplayMetadata("lucide:Fingerprint", IsHidden = true, IsEditable = false)]
+    public string OcrCacheKey { get; set; } = "";
     [Display(Name = "OCR status", Description = "Progress of extracting text and images from the original file. Managed by the OCR agent.")]
     [DisplayMetadata("lucide:ScanText", ShowInSnippet = true, IsEditable = false, Order = 20)]
     public ProcessedStatus OcrStatus { get; set; }

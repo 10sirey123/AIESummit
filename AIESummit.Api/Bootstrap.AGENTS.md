@@ -21,6 +21,8 @@ Bootstrap executes in this order.
 5. Check and add missing APIInfo, model, step, and agent-config rows.
 6. Save changes once, then commit the transaction.
 
+Startup also applies the explicit additive SQL upgrades for page analysis, OCR cache fingerprints, and seed provenance while holding the advisory lock. The OCR upgrade adds `Uploads.OcrCacheKey` and its lookup index. Each upload reaching OCR is fingerprinted from its exact source bytes; successfully OCRed rows can then supply pages and extracted image bytes to a duplicate upload. No old-upload backfill is needed. Prompt response caching is controlled by `LLMPromptAgentConfig.MD5HashCheck`; bootstrap enables it on the existing prompt-agent configuration row as well as on a new row. Restart the API on an existing installation to apply the schema upgrade and enable the prompt cache before expecting both caches to work. Confirm the column exists and the active prompt-agent row has `MD5HashCheck = true` before starting workers against a database that has not yet been upgraded.
+
 An unhandled bootstrap failure prevents normal API startup. The health route is mapped later, and the process does not become healthy merely because PostgreSQL is reachable. In Compose, the worker and Admin API wait for API health, so a bootstrap failure can block downstream startup too.
 
 ## Schema creation is outside the seed lock

@@ -4,7 +4,7 @@ Framework source links in this guide are optional upstream references at the bun
 
 Read the [repository guide](../AGENTS.md) and the [agent directory guide](AGENTS.md). The current implementation is entirely in [OcrAgent.cs](OcrAgent.cs). It uses BlueShift's `BaseAPIAgent` to load persisted connection configuration and sends one HTTP request containing the uploaded source to the configured Mistral OCR endpoint.
 
-This is not Horus's PageImageContainer integration. AIESummit does not run Poppler rendering, ImageMagick normalization, Groq OCR, patient audits, rendered-page manifests or a PDF-hash OCR cache. The Horus guide supplies useful separation between agent, API browser and page output, but its endpoints and deployment commands are not applicable here.
+OCR caching is implemented with `UploadedFile.OcrCacheKey`, a SHA-256 fingerprint of the exact source bytes. New uploads are fingerprinted at the API boundary; rows with an empty fingerprint are fingerprinted when they first reach OCR. Before calling Mistral, the OCR agent looks for another successfully OCRed upload with the same fingerprint and MIME type. On a hit it copies ordered page Markdown and each extracted image's bytes into new page/image records linked to the new upload. It does not reuse source rows across owners. There is no need to backfill historical uploads. Bootstrap applies the additive `002-ocr-cache.sql` upgrade on retained databases.
 
 ## Agent contract and activation
 

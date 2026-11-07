@@ -63,7 +63,7 @@ The credential identifiers are not evidence that `APIInfo` uses this tag interfa
 
 Existing model and step rows are preserved. Startup does not overwrite an operator-edited model name, provider, prompt, template, enabled flag or existing step-to-model association. `LLM_MODEL` supplies the initial model name, defaulting to `gpt-4.1-mini`. Changing that environment variable does not update a model already stored under `foundry-split`.
 
-This behavior is intentional idempotent creation. It is not a general source-to-database synchronization mechanism. Source changes to `SplitStep.Definition()` do not automatically update an existing database step. Review the stored configuration when validating a prompt change, and use an explicitly designed update path for the fields the task intends to change.
+This behavior is intentional idempotent creation. Source changes to `SplitStep.Definition()` do not automatically update an existing database step. Use the implemented [configuration seeding workflow](../docs/configuration-seeding.md) to export the actual definitions, review stable-tag matches and field differences, then apply the exact previewed manifest. Default exports preserve selected models and enabled flags; model/API records use keep policy. Seed registry identities supplement the entities' natural keys and record provenance without changing existing database IDs.
 
 The advisory lock serializes cooperating startup seeders that use the same lock. It does not serialize arbitrary Admin writes or outside tools. Unique indexes remain essential for database integrity. An `AnyAsync` check followed by an insert alone is vulnerable to concurrent writers.
 

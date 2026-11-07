@@ -69,3 +69,9 @@ Authors checked the relevant current implementation and reported their source ev
 - No runtime tests, database changes, or provider calls were needed for this documentation-only pass. Existing smoke coverage is documented without claiming additional browser, negative-path, or hosted-Firebase testing.
 
 
+
+## Configuration-seeding documentation update — 2026-11-07
+
+The historical CLI-absent statements above describe the original documentation pass. The current implementation is documented in [configuration-seeding.md](configuration-seeding.md), linked from the root [AGENTS.md](../AGENTS.md) routing table, README and install guide. It covers the bundled CLI, actual step definitions, generated structured JSON and metadata application, managed fields, policies, reviewed preview tokens, optional bindings, schema-versus-data boundaries, deployment, troubleshooting and isolated PostgreSQL/CLI checks. [The exporter guide](../AIESummit.Configuration/AGENTS.md) records implementation constraints. Focused step, metadata, stable-tag, persistence, bootstrap, deployment and script guides route to the same operating instructions.
+
+This update changes documentation only. It does not apply a configuration plan, change credentials or invoke a provider.
