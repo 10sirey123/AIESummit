@@ -108,7 +108,7 @@ def fetch(entry, verify_only):
                         shutil.copyfileobj(response, out, 4 * 1024 * 1024)
                 if partial.stat().st_size < entry["size"]:
                     # A server can end a response early without raising an exception.
-                    # Keep the verified-size prefix available for a range retry.
+                    # Keep the received prefix available for a range retry.
                     raise OSError(f"Incomplete transfer: {partial.stat().st_size}/{entry['size']} bytes")
                 if not valid(partial, entry):
                     partial.unlink()

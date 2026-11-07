@@ -14,6 +14,7 @@ The companion files below organize the repository guidance by task. A companion 
 
 | Work | Start here | Focused companions |
 | --- | --- | --- |
+| Fresh Windows environment and dependencies | [Installation guide](install.md) | Docker checks, PowerShell 7, Git, .NET 10 SDK, Node.js 24, credentials, startup and optional Python |
 | Entity model and Admin presentation | [Domain guide](AIESummit.Domain/AGENTS.md) | `DisplayMetadata.AGENTS.md`, `Relationships.AGENTS.md` |
 | LLM subject and persistence | [Domain guide](AIESummit.Domain/AGENTS.md) | `IAmLLMCapable.AGENTS.md`, `Persistence.AGENTS.md` |
 | Children, stable tags and files | [Domain guide](AIESummit.Domain/AGENTS.md) | `IHaveChildren.AGENTS.md`, `IHaveUniqueTag.AGENTS.md`, `Files.AGENTS.md` |
@@ -82,6 +83,8 @@ The API serves the original static browser client. The separate AIESummit React 
 The contract source is `AIESummit.Api/ApiSpec/template.json` plus JSON fragments under `Paths` and `Components`. `build.mjs` merges them in stable filename order and rejects duplicate entries. It produces `wwwroot/openapi.json`. It does not generate endpoint implementations or C# DTO classes. Update contract fragments and actual endpoint behavior together.
 
 ## Local runtime and configuration
+
+For a machine with only Docker Desktop installed, follow [install.md](install.md) before the operating instructions below. Keep that guide current whenever prerequisites, setup commands, SDK selection, configuration or first-run workflow changes.
 
 Use PowerShell 7 and Docker for the local stack. Host-side build checks additionally need the .NET 10 SDK. Contract generation and JavaScript syntax checks need Node.js. Access to the private BlueShift submodule is required.
 

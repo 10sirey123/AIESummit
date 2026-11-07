@@ -4,6 +4,8 @@ AIESummit is the starting point for a contract intake and AI analysis workflow. 
 
 ## Run locally
 
+For a fresh Windows machine with Docker Desktop installed, follow [install.md](install.md) to install and verify the remaining dependencies, configure credentials and start the app.
+
 Install Docker and PowerShell 7. Clone with access to the private BlueShift repository. Create a local `.env` from `.env.example` and enter the Azure Foundry endpoint and key. The defaults use the `mistral-ocr-4-0` and `gpt-4.1-mini` deployments.
 
 ```powershell

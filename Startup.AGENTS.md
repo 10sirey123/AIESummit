@@ -1,5 +1,7 @@
 # Starting and inspecting the local stack
 
+For first-time machine setup, start with [install.md](install.md). It covers dependency installation and verification from a Windows environment with only Docker Desktop installed.
+
 The supported local entrypoint is [start.ps1](start.ps1). It initializes the pinned framework dependency, prepares temporary Admin authentication and starts the Compose stack. Read [deploy/AGENTS.md](deploy/AGENTS.md) for service architecture and [scripts/smoke.AGENTS.md](scripts/smoke.AGENTS.md) before end-to-end verification.
 
 ## Prerequisites
