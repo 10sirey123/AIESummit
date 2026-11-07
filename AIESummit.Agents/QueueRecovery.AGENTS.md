@@ -1,5 +1,7 @@
 # Pending-work queue recovery
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 `UploadQueueRecovery` restores queue stimuli for durable work that is still eligible for processing. It exists because the local Service Bus emulator recreates its queues when it restarts while PostgreSQL retains uploads and prompts. It also helps recover pending work after a commit/publication interruption.
 
 Recovery does not rerun every upload, reset errors, rebuild missing application rows or guarantee exactly-once external calls. Read [OcrAgent.AGENTS.md](OcrAgent.AGENTS.md), [SplitStep.AGENTS.md](SplitStep.AGENTS.md) and [Telemetry.AGENTS.md](Telemetry.AGENTS.md) alongside this guide when diagnosing a stalled upload.
@@ -145,6 +147,6 @@ Such an experiment can call configured paid OCR/LLM deployments. Read [smoke.AGE
 
 Application evidence is [UploadQueueRecovery.cs](UploadQueueRecovery.cs), [SplitStep.cs](SplitStep.cs), [worker.overlay.json](../deploy/worker.overlay.json), [Dockerfile](../deploy/Dockerfile) and [compose.yaml](../compose.yaml).
 
-Framework evidence is [BaseAgent.cs](../external/blueshift/Blueshift.Agents/Abstract/BaseAgent.cs), [SubjectExecutionLease.cs](../external/blueshift/Blueshift.Agents/Coordination/SubjectExecutionLease.cs), [LLMStepAgent.cs](../external/blueshift/Blueshift.Agents/LLM/LLMStepAgent.cs), [LlmPromptAgent.cs](../external/blueshift/Blueshift.Agents/LLM/LlmPromptAgent.cs) and [AgentHostService.cs](../external/blueshift/Blueshift.Agents.Worker/AgentHostService.cs).
+Framework evidence is [BaseAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/Abstract/BaseAgent.cs), [SubjectExecutionLease.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/Coordination/SubjectExecutionLease.cs), [LLMStepAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LLMStepAgent.cs), [LlmPromptAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LlmPromptAgent.cs) and [AgentHostService.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents.Worker/AgentHostService.cs).
 
 The complete historical guide `../../horus/Voiston.AgentHostCore/AGENTS.md` motivates reading host configuration and distinguishing normal queue processing from scoped testing. Its .NET 6 private host, legacy configuration bridge, `voiston` alias, `--force-entity` syntax and split-host temp workflow are not current AIESummit commands. This application uses the shared .NET 10 BlueShift worker plus a venture pack and a narrow hosted recovery service.

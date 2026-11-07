@@ -1,5 +1,7 @@
 # Display metadata and Admin fields
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read this guide when adding or changing an entity field that the shared Blueshift Admin displays. Start with [AGENTS.md](AGENTS.md) for domain modeling and use [Relationships.AGENTS.md](Relationships.AGENTS.md) for relationship mapping and related-record lists. This guide describes the checked-in `net10` framework contract. Inspect the pinned framework again when upgrading it.
 
 ## Current application behavior
@@ -172,13 +174,13 @@ Metadata-only label or icon changes do not justify a schema migration by themsel
 
 ## Source anchors
 
-- [DisplayMetadataAttribute.cs](../external/blueshift/Blueshift.Domain/Infrastructure/DisplayMetadataAttribute.cs) defines the attributes, connector names, temporal kinds, and defaults.
-- [CatalogService.cs](../external/blueshift/Blueshift.Admin.Api/Services/CatalogService.cs) defines catalog inclusion, inferred connectors, labels, snippets, ordering, and related types.
-- [AdminOptions.cs](../external/blueshift/Blueshift.Admin.Api/Options/AdminOptions.cs) defines allow-list, mutation restrictions, sensitive names, and optional list columns.
-- [ConnectorField.tsx](../external/blueshift/Blueshift.Admin/src/connectors/ConnectorField.tsx) and [registry.tsx](../external/blueshift/Blueshift.Admin/src/connectors/registry.tsx) define rendering dispatch.
-- [SearchListSingleField.tsx](../external/blueshift/Blueshift.Admin/src/connectors/SearchListSingle/SearchListSingleField.tsx) defines reference selection and label loading.
-- [SecretField.tsx](../external/blueshift/Blueshift.Admin/src/connectors/Secret/SecretField.tsx), [WriteOnlyCredentials.cs](../external/blueshift/Blueshift.Admin.Api/Services/WriteOnlyCredentials.cs), and [AdminBroadcastSanitizer.cs](../external/blueshift/Blueshift.Admin.Api/Infrastructure/AdminBroadcastSanitizer.cs) define distinct secret-handling boundaries.
-- [EntityCrudService.cs](../external/blueshift/Blueshift.Admin.Api/Services/EntityCrudService.cs) connects Admin read/write behavior and entity mutation policy to persistence.
-- [EFBasePersistenceRepository.cs](../external/blueshift/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) checks noneditable metadata during Admin saves, with explicit file-field and password-salt exceptions.
+- [DisplayMetadataAttribute.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Infrastructure/DisplayMetadataAttribute.cs) defines the attributes, connector names, temporal kinds, and defaults.
+- [CatalogService.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Services/CatalogService.cs) defines catalog inclusion, inferred connectors, labels, snippets, ordering, and related types.
+- [AdminOptions.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Options/AdminOptions.cs) defines allow-list, mutation restrictions, sensitive names, and optional list columns.
+- [ConnectorField.tsx](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin/src/connectors/ConnectorField.tsx) and [registry.tsx](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin/src/connectors/registry.tsx) define rendering dispatch.
+- [SearchListSingleField.tsx](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin/src/connectors/SearchListSingle/SearchListSingleField.tsx) defines reference selection and label loading.
+- [SecretField.tsx](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin/src/connectors/Secret/SecretField.tsx), [WriteOnlyCredentials.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Services/WriteOnlyCredentials.cs), and [AdminBroadcastSanitizer.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Infrastructure/AdminBroadcastSanitizer.cs) define distinct secret-handling boundaries.
+- [EntityCrudService.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Services/EntityCrudService.cs) connects Admin read/write behavior and entity mutation policy to persistence.
+- [EFBasePersistenceRepository.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) checks noneditable metadata during Admin saves, with explicit file-field and password-salt exceptions.
 
-The full Horus entity guide informed the practical examples and level of detail. Its EF6 mapping syntax, per-entity MVC controller setup, project-file inclusion steps, and serializer assumptions are not the current AIESummit `net10` contract. Framework source is reference material. Make application-specific changes in this repository rather than modifying the submodule to accommodate local metadata.
+The full Horus entity guide informed the practical examples and level of detail. Its EF6 mapping syntax, per-entity MVC controller setup, project-file inclusion steps, and serializer assumptions are not the current AIESummit `net10` contract. Framework source is reference material. Make application-specific changes in this repository rather than modifying framework binaries to accommodate local metadata.

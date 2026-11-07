@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "sourceRepository": "https://github.com/10123IO/10.Blueshift.123",
+  "sourceBranch": "net10",
+  "sourceCommit": "cc69aa4da64bf313ec7120711624816c7f9d4254",
+  "packageVersion": "10.0.0-aiesummit.cc69aa4",
+  "targetFramework": "net10.0",
+  "hostRuntime": "linux-x64",
+  "selfContained": false,
+  "sdkImage": "mcr.microsoft.com/dotnet/sdk:10.0.403",
+  "frontendImage": "node:22-alpine",
+  "builtAtUtc": "2026-11-07T19:03:54.5099410Z",
+  "artifacts": [
+    {
+      "path": "packages/10123.Blueshift.Domain.10.0.0-aiesummit.cc69aa4.nupkg",
+      "bytes": 217205,
+      "sha256": "e7d2e13c03b60e7327a411e2c03262e3421419f3bab543b70589340706d205fd"
+    },
+    {
+      "path": "packages/10123.Blueshift.Agents.10.0.0-aiesummit.cc69aa4.nupkg",
+      "bytes": 226229,
+      "sha256": "f789f030d7e0243fbd1825f34ba6438e2ad5ae3a51aa6442a1e1742f93b1ab43"
+    },
+    {
+      "path": "worker-linux-x64.tar.gz",
+      "bytes": 12087938,
+      "sha256": "e2553b23964bb66d9d9773edfdd18186ffb9649b01ad10427cf05d8289bd0629"
+    },
+    {
+      "path": "admin-api-linux-x64.tar.gz",
+      "bytes": 13086381,
+      "sha256": "dae30bc1012c4681ff9bfb43f8f16867c925b2412a9bfc3be2ddf920c84109bd"
+    },
+    {
+      "path": "admin-web.tar.gz",
+      "bytes": 523419,
+      "sha256": "72a8e83761938bb5a67ff39b21e2c53d0906fa7cbcdef27858cb3a1d5b065b48"
+    },
+    {
+      "path": "bootstrap-admin-auth.ps1",
+      "bytes": 4066,
+      "sha256": "3cf9ac3fa1f38ee6aa1120ef28d7d5bd15381aac8904101e1d96426558b76f41"
+    },
+    {
+      "path": "nginx.conf",
+      "bytes": 816,
+      "sha256": "9a867b40d5c146f36eac6d5cc0b4ff2495ccaa836470de00cfe237a3fa738de6"
+    }
+  ]
+}

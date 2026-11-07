@@ -47,10 +47,13 @@ Unlinked focused companion filenames in a row are relative to that row's directo
 | `AIESummit.Api/wwwroot` | Plain JavaScript/CSS workspace and generated `openapi.json` |
 | `deploy` | Container builds, worker pack overlay and local service configuration |
 | `scripts/smoke.ps1` | Synthetic end-to-end workflow against the local stack and live model deployments |
-| `external/blueshift` | Framework submodule, including the shared worker and Admin hosts |
+| `dependencies/blueshift` | Committed local NuGet packages, Linux worker/Admin hosts, Admin website, bootstrap helper and checksummed manifest |
+| `NuGet.Config` | Bundled Blueshift package source plus public NuGet |
+| `scripts/package-blueshift.ps1` | Maintainer-only refresh from a separate authorized source checkout |
+| `scripts/verify-dependencies.ps1` | Verify bundled artifact hashes and sizes |
 | `artifacts` | Ignored local outputs and generated Admin token |
 
-The API references the agent project, which exposes pack configuration and the domain. Runtime worker and Admin hosts come from BlueShift rather than private application host projects. `deploy/Dockerfile` publishes those hosts separately, so a successful solution build alone does not validate every container target.
+The API references the agent project, which exposes pack configuration and the domain. Runtime worker and Admin hosts come from BlueShift rather than private application host projects. `deploy/Dockerfile` publishes only the application and packs, then extracts the prebuilt Linux hosts and Admin website from the committed bundle. A successful solution build alone does not validate every container target.
 
 ## Processing and persistence
 
@@ -86,7 +89,7 @@ The contract source is `AIESummit.Api/ApiSpec/template.json` plus JSON fragments
 
 For a machine with only Docker Desktop installed, follow [install.md](install.md) before the operating instructions below. Keep that guide current whenever prerequisites, setup commands, SDK selection, configuration or first-run workflow changes.
 
-Use PowerShell 7 and Docker for the local stack. Host-side build checks additionally need the .NET 10 SDK. Contract generation and JavaScript syntax checks need Node.js. Access to the private BlueShift submodule is required.
+Use PowerShell 7 and Docker for the local stack. Host-side build checks additionally need the .NET 10 SDK. Contract generation and JavaScript syntax checks need Node.js. Blueshift binaries are bundled in `dependencies/blueshift`; private framework access is not required.
 
 Create `.env` locally from `.env.example` and provide the Foundry endpoint and key. Do not copy credential values into documentation or tool output. Then run from the repository root.
 
@@ -94,7 +97,7 @@ Create `.env` locally from `.env.example` and provide the Foundry endpoint and k
 ./start.ps1
 ```
 
-Startup initializes the pinned submodule, generates local Admin authentication files and a four-hour operator token, and starts the Compose stack with a readiness wait. It prints service locations and the token file path, not the token. Re-running startup renews the local token.
+Startup verifies the checksums of the pinned binary bundle, generates local Admin authentication files and a four-hour operator token, and starts the Compose stack with a readiness wait. It prints service locations and the token file path, not the token. Re-running startup renews the local token.
 
 | Service | Local entry point or role |
 | --- | --- |
@@ -127,17 +130,17 @@ Normal shutdown retains named volumes for PostgreSQL, queue infrastructure, Fire
 
 ## Change workflow
 
-1. Inspect `git status --short` and `git submodule status`. Preserve unrelated changes and the pinned BlueShift revision.
-2. Read the nearest guide and implementation entrypoints. Follow the source path into `external/blueshift` when a framework contract is involved.
+1. Inspect `git status --short` and run `./scripts/verify-dependencies.ps1`. Preserve unrelated changes and the pinned Blueshift bundle.
+2. Read the nearest guide and implementation entrypoints. Use the bundled package contracts and companion guides when a framework contract is involved. Upstream source citations are optional maintainer references.
 3. Identify all affected layers. An entity change can affect EF mapping, Admin metadata, pack discovery, seed configuration, API projections, contract fragments and browser rendering.
 4. Make the smallest coherent change. Use the existing framework extension points rather than adding a private processing loop or parallel host. Explain a new dependency's purpose before adding it to the implementation.
 5. Update relevant guides and generated outputs. Label future designs explicitly and avoid presenting plans as current features.
 6. Run checks appropriate to the affected layers. Report which commands passed, which were not run and any remaining runtime uncertainty.
-7. Review the final diff for credentials, unrelated edits and submodule changes. Include a concise explanation of resulting behavior and verification evidence.
+7. Review the final diff for credentials, unrelated edits and bundled dependency changes. Include a concise explanation of resulting behavior and verification evidence.
 
 Use `rg` or `rg --files` for bounded discovery. Place local diagnostic outputs under ignored `artifacts/`. Horus's suggested `temp/` convention is not the ignore rule here. Never commit `.env`, `deploy/*.local.*`, tokens or provider responses containing real user documents.
 
-The dependency is available as source in this repository. Inspect it directly rather than relying on Horus's old statement that framework sources are unavailable. Treat submodule changes as a separate dependency change with an explicit reason and compatibility checks. Do not silently update to a branch head while implementing application work.
+Blueshift is distributed here as compiled artifacts, not a Git submodule. Normal restore/build/startup requires no private framework access. Follow [the bundle guide](dependencies/blueshift/README.md) to refresh from a separate authorized source checkout; update packages, Linux hosts, frontend and manifest together. Do not replace a published package version with different bytes. Verify dependency hashes and test the solution, Docker targets and provider-backed smoke flow after a refresh. The `.gitattributes` rule preserves checksummed bytes across Windows checkouts.
 
 ## Verification commands
 
@@ -145,6 +148,7 @@ Run commands from the repository root. These are actual repository entrypoints, 
 
 ```powershell
 dotnet build AIESummit.slnx --nologo
+./scripts/verify-dependencies.ps1
 docker compose config -q
 node AIESummit.Api/ApiSpec/build.mjs
 node --check AIESummit.Api/wwwroot/app.js
@@ -193,7 +197,7 @@ The current Cite8 reference is Erick's most recently authored branch head found 
 
 Cite8 confirms the modern shared Admin, EF Core/PostgreSQL domain pack and BlueShift worker arrangement. Its product App, CLI overlays, migration pipeline, authored skills, Stripe/Auth0 setup and issue-management workflow are Cite8-specific and are not implemented or mandated here. Recheck recent branch activity before a later reference refresh. Do not change AIESummit's dependency pin merely to match a reference branch.
 
-Current local evidence is `README.md`, `AIESummit.slnx`, `compose.yaml`, the implementation paths listed above, `deploy/Dockerfile`, `deploy/worker.overlay.json`, `start.ps1`, `scripts/smoke.ps1`, `.gitignore`, and the checked-out BlueShift contracts. Features such as a standalone CLI, migration pipeline, generated C# API implementation, upload deletion workflow or richer rendered Markdown viewer require implementation work before they can be documented as available.
+Current local evidence is `README.md`, `AIESummit.slnx`, `compose.yaml`, the implementation paths listed above, `deploy/Dockerfile`, `deploy/worker.overlay.json`, `start.ps1`, `scripts/smoke.ps1`, `.gitignore`, and the bundled Blueshift package contracts. Features such as a standalone CLI, migration pipeline, generated C# API implementation, upload deletion workflow or richer rendered Markdown viewer require implementation work before they can be documented as available.
 
 ## Contract-analysis scope and benchmark guidance
 

@@ -2,15 +2,15 @@
 
 For first-time machine setup, start with [install.md](install.md). It covers dependency installation and verification from a Windows environment with only Docker Desktop installed.
 
-The supported local entrypoint is [start.ps1](start.ps1). It initializes the pinned framework dependency, prepares temporary Admin authentication and starts the Compose stack. Read [deploy/AGENTS.md](deploy/AGENTS.md) for service architecture and [scripts/smoke.AGENTS.md](scripts/smoke.AGENTS.md) before end-to-end verification.
+The supported local entrypoint is [start.ps1](start.ps1). It verifies the committed framework binary bundle, prepares temporary Admin authentication and starts the Compose stack. Read [deploy/AGENTS.md](deploy/AGENTS.md) for service architecture and [scripts/smoke.AGENTS.md](scripts/smoke.AGENTS.md) before end-to-end verification.
 
 ## Prerequisites
 
-- PowerShell and Git must be available, including access to the configured BlueShift submodule remote when it is not already initialized.
+- PowerShell 7 and the committed `dependencies/blueshift` bundle must be available. Git is needed to clone AIESummit; no Blueshift repository access is required.
 - Docker must be running with Linux-container support, working Compose support for `--wait`, sufficient memory and access to the configured image registries.
 - Populate a local `.env` using the keys in [.env.example](.env.example). Required Foundry endpoint and key values must be available for API startup and live processing.
 - Ensure local ports 18080, 13088 and 19099 are available for the application, Admin and Firebase Auth emulator.
-- Use the repository's existing dependency revision. Do not switch the submodule branch or update its pin as an incidental startup repair.
+- Use the repository's existing dependency revision. Do not regenerate dependency artifacts as an incidental startup repair.
 
 The Docker build publishes .NET projects inside its SDK image. Use local .NET for host-side .NET builds and Node for OpenAPI checks and the separate [AIESummit React workspace](docs/ui-workflow.md).
 
@@ -22,13 +22,13 @@ From the repository root, run `./start.ps1` in PowerShell. The script uses `Push
 
 It performs these operations in order.
 
-1. Runs `git submodule update --init --recursive` and throws if that native command fails.
-2. Invokes the framework's `bootstrap-admin-auth.ps1` with settings path `deploy/admin-auth.local.json` and token path `artifacts/admin.token.local.txt`.
+1. Runs `scripts/verify-dependencies.ps1` and throws if a bundled artifact is missing or its checksum/size differs from the manifest.
+2. Invokes `dependencies/blueshift/bootstrap-admin-auth.ps1` with settings path `deploy/admin-auth.local.json` and token path `artifacts/admin.token.local.txt`.
 3. Requests Admin role, subject `aiesummit-operator` and a 240-minute token lifetime from that helper.
 4. Runs `docker compose up --build --detach --wait --wait-timeout 180`.
 5. Throws if Compose returns failure, otherwise prints the application/Admin URLs and the token file location.
 
-The script has `$ErrorActionPreference = 'Stop'`. Its auth helper invocation does not have a separate `$LASTEXITCODE` check like the native Git and Compose calls, so investigate helper output and terminating errors when credentials are not produced. Do not assume the script has independently validated every generated auth artifact.
+The script has `$ErrorActionPreference = 'Stop'`. Its auth helper invocation does not have a separate `$LASTEXITCODE` check like the native Compose call, so investigate helper output and terminating errors when credentials are not produced. Do not assume the script has independently validated every generated auth artifact.
 
 The 180-second option bounds Compose's readiness wait. It is not a guarantee that image builds, provider processing or the whole invocation finish within three minutes. Image downloads and builds can take longer.
 
@@ -93,7 +93,7 @@ Diagnose by the failing boundary.
 
 | Symptom | First evidence to inspect |
 | --- | --- |
-| Submodule initialization fails | Git access and the configured submodule revision/remote |
+| Dependency verification fails | Restore the intended tracked bundle and manifest; run `./scripts/verify-dependencies.ps1` |
 | Build fails | First relevant publish/compiler error and whether dependency source exists |
 | API exits at startup | Required configuration, PostgreSQL readiness and bootstrap error |
 | Browser opens but login fails | Firebase mode/project alignment and emulator reachability |

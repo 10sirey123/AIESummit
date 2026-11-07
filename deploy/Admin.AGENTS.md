@@ -1,6 +1,8 @@
 # Shared BlueShift Admin deployment
 
-AIESummit uses the shared BlueShift Admin API and SPA from the pinned submodule. It does not have a private `AIESummit.Admin` host or a second implementation of catalog CRUD. The venture supplies domain and agent packs, database configuration, navigation and entity restrictions.
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
+AIESummit uses the shared BlueShift Admin API and SPA from the pinned binary bundle. It does not have a private `AIESummit.Admin` host or a second implementation of catalog CRUD. The venture supplies domain and agent packs, database configuration, navigation and entity restrictions.
 
 Read [AGENTS.md](AGENTS.md) for the wider container topology, [../AIESummit.Domain/AGENTS.md](../AIESummit.Domain/AGENTS.md) for entity registration, and [../AIESummit.Agents/Telemetry.AGENTS.md](../AIESummit.Agents/Telemetry.AGENTS.md) for execution evidence.
 
@@ -140,6 +142,6 @@ Do not delete signing settings as the first response to an expired token. Do not
 
 ## Sources and reference translation
 
-Current deployment sources are [admin.json](admin.json), [Dockerfile](Dockerfile), [compose.yaml](../compose.yaml) and [start.ps1](../start.ps1). Framework contracts are [AdminOptions.cs](../external/blueshift/Blueshift.Admin.Api/Options/AdminOptions.cs), [AdminSecurity.cs](../external/blueshift/Blueshift.Admin.Api/Hosting/AdminSecurity.cs), [Program.cs](../external/blueshift/Blueshift.Admin.Api/Program.cs), [nginx.conf](../external/blueshift/Blueshift.Admin/nginx.conf) and [bootstrap-admin-auth.ps1](../external/blueshift/scripts/bootstrap-admin-auth.ps1).
+Current deployment sources are [admin.json](admin.json), [Dockerfile](Dockerfile), [compose.yaml](../compose.yaml) and [start.ps1](../start.ps1). Framework contracts are [AdminOptions.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Options/AdminOptions.cs), [AdminSecurity.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Hosting/AdminSecurity.cs), [Program.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Program.cs), [nginx.conf](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin/nginx.conf) and [bootstrap-admin-auth.ps1](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/scripts/bootstrap-admin-auth.ps1).
 
 The full Horus root guide at `../../horus/AGENTS.md` motivates a separate operator surface over the shared domain. Its ASP.NET Framework Admin and application-specific controller conventions are legacy. Cite8's root guide inspected at commit `903626a9bb4ce471bccc28490b857886d6aa5c78` on Erick's recent `origin/codex/certification-tier-checkout` confirms the modern central Admin/domain-pack pattern. Cite8-specific workspace bundles, skills and operator scripts are not AIESummit features.

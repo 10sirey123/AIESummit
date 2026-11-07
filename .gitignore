@@ -10,6 +10,9 @@ coverage/
 *.nupkg
 *.snupkg
 
+# Intentionally versioned Blueshift binary packages
+!/dependencies/blueshift/packages/*.nupkg
+
 # IDE and user-specific state
 .vs/
 .idea/

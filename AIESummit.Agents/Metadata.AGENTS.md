@@ -1,5 +1,7 @@
 # Structured split metadata
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 This guide covers the JSON returned by the document-split prompt and its conversion into persisted documents. The implementation is `SplitResult`, `PageRange` and `SplitPolicy` in [SplitStep.cs](SplitStep.cs). Read [SplitStep.AGENTS.md](SplitStep.AGENTS.md) for prompt generation and [Domain persistence guidance](../AIESummit.Domain/Persistence.AGENTS.md) for database boundaries.
 
 ## Current response contract
@@ -136,6 +138,6 @@ Use a live smoke run only when the full provider-to-persistence path needs verif
 
 ## Sources
 
-Application behavior is in [SplitStep.cs](SplitStep.cs), [OcrAgent.cs](OcrAgent.cs) and [Document.cs](../AIESummit.Domain/Document.cs). Framework contracts are [BaseMetadata.cs](../external/blueshift/Blueshift.Domain/LLM/BaseMetadata.cs), [IMetadataExecutionContext.cs](../external/blueshift/Blueshift.Domain/LLM/IMetadataExecutionContext.cs), [BaseMetadataJsonConverter.cs](../external/blueshift/Blueshift.Domain/LLM/BaseMetadataJsonConverter.cs), [LlmPromptWorker.cs](../external/blueshift/Blueshift.Agents/LLM/LlmPromptWorker.cs) and [EFBasePersistenceRepository.cs](../external/blueshift/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs).
+Application behavior is in [SplitStep.cs](SplitStep.cs), [OcrAgent.cs](OcrAgent.cs) and [Document.cs](../AIESummit.Domain/Document.cs). Framework contracts are [BaseMetadata.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/BaseMetadata.cs), [IMetadataExecutionContext.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/IMetadataExecutionContext.cs), [BaseMetadataJsonConverter.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/BaseMetadataJsonConverter.cs), [LlmPromptWorker.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LlmPromptWorker.cs) and [EFBasePersistenceRepository.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs).
 
 The complete historical `../../horus/Voiston.Agents/Concrete/LLM/AGENTS.md` was used for pipeline context. Its legacy factories, separate agent-definition library and provider schema guarantees must not be treated as current application contracts.

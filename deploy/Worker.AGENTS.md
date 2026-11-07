@@ -1,12 +1,14 @@
 # Worker pack and queue configuration
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 The application runs its agents in the shared `Blueshift.Agents.Worker` executable. The Docker worker image contains the application packs and [worker.overlay.json](worker.overlay.json). There is no local AIESummit worker executable or CLI project.
 
 Read [deployment guidance](AGENTS.md) for the whole stack, [agent guidance](../AIESummit.Agents/AGENTS.md) for processing contracts and [QueueRecovery.AGENTS.md](../AIESummit.Agents/QueueRecovery.AGENTS.md) for recovery and execution coordination details.
 
 ## Packed files and entrypoint
 
-[Dockerfile](Dockerfile) publishes `AIESummit.Agents` into `/out/packs`, the shared worker into `/out/worker`, then copies them into `/packs` and `/app` in the worker image. The Domain assembly is included with the agent pack's published dependencies.
+[Dockerfile](Dockerfile) publishes `AIESummit.Agents` into `/out/packs`, copies it to `/packs` and extracts the bundled `dependencies/blueshift/worker-linux-x64.tar.gz` into `/app` in the worker image. The Domain assembly is included with the agent pack's published dependencies.
 
 The entrypoint is equivalent to the following inside the container.
 
@@ -123,6 +125,6 @@ Validate a fresh startup, retained eligible work after restart and duplicate/red
 
 ## Sources and legacy translation
 
-Current evidence is [worker.overlay.json](worker.overlay.json), [servicebus.json](servicebus.json), [compose.yaml](../compose.yaml), [Dockerfile](Dockerfile), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs) and [UploadQueueRecovery.cs](../AIESummit.Agents/UploadQueueRecovery.cs). Configuration contracts are in the pinned worker's [WorkerConfig.cs](../external/blueshift/Blueshift.Agents.Worker/WorkerConfig.cs), [WorkerHostOptions.cs](../external/blueshift/Blueshift.Agents.Worker/WorkerHostOptions.cs), [StartupValidator.cs](../external/blueshift/Blueshift.Agents.Worker/StartupValidator.cs) and [Program.cs](../external/blueshift/Blueshift.Agents.Worker/Program.cs).
+Current evidence is [worker.overlay.json](worker.overlay.json), [servicebus.json](servicebus.json), [compose.yaml](../compose.yaml), [Dockerfile](Dockerfile), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs) and [UploadQueueRecovery.cs](../AIESummit.Agents/UploadQueueRecovery.cs). Configuration contracts are in the pinned worker's [WorkerConfig.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents.Worker/WorkerConfig.cs), [WorkerHostOptions.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents.Worker/WorkerHostOptions.cs), [StartupValidator.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents.Worker/StartupValidator.cs) and [Program.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents.Worker/Program.cs).
 
 The full historical `../../horus/Voiston.AgentHostCore/Configuration/AGENTS.md` supplies the principle of validating configuration before execution. Its `Config` inheritance, settings sections and diagnostic-table guarantees are not the current worker loader.

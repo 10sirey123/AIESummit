@@ -1,5 +1,7 @@
 # Code-defined document splitting
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read this guide when changing the split step's definition, registration, prompt composition, subject policy, or persisted runtime configuration. [SplitStep.cs](SplitStep.cs) contains the current step definition, response classes, both policy implementations, and `AgentPack` registration. Read [Metadata.AGENTS.md](Metadata.AGENTS.md) for detailed response validation and application behavior, and [../AIESummit.Domain/IAmLLMCapable.AGENTS.md](../AIESummit.Domain/IAmLLMCapable.AGENTS.md) for the subject contract.
 
 ## Three separate runtime inputs
@@ -155,10 +157,10 @@ Finally, cover valid and invalid structured responses, document replacement, gen
 ## Source anchors
 
 - [SplitStep.cs](SplitStep.cs) and [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs) define the venture behavior and seed preservation.
-- [LlmTypeRegistry.cs](../external/blueshift/Blueshift.Domain/LLM/LlmTypeRegistry.cs) defines explicit supported types and naming.
-- [LlmCodeStepRegistry.cs](../external/blueshift/Blueshift.Domain/LLM/LlmCodeStepRegistry.cs) defines binding and persisted-prompt validation.
-- [LLMPromptFactory.cs](../external/blueshift/Blueshift.Domain/LLM/LLMPromptFactory.cs) defines template selection, schema generation, lambda execution, and captured prompt fields.
-- [LLMStepAgent.cs](../external/blueshift/Blueshift.Agents/LLM/LLMStepAgent.cs) reads persisted steps and determines prompt eligibility.
-- [ILlmStepSubjectPolicy.cs](../external/blueshift/Blueshift.Agents/LLM/ILlmStepSubjectPolicy.cs) and [LlmPromptContracts.cs](../external/blueshift/Blueshift.Agents/LLM/LlmPromptContracts.cs) define the two policy roles.
+- [LlmTypeRegistry.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/LlmTypeRegistry.cs) defines explicit supported types and naming.
+- [LlmCodeStepRegistry.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/LlmCodeStepRegistry.cs) defines binding and persisted-prompt validation.
+- [LLMPromptFactory.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/LLMPromptFactory.cs) defines template selection, schema generation, lambda execution, and captured prompt fields.
+- [LLMStepAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LLMStepAgent.cs) reads persisted steps and determines prompt eligibility.
+- [ILlmStepSubjectPolicy.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/ILlmStepSubjectPolicy.cs) and [LlmPromptContracts.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LlmPromptContracts.cs) define the two policy roles.
 
 Use framework sources as references. Keep application prompt composition, hydration, seed reconciliation, and response behavior in the venture rather than changing the shared framework for this one step.

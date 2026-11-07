@@ -1,5 +1,7 @@
 # OCR agent and Mistral adapter
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read the [repository guide](../AGENTS.md) and the [agent directory guide](AGENTS.md). The current implementation is entirely in [OcrAgent.cs](OcrAgent.cs). It uses BlueShift's `BaseAPIAgent` to load persisted connection configuration and sends one HTTP request containing the uploaded source to the configured Mistral OCR endpoint.
 
 This is not Horus's PageImageContainer integration. AIESummit does not run Poppler rendering, ImageMagick normalization, Groq OCR, patient audits, rendered-page manifests or a PDF-hash OCR cache. The Horus guide supplies useful separation between agent, API browser and page output, but its endpoints and deployment commands are not applicable here.
@@ -155,6 +157,6 @@ Do not use Horus's PageImageContainer test scripts or bind its suggested port 18
 
 Application sources are [OcrAgent.cs](OcrAgent.cs), [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs), [UploadedFile.cs](../AIESummit.Domain/UploadedFile.cs), [UploadEndpoints.cs](../AIESummit.Api/UploadEndpoints.cs) and [compose.yaml](../compose.yaml).
 
-Framework context loading is defined by [BaseAPIAgent.cs](../external/blueshift/Blueshift.Agents/Abstract/BaseAPIAgent.cs) and `BaseAPIExtensionMethods.SetContext` in [BaseAPIBrowser.cs](../external/blueshift/Blueshift.Domain/Infrastructure/APIBrowser/BaseAPIBrowser.cs). [BaseAgent.cs](../external/blueshift/Blueshift.Agents/Abstract/BaseAgent.cs) controls the surrounding execution, state and save lifecycle.
+Framework context loading is defined by [BaseAPIAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/Abstract/BaseAPIAgent.cs) and `BaseAPIExtensionMethods.SetContext` in [BaseAPIBrowser.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Infrastructure/APIBrowser/BaseAPIBrowser.cs). [BaseAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/Abstract/BaseAgent.cs) controls the surrounding execution, state and save lifecycle.
 
 The complete Horus reference is `../../horus/Voiston.Agents/Containers/PageImageContainer/AGENTS.md`. Its detailed request/output and operational documentation motivated this guide. Its Groq credentials, cache flags, patient-audit fields, rendering dependencies and Azure Container Apps deployment instructions are not AIESummit functionality.

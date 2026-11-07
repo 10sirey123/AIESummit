@@ -1,6 +1,6 @@
 # Install AIESummit from scratch
 
-This guide sets up the complete local development environment on Windows x64, starting with only Docker Desktop installed and running. Run the commands in order. A web browser, internet access, access to the private Blueshift repository, and Azure Foundry credentials with usable OCR and LLM deployments are also needed. The current app performs document intake, OCR and splitting; contract risk analysis is future work.
+This guide sets up the complete local development environment on Windows x64, starting with only Docker Desktop installed and running. Run the commands in order. A web browser, internet access, access to this AIESummit repository, and Azure Foundry credentials with usable OCR and LLM deployments are also needed. Blueshift binaries are included in this repository; no private framework repository or private package-feed access is required. The current app performs document intake, OCR and splitting; contract risk analysis is future work.
 
 ## 1. Check Docker Desktop
 
@@ -54,7 +54,7 @@ npm --version
 
 Expect PowerShell 7.x, an installed Git, SDK 10.0.403 or a compatible newer 10.0 SDK, Node v24.x and an npm version. If a command is missing, reopen the terminal to refresh PATH. Windows PowerShell 5.1 cannot run all application scripts.
 
-## 3. Clone the application and Blueshift
+## 3. Clone the application
 
 Use a short local path to leave room for long benchmark filenames. The following example creates a new checkout; if the directory already exists, use that checkout instead of cloning over it.
 
@@ -63,14 +63,11 @@ New-Item -ItemType Directory -Force C:\src | Out-Null
 Set-Location C:\src
 git clone https://github.com/10sirey123/AIESummit.git
 Set-Location AIESummit
-git -c core.longpaths=true submodule update --init --recursive
-git submodule status
+./scripts/verify-dependencies.ps1
 dotnet --version
 ```
 
-When Git requests authentication for `10123IO/10.Blueshift.123`, sign in through Git's credential manager using an account with repository access. If access is denied, request access from the repository owner and rerun submodule initialization. Do not put a token in the clone URL or a tracked file. GitHub CLI is not required.
-
-`external/blueshift` tracks `net10` in `.gitmodules`, while the application's recorded submodule commit selects the reproducible dependency revision. Do not use `git submodule update --remote` for ordinary setup. `git submodule status` should show a commit without a leading `-` (uninitialized) or `+` (different revision).
+If Git requests authentication for AIESummit, use an account granted access to this repository. Do not put a token in the clone URL or a tracked file. GitHub CLI is not required. There are no submodules to initialize. The checksum verification must report seven valid artifacts from `dependencies/blueshift`; its manifest records the upstream `net10` revision. See [the bundle guide](dependencies/blueshift/README.md) for details. The local NuGet feed is configured automatically by the repository's `NuGet.Config`.
 
 Run `dotnet --version` **inside this repository** to verify the SDK selected by `global.json`. Confirm `AIESummit.slnx`, `start.ps1`, `compose.yaml` and `web/package-lock.json` exist. If they are absent, obtain the application branch containing the intake scaffold before continuing.
 
@@ -105,7 +102,7 @@ FIREBASE_API_KEY=demo-key
 AIESUMMIT_API_ENVIRONMENT=Development
 ```
 
-No real Firebase project is needed for local testing. PostgreSQL, SQL Server, Service Bus, OpenSearch and Firebase tools run in Docker; do not install them separately on Windows. The container builds restore .NET packages and build the Blueshift Admin frontend automatically.
+No real Firebase project is needed for local testing. PostgreSQL, SQL Server, Service Bus, OpenSearch and Firebase tools run in Docker; do not install them separately on Windows. The container builds restore application packages from the bundled Blueshift feed and public NuGet. Worker/Admin hosts and the Admin website are already built and included in `dependencies/blueshift`.
 
 `.env`, generated Admin settings and tokens are ignored by Git. Never paste their contents into logs or commit them. Startup seeds missing provider/model records into PostgreSQL. After the first successful initialization, change persisted provider credentials/deployments through Admin; editing `.env` alone does not overwrite existing configuration. Do not delete data volumes to rotate credentials.
 
@@ -118,7 +115,7 @@ docker compose config -q
 ./start.ps1
 ```
 
-The quiet configuration check should exit successfully without printing resolved secrets. Startup initializes the pinned submodule, creates Admin settings and a four-hour token, builds the images and starts the services. Initial downloads/builds can take several minutes; the readiness timeout starts after the build phase.
+The quiet configuration check should exit successfully without printing resolved secrets. Startup verifies the bundled dependency checksums, creates Admin settings and a four-hour token, builds the images and starts the services. Initial downloads/builds can take several minutes; the readiness timeout starts after the build phase.
 
 Check the running services and API:
 
@@ -209,7 +206,7 @@ This retains named volumes and their uploaded documents, accounts, configuration
 | --- | --- |
 | Command not found after installation | Open a fresh PowerShell 7 terminal and verify PATH/version checks again. |
 | SDK not found in the repository | Run `dotnet --list-sdks`; install 10.0.403 or a compatible newer stable 10.0 SDK selected by `global.json`. |
-| Blueshift clone denied | Sign in with a GitHub account granted access to the private repository; rerun pinned submodule initialization. |
+| Bundled dependency missing or checksum fails | Restore the tracked `dependencies/blueshift` files from the intended AIESummit revision; rerun `./scripts/verify-dependencies.ps1`. Private Blueshift access is not needed. |
 | Missing Foundry variable | Edit `.env`, save it, then rerun `docker compose config -q`. Never dump the full resolved configuration. |
 | Build cannot resolve `api.nuget.org` or download packages/images | Check host and Docker DNS/proxy/VPN connectivity to NuGet, npm and container registries; once restored, rerun `./start.ps1`. Existing build caches are reused. |
 | Port already in use | Check 5173, 18080, 13088 and 19099. A running Hackathon stack uses the same ports. Stop the known conflicting application deliberately or coordinate a port change; do not kill unrelated processes. |

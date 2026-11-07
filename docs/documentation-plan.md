@@ -1,6 +1,6 @@
 # Documentation implementation plan
 
-Each numbered task owns one guidance file. Authors must read the current AIESummit sources and the named Horus example, then verify framework contracts against external/blueshift without editing that submodule. Horus describes legacy APIs in several areas. Explain current equivalents and migration differences explicitly. Files must contain substantial operational guidance, examples where appropriate, failure modes, verification, and source references. Directory AGENTS.md files link their focused companion files so they are discoverable. Examples of future work must be labeled and must not claim current implementation.
+Each numbered task owns one guidance file. Authors must read the current AIESummit sources and the named Horus example, then verify framework contracts against the bundled packages; optional upstream source verification requires a separate authorized maintainer checkout. Horus describes legacy APIs in several areas. Explain current equivalents and migration differences explicitly. Files must contain substantial operational guidance, examples where appropriate, failure modes, verification, and source references. Directory AGENTS.md files link their focused companion files so they are discoverable. Examples of future work must be labeled and must not claim current implementation.
 
 1. `AGENTS.md` — repository map, reading routes and verification. Current evidence: README.md, compose.yaml, AIESummit.slnx. Horus reference: `../horus/AGENTS.md`. Status: complete; reviewed.
 2. `AIESummit.Domain/AGENTS.md` — entity design and registration. Current evidence: AIESummit.Domain/Entities.cs. Horus reference: `../horus/Horus.Domain/Entities/AGENTS.md`. Status: complete; reviewed.
@@ -45,7 +45,7 @@ Review gates
 - Verify named symbols, paths, commands and examples against current code.
 - Cover metadata, connected lists, ILlmCapable, IHaveChildren, IHaveUniqueTag, persistence, API, browser, deployment, telemetry and tests.
 - Distinguish implemented capabilities from proposed patterns, including absent migrations and CLI.
-- Check navigation, contradictions and secrets. Preserve application source and submodule state.
+- Check navigation, contradictions and secrets. Preserve application source and the committed dependency bundle.
 
 ## Task execution record
 
@@ -61,10 +61,10 @@ Authors checked the relevant current implementation and reported their source ev
 
 ## Final audit — 2026-11-06
 
-- All 31 planned guidance files exist in this repository, outside the framework submodule. Every file contains more than 500 words of substantive guidance.
+- All 31 planned guidance files exist in this repository, outside the framework binary bundle. Every file contains more than 500 words of substantive guidance.
 - The link audit inspected 412 Markdown links and found no unresolved local targets. Local target existence was checked automatically; remote availability was not claimed.
 - No unpaired code fences, merge conflict markers, or trailing whitespace were found in the guidance files. Temporary rollout caveats were removed.
-- Application-file hashes matched the documentation-pass baseline across 31 non-documentation files. The BlueShift submodule remained clean at its recorded revision.
+- Application-file hashes matched the documentation-pass baseline across 31 non-documentation files. At the historical documentation pass the BlueShift submodule remained clean; it has since been replaced by the committed binary bundle.
 - README and root guidance record Erick's selected Cite8 branch and exact reference commit. Horus's legacy assumptions are distinguished from current implementation throughout the guides.
 - No runtime tests, database changes, or provider calls were needed for this documentation-only pass. Existing smoke coverage is documented without claiming additional browser, negative-path, or hosted-Firebase testing.
 

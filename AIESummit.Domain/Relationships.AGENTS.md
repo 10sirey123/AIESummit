@@ -1,5 +1,7 @@
 # Relationships and connected Admin lists
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read this guide when adding a reference, collection, join entity or related section in central Admin. [AIESummitDb.cs](AIESummitDb.cs) is the current EF model. [AGENTS.md](AGENTS.md) covers entity registration, [DisplayMetadata.AGENTS.md](DisplayMetadata.AGENTS.md) covers editors, and [IHaveChildren.AGENTS.md](IHaveChildren.AGENTS.md) covers ownership cleanup.
 
 ## Three separate contracts
@@ -152,8 +154,8 @@ For derived associations such as document images, a read-only query relation may
 - Current model and mappings in [AIESummitDb.cs](AIESummitDb.cs).
 - Operator permissions and discoverable types in [admin.json](../deploy/admin.json).
 - Public ownership joins in [UploadEndpoints.cs](../AIESummit.Api/UploadEndpoints.cs).
-- Attribute contracts in [ForeignTypesAttribute.cs](../external/blueshift/Blueshift.Domain/Infrastructure/ForeignTypesAttribute.cs) and [DisplayMetadataAttribute.cs](../external/blueshift/Blueshift.Domain/Infrastructure/DisplayMetadataAttribute.cs).
-- Catalog projection in [CatalogService.cs](../external/blueshift/Blueshift.Admin.Api/Services/CatalogService.cs).
-- FK lookup, connected queries and mutation modes in [EntityCrudService.cs](../external/blueshift/Blueshift.Admin.Api/Services/EntityCrudService.cs).
-- Route contracts in [AdminEndpointExtensions.cs](../external/blueshift/Blueshift.Admin.Api/Infrastructure/Endpoints/AdminEndpointExtensions.cs).
+- Attribute contracts in [ForeignTypesAttribute.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Infrastructure/ForeignTypesAttribute.cs) and [DisplayMetadataAttribute.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Infrastructure/DisplayMetadataAttribute.cs).
+- Catalog projection in [CatalogService.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Services/CatalogService.cs).
+- FK lookup, connected queries and mutation modes in [EntityCrudService.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Services/EntityCrudService.cs).
+- Route contracts in [AdminEndpointExtensions.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Infrastructure/Endpoints/AdminEndpointExtensions.cs).
 - Historical design reference in `../../horus/Horus.Domain/Entities/AGENTS.md`, read in full. Its relationship intent is retained here with current EF Core and central Admin semantics.

@@ -1,6 +1,6 @@
 # AIESummit.Agents
 
-This .NET 10 class library contains the application's OCR adapter, document-splitting policies, pack registration, recovery service and execution correlation. It references `AIESummit.Domain` and the pinned BlueShift agent framework. The long-running receiver is the shared `Blueshift.Agents.Worker` host built by [deploy/Dockerfile](../deploy/Dockerfile). There is no application-specific executable host or local CLI project.
+This .NET 10 class library contains the application's OCR adapter, document-splitting policies, pack registration, recovery service and execution correlation. It references `AIESummit.Domain` and the pinned BlueShift agent framework. The long-running receiver is the bundled `Blueshift.Agents.Worker` host deployed by [deploy/Dockerfile](../deploy/Dockerfile). There is no application-specific executable host or local CLI project.
 
 Read this guide before changing background processing. The application sources and pinned framework contracts take precedence over analogous implementations in Horus or Cite8.
 
@@ -143,4 +143,4 @@ The full Horus `Voiston.Agents/AGENTS.md` informs the agent/config/browser separ
 
 Erick's Cite8 agent guide was read from commit `903626a9bb4ce471bccc28490b857886d6aa5c78` at `src/Cite8.Agents/AGENTS.md`. It provides the closer architectural reference for a venture class library loaded by the shared worker, API publishers without receivers, and pack-owned LLM registries. Its catalog seed tools, case subjects, scripts, no-periodic-sweep behavior and credential-seeding policy must not be copied as descriptions of this application.
 
-Current evidence is [OcrAgent.cs](OcrAgent.cs), [SplitStep.cs](SplitStep.cs), [UploadQueueRecovery.cs](UploadQueueRecovery.cs), [UploadExecutionContext.cs](UploadExecutionContext.cs), [Program.cs](../AIESummit.Api/Program.cs), [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs), [worker.overlay.json](../deploy/worker.overlay.json), [compose.yaml](../compose.yaml) and [deploy/Dockerfile](../deploy/Dockerfile). Inspect the pinned `external/blueshift` implementation read-only when a framework contract needs clarification.
+Current evidence is [OcrAgent.cs](OcrAgent.cs), [SplitStep.cs](SplitStep.cs), [UploadQueueRecovery.cs](UploadQueueRecovery.cs), [UploadExecutionContext.cs](UploadExecutionContext.cs), [Program.cs](../AIESummit.Api/Program.cs), [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs), [worker.overlay.json](../deploy/worker.overlay.json), [compose.yaml](../compose.yaml) and [deploy/Dockerfile](../deploy/Dockerfile). Use the bundled contracts and optional upstream citations when a framework contract needs clarification; source inspection requires a separate authorized maintainer checkout.

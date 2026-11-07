@@ -1,5 +1,7 @@
 # Uploaded files, OCR pages, and extracted images
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read this guide when changing upload validation, retained file bytes, OCR image extraction, document page ranges, or image delivery. The current implementation stores source and extracted image bytes in the application database. It sends the source to the configured Mistral OCR API. It does not run the Horus PageImageContainer, render pages through Poppler, or use that container's cache and download endpoints.
 
 Start with [AGENTS.md](AGENTS.md), [OcrAgent.cs](../AIESummit.Agents/OcrAgent.cs), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs), and [UploadEndpoints.cs](../AIESummit.Api/UploadEndpoints.cs). Those files jointly define the contract. A change to one representation can affect page-range validation, image ownership, and browser display.
@@ -174,4 +176,4 @@ Use synthetic fixtures and a controlled OCR response when checking parsing behav
 
 The complete Horus [PageImageContainer guide](../../horus/Voiston.Agents/Containers/PageImageContainer/AGENTS.md) was used for scope and practical depth. Its Poppler/ImageMagick rendering, Groq OCR and patient audit, rendered-page manifests, cache hashes and TTL, `PUBLIC_BASE_PATH`, 100 MB container limits, and Azure container deployment commands describe that separate system. They are not AIESummit capabilities or configuration requirements.
 
-For current behavior, use the application sources linked above, [UploadQueueRecovery.cs](../AIESummit.Agents/UploadQueueRecovery.cs), framework [Image.cs](../external/blueshift/Blueshift.Domain/Entities/Image.cs), and [BasePersistenceFile.cs](../external/blueshift/Blueshift.Domain/Abstract/BasePersistenceFile.cs). Keep framework files as references and implement application-specific changes in this repository.
+For current behavior, use the application sources linked above, [UploadQueueRecovery.cs](../AIESummit.Agents/UploadQueueRecovery.cs), framework [Image.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/Image.cs), and [BasePersistenceFile.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Abstract/BasePersistenceFile.cs). Keep framework files as references and implement application-specific changes in this repository.

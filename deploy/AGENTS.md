@@ -34,7 +34,7 @@ Run the existing PowerShell entry point from the repository root.
 ./start.ps1
 ```
 
-It changes to the repository directory, initializes the framework submodule recursively, creates local Admin authentication settings/token through the framework bootstrap script, and runs `docker compose up --build --detach --wait --wait-timeout 180`. It checks external-command exit codes and prints the application/Admin addresses and the token file location.
+It changes to the repository directory, verifies the bundled dependency checksums, creates local Admin authentication settings/token through the framework bootstrap script, and runs `docker compose up --build --detach --wait --wait-timeout 180`. It checks external-command exit codes and prints the application/Admin addresses and the token file location.
 
 The generated Admin token has the Admin role, subject `aiesummit-operator`, and a requested 240-minute lifetime. Its file is `artifacts/admin.token.local.txt`. The settings file is `deploy/admin-auth.local.json`. Treat both as local authentication material. Do not print their contents or commit them.
 
@@ -44,14 +44,14 @@ The application requires Foundry values supplied through the intended local envi
 
 ## Build stages and packed binaries
 
-[Dockerfile](Dockerfile) has a shared build stage using `mcr.microsoft.com/dotnet/sdk:10.0.401`. It copies the three application projects and the framework Domain, Agents, Worker, and Admin API projects into the build context, then publishes Release outputs.
+[Dockerfile](Dockerfile) has a shared build stage using `mcr.microsoft.com/dotnet/sdk:10.0.403`. It copies the application projects, `NuGet.Config`, `global.json` and bundled NuGet packages, then publishes only the application and agent packs. Framework hosts and the Admin website are prebuilt archives from `dependencies/blueshift`.
 
 | Publish output | Purpose |
 | --- | --- |
 | `/out/api` | Published `AIESummit.Api` and dependencies |
 | `/out/packs` | Published `AIESummit.Agents` and its domain/framework dependencies |
-| `/out/worker` | Shared `Blueshift.Agents.Worker` host |
-| `/out/admin` | Shared `Blueshift.Admin.Api` host, without frontend installation/build in this stage |
+| `dependencies/blueshift/worker-linux-x64.tar.gz` | Prebuilt shared `Blueshift.Agents.Worker` host |
+| `dependencies/blueshift/admin-api-linux-x64.tar.gz` | Prebuilt shared `Blueshift.Admin.Api` host |
 
 The runtime base is `mcr.microsoft.com/dotnet/aspnet:10.0`, sets `ASPNETCORE_URLS=http://+:8080`, and installs `libgssapi-krb5-2` and `curl`. The `api`, `worker`, and `admin` target stages copy their published output into `/app`.
 
@@ -59,13 +59,11 @@ The worker and Admin also copy the published venture pack to `/packs`. The worke
 
 These are image-contained binaries and overlays. There is no host DLL bind mount or live source-code mount for the application services. Editing or rebuilding a host DLL does not change a running container's pack. Rebuild the relevant images and recreate their containers to use new code or baked-in overlays.
 
-The separate Admin frontend image builds from `external/blueshift/Blueshift.Admin`, using its own Node build and Nginx runtime. The Firebase image builds from `Firebase.Dockerfile` in this directory, installs the pinned Firebase tools version, and copies `firebase.json`.
+The separate Admin frontend image uses the `admin-web` target in `deploy/Dockerfile`, extracting `dependencies/blueshift/admin-web.tar.gz` into Nginx with the bundled proxy configuration. The Firebase image builds from `Firebase.Dockerfile` in this directory, installs the pinned Firebase tools version, and copies `firebase.json`.
 
 ## Framework and image versions
 
-`.gitmodules` names the framework tracking branch `net10`. The superproject's gitlink determines the actual checked-out code used for a reproducible build. At documentation authoring it points to `cc69aa4da64bf313ec7120711624816c7f9d4254`. Verify the current pointer rather than assuming a branch name selects the latest framework code.
-
-`git submodule update --init --recursive` checks out recorded submodule revisions. It does not authorize advancing the framework pointer or editing framework files. If a framework upgrade is requested, treat it as a separate reviewed dependency change and rebuild all affected hosts/packs together.
+The committed `dependencies/blueshift/manifest.json` pins the `net10` source revision, package version, build images, artifact sizes and hashes. Normal builds use no framework source or private feed. See [the bundle guide](../dependencies/blueshift/README.md) for the maintainer-only refresh workflow and Linux x64 host limitation. Update and validate all artifacts together when upgrading.
 
 Compose currently names PostgreSQL 16, Service Bus emulator 2.0.1, OpenSearch 2.18.0, and SQL Server 2022's `latest` tag. Firebase uses Node 22 Alpine and Firebase tools 14.12.1. A version tag is not a digest pin. Do not describe every upstream base image as immutable merely because venture binaries are packed into images.
 

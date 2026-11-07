@@ -1,5 +1,7 @@
 # Persistence and schema evolution
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read [AGENTS.md](AGENTS.md) for entity registration and [Relationships.AGENTS.md](Relationships.AGENTS.md) for relationship design. This guide covers the current EF Core/PostgreSQL persistence path and how to approach future schema changes without losing retained data.
 
 The authoritative context is `AIESummitDb` in [AIESummitDb.cs](AIESummitDb.cs). It derives from the pinned framework's `EFBaseDbContext`. The API registers it through `UseNpgsql` and connection string name `AIESummitDb`. The shared worker and Admin load the same context from the domain pack. SQL Server in Compose belongs to the Service Bus emulator, not the application model.
@@ -174,6 +176,6 @@ There is no dedicated local migration test suite or application CLI to substitut
 
 Current application evidence is [AIESummitDb.cs](AIESummitDb.cs), [Program.cs](../AIESummit.Api/Program.cs), [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs), [compose.yaml](../compose.yaml) and [UploadQueueRecovery.cs](../AIESummit.Agents/UploadQueueRecovery.cs).
 
-Framework evidence is [EFBaseDbContext.cs](../external/blueshift/Blueshift.Domain/Concrete/EFBaseDbContext.cs), [EFBasePersistenceRepository.cs](../external/blueshift/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) and [CommitPublications.cs](../external/blueshift/Blueshift.Domain/Concrete/CommitPublications.cs). Inspect the pinned dependency read-only unless the task explicitly concerns a framework change.
+Framework evidence is [EFBaseDbContext.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBaseDbContext.cs), [EFBasePersistenceRepository.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) and [CommitPublications.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/CommitPublications.cs). Inspect the pinned dependency read-only unless the task explicitly concerns a framework change.
 
 The complete reference `../../horus/Horus.Domain/Entities/migrations.AGENTS.md` motivates the build, inspect, apply and verify discipline. Its EF6 commands, environment details, credential examples, temporary naming convention and history-repair procedures are not portable instructions for this repository. This guide deliberately supplies no copied credential or unverified migration command.

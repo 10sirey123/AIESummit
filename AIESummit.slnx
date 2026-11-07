@@ -1,9 +1,4 @@
 <Solution>
-  <Folder Name="/external/" />
-  <Folder Name="/external/blueshift/">
-    <Project Path="external/blueshift/Blueshift.Agents/Blueshift.Agents.csproj" />
-    <Project Path="external/blueshift/Blueshift.Domain/Blueshift.Domain.csproj" />
-  </Folder>
   <Project Path="AIESummit.Agents/AIESummit.Agents.csproj" />
   <Project Path="AIESummit.Api/AIESummit.Api.csproj" />
   <Project Path="AIESummit.Domain/AIESummit.Domain.csproj" />

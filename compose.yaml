@@ -123,7 +123,9 @@ services:
         condition: service_healthy
   blueshift-admin:
     build:
-      context: external/blueshift/Blueshift.Admin
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: admin-web
     ports: ["127.0.0.1:13088:80"]
     depends_on: [blueshift-admin-api]
 

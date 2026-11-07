@@ -1,5 +1,7 @@
 # Hierarchy traversal and deletion
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Read this guide before introducing `IHaveChildren` or changing deletion of an entity with dependents. Read [Relationships.AGENTS.md](Relationships.AGENTS.md) for EF mapping and Admin related lists. The hierarchy contract describes application traversal and cleanup. EF relationships, database delete behavior, authorization, and file storage remain separate concerns.
 
 ## Current venture boundary
@@ -224,12 +226,12 @@ The file hierarchy base does not, through these helpers, delete external storage
 
 ## Source anchors
 
-- [IHaveChildren.cs](../external/blueshift/Blueshift.Domain/Entities/Base/IHaveChildren.cs) and [ChildrenConfigurator.cs](../external/blueshift/Blueshift.Domain/Entities/Base/ChildrenConfigurator.cs) define signatures and generic constraints.
-- [BaseWithChildren.cs](../external/blueshift/Blueshift.Domain/Entities/Base/BaseWithChildren.cs) defines all three current hierarchy base families and cache defaults.
-- [BaseWithChildrenGeneric.cs](../external/blueshift/Blueshift.Domain/Entities/Base/BaseWithChildrenGeneric.cs) defines loading, cleanup, traversal limits, and deletion staging.
-- [ChildNode.cs](../external/blueshift/Blueshift.Domain/Entities/Base/ChildNode.cs) defines flattening and null-node behavior.
-- [HierarchyBehaviorTests.cs](../external/blueshift/Blueshift.Hierarchy.Tests/HierarchyBehaviorTests.cs) and [HierarchyBoundaryTests.cs](../external/blueshift/Blueshift.Hierarchy.Tests/HierarchyBoundaryTests.cs) document observed ordering, failure, save, ownership, and storage boundaries.
-- [LLMStep.cs](../external/blueshift/Blueshift.Domain/Entities/LLMStep.cs) shows nullable reference cleanup. [LLMStepAgent.cs](../external/blueshift/Blueshift.Agents/LLM/LLMStepAgent.cs) shows explicit descendant/self deletion and a caller-owned save boundary.
-- [EFBasePersistenceRepository.cs](../external/blueshift/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) and [EntityCrudService.cs](../external/blueshift/Blueshift.Admin.Api/Services/EntityCrudService.cs) distinguish normal delete entry points from explicit hierarchy calls.
+- [IHaveChildren.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/Base/IHaveChildren.cs) and [ChildrenConfigurator.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/Base/ChildrenConfigurator.cs) define signatures and generic constraints.
+- [BaseWithChildren.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/Base/BaseWithChildren.cs) defines all three current hierarchy base families and cache defaults.
+- [BaseWithChildrenGeneric.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/Base/BaseWithChildrenGeneric.cs) defines loading, cleanup, traversal limits, and deletion staging.
+- [ChildNode.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/Base/ChildNode.cs) defines flattening and null-node behavior.
+- [HierarchyBehaviorTests.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Hierarchy.Tests/HierarchyBehaviorTests.cs) and [HierarchyBoundaryTests.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Hierarchy.Tests/HierarchyBoundaryTests.cs) document observed ordering, failure, save, ownership, and storage boundaries.
+- [LLMStep.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/LLMStep.cs) shows nullable reference cleanup. [LLMStepAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LLMStepAgent.cs) shows explicit descendant/self deletion and a caller-owned save boundary.
+- [EFBasePersistenceRepository.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) and [EntityCrudService.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Admin.Api/Services/EntityCrudService.cs) distinguish normal delete entry points from explicit hierarchy calls.
 
 The complete Horus hierarchy guide informed this guide's practical scope. Its statement that `DeleteMe` recursively deletes children is not the behavior of the checked-in framework. Keep this distinction when borrowing examples, and recheck implementation and tests on a framework upgrade. Framework sources remain reference material for application changes.

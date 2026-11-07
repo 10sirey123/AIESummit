@@ -1,5 +1,7 @@
 # LLM-capable upload subjects
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 This filename retains the Horus term for discoverability. AIESummit implements `Blueshift.Domain.LLM.ILlmCapable`, not Horus's `IAmLLMCapable`. Read [AGENTS.md](AGENTS.md) before changing the model, then [SplitStep.AGENTS.md](../AIESummit.Agents/SplitStep.AGENTS.md) and [Metadata.AGENTS.md](../AIESummit.Agents/Metadata.AGENTS.md) for processing changes.
 
 The entity contract is deliberately small. Hydration, prompt lifecycle and result connection belong to registered policies and metadata types in `AIESummit.Agents`. Adding the interface to a class does not by itself create a working processing flow.
@@ -173,9 +175,9 @@ For a full local integration change, use `./start.ps1` and `./scripts/smoke.ps1`
 ## Source references
 
 - [UploadedFile.cs](UploadedFile.cs), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs), [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs) and [UploadEndpoints.cs](../AIESummit.Api/UploadEndpoints.cs) define the current application behavior.
-- [ILlmCapable.cs](../external/blueshift/Blueshift.Domain/LLM/ILlmCapable.cs) defines the actual entity contract.
-- [ILlmStepSubjectPolicy.cs](../external/blueshift/Blueshift.Agents/LLM/ILlmStepSubjectPolicy.cs), [LlmPromptContracts.cs](../external/blueshift/Blueshift.Agents/LLM/LlmPromptContracts.cs), [LLMStepAgent.cs](../external/blueshift/Blueshift.Agents/LLM/LLMStepAgent.cs) and [LlmPromptWorker.cs](../external/blueshift/Blueshift.Agents/LLM/LlmPromptWorker.cs) define hydration, prompt creation and connection behavior.
-- [LlmTypeRegistry.cs](../external/blueshift/Blueshift.Domain/LLM/LlmTypeRegistry.cs) and [LlmCodeStepRegistry.cs](../external/blueshift/Blueshift.Domain/LLM/LlmCodeStepRegistry.cs) define supported type and step identities.
+- [ILlmCapable.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/ILlmCapable.cs) defines the actual entity contract.
+- [ILlmStepSubjectPolicy.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/ILlmStepSubjectPolicy.cs), [LlmPromptContracts.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LlmPromptContracts.cs), [LLMStepAgent.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LLMStepAgent.cs) and [LlmPromptWorker.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Agents/LLM/LlmPromptWorker.cs) define hydration, prompt creation and connection behavior.
+- [LlmTypeRegistry.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/LlmTypeRegistry.cs) and [LlmCodeStepRegistry.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/LlmCodeStepRegistry.cs) define supported type and step identities.
 - The complete historical reference is `../../horus/Horus.Domain/Entities/IAmLLMCapable.agents.md`. Its flow-oriented explanation inspired this guide, while the translation table separates its legacy API from the checked-out framework.
 
-Inspect framework sources read-only for application work. Do not change the submodule to make an unverified legacy example compile.
+Inspect framework sources read-only for application work. Do not replace framework binaries to make an unverified legacy example compile.

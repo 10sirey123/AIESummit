@@ -1,5 +1,7 @@
 # Stable tags and configuration identity
 
+Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
+
 Use this guide when adding code-defined configuration, changing an LLM step tag, or diagnosing duplicate configuration after startup. Read [Persistence.AGENTS.md](Persistence.AGENTS.md) for schema changes and [Bootstrap.AGENTS.md](../AIESummit.Api/Bootstrap.AGENTS.md) for the complete seeding workflow.
 
 ## Interface and database contract
@@ -140,6 +142,6 @@ Plan a rename deliberately.
 
 ## Source references
 
-Current behavior is defined by [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs) and [AIESummitDb.cs](AIESummitDb.cs). Framework evidence is in [IHaveUniqueTag.cs](../external/blueshift/Blueshift.Domain/Abstract/IHaveUniqueTag.cs), [LLMStep.cs](../external/blueshift/Blueshift.Domain/Entities/LLMStep.cs), [LLMModel.cs](../external/blueshift/Blueshift.Domain/Entities/LLMModel.cs) and [LlmCodeStepRegistry.cs](../external/blueshift/Blueshift.Domain/LLM/LlmCodeStepRegistry.cs).
+Current behavior is defined by [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs) and [AIESummitDb.cs](AIESummitDb.cs). Framework evidence is in [IHaveUniqueTag.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Abstract/IHaveUniqueTag.cs), [LLMStep.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/LLMStep.cs), [LLMModel.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Entities/LLMModel.cs) and [LlmCodeStepRegistry.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/LLM/LlmCodeStepRegistry.cs).
 
 The full historical reference `../../horus/Horus.Domain/LLMSteps/AGENTS.md` supplies the effective-runtime verification principle. Its CLI commands, measurement metadata lifecycle and legacy metadata constructor APIs are not current AIESummit contracts.

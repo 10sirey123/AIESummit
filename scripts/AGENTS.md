@@ -6,7 +6,7 @@ Read [smoke.AGENTS.md](smoke.AGENTS.md) before changing or running the live acce
 
 ## Execution environment
 
-Use PowerShell 7 for the repository scripts. The smoke uses `Invoke-WebRequest -Form` and `-SkipHttpErrorCheck`, so Windows PowerShell 5.1 is not the intended runtime. Docker and access to the pinned private BlueShift submodule are required for the complete stack. Host compilation requires the .NET 10 SDK, and contract/JavaScript checks require Node.js.
+Use PowerShell 7 for the repository scripts. The smoke uses `Invoke-WebRequest -Form` and `-SkipHttpErrorCheck`, so Windows PowerShell 5.1 is not the intended runtime. Docker and the committed `dependencies/blueshift` bundle are required for the complete stack; private framework access is not needed. Host compilation requires the .NET 10 SDK, and contract/JavaScript checks require Node.js.
 
 Run the documented relative commands from the repository root. `start.ps1` changes to its own script directory and restores the caller's location in `finally`. `smoke.ps1` locates its Admin token through `$PSScriptRoot` and creates its PDF in the OS temporary directory. The smoke's service URLs are fixed local URLs, not derived from the working directory or a generic environment argument.
 
@@ -122,7 +122,7 @@ Do not delete retained database rows or volumes as incidental cleanup. A future 
 - A database migration path, because the app currently initializes schemas with `EnsureCreated`.
 - Every Admin CRUD restriction, menu layout, role or expired-session browser behavior.
 
-Do not report a successful `dotnet test` command with no discovered AIESummit tests as unit-test coverage. Framework tests in the submodule are a separate suite with their own scope and instructions. Do not edit or enroll all of them automatically when the task is local documentation or application behavior.
+Do not report a successful `dotnet test` command with no discovered AIESummit tests as unit-test coverage. Framework tests require a separate authorized source checkout and are not included in this binary bundle. Do not edit or enroll all of them automatically when the task is local documentation or application behavior.
 
 ## Adding focused tests in future work
 
@@ -155,3 +155,7 @@ The complete Horus reference `../../horus/Voiston.Agents.Tests/AGENTS.md` motiva
 `download_benchmarks.py` is the existing dependency-free Python 3.12+ utility for pinned benchmark downloads and integrity verification. Run `python scripts/download_benchmarks.py` or `python scripts/download_benchmarks.py --verify-only` from the root. Preserve its source lock, raw data and upstream splits; see `../corporea/README.md` and root benchmark policy. Python is for dataset preparation only.
 
 `test_download_benchmarks.py` checks recovery from prematurely ended responses and safe replacement when a server ignores a byte range. Run `python -m unittest discover -s scripts -p test_download_benchmarks.py -v`. It uses a local HTTP server and temporary synthetic bytes; it needs no provider credentials or external network access. Incomplete transfers must retain their partial bytes for subsequent range requests. Only discard a partial file when its full expected length fails checksum verification or its length exceeds the expected size.
+
+## Bundled framework maintenance
+
+Run `./scripts/verify-dependencies.ps1` to verify all seven committed Blueshift artifacts against `dependencies/blueshift/manifest.json`; startup runs this too. Only maintainers need `./scripts/package-blueshift.ps1 -SourcePath <separate-checkout>` and private source access to refresh binaries. The pinned-source container build is `deploy/Blueshift.Bundle.Dockerfile`. See `../dependencies/blueshift/README.md` for versioning, provenance and validation. Normal builds consume the local NuGet feed and prebuilt Linux hosts/site without a submodule.
