@@ -27,6 +27,7 @@
 - Preserve original downloaded datasets and upstream train/dev/test splits. Keep transformations, OCR, model outputs, and evaluation results separate from raw files.
 - CUAD is the initial annotated clause extraction and original-PDF benchmark. MAUD covers merger agreement understanding. EDGAR-CORPUS provides annual-report text for ingestion and domain stress testing, not gold clause-risk annotations.
 - MAUD and EDGAR-CORPUS do not ship original contract/filing PDFs in these releases. Documentation PDFs do not count as input documents. Never label rendered text or synthetic PDFs as originals.
-- Keep dataset provenance, licenses, versions, checksums, and limitations documented. Do not train or tune on evaluation splits; prevent document overlap across splits.
+- Keep dataset provenance, licenses, versions, checksums, and limitations documented. Do not train or tune on evaluation splits. MAUD's upstream splits share contract names; preserve them for published-benchmark comparisons, but create a separately documented document-held-out protocol for unseen-contract evaluation. Prevent document overlap in that protocol.
 - Raw downloads, extracted corpora, and generated reports are local and ignored by Git. Track download tooling, source locks, and dataset documentation.
+- Preserve long original filenames; several CUAD paths exceed the legacy Windows 260-character limit. Use tools that support long paths when counting or opening these files.
 - Do not place real private contracts, credentials, or personal data in Git. Do not send contract contents to an external service without authorization.

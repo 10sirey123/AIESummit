@@ -88,11 +88,26 @@ def fetch(entry, verify_only):
         partial = path.with_name(path.name + ".part")
         for attempt in range(5):
             try:
-                request = urllib.request.Request(entry["url"], headers={
-                    "User-Agent": "AIESummit-BenchmarkBootstrap/1.0"})
-                with urllib.request.urlopen(request, timeout=120) as response, partial.open("wb") as out:
-                    shutil.copyfileobj(response, out, 4 * 1024 * 1024)
+                # Resume partial files when the upstream supports byte ranges.
+                if valid(partial, entry):
+                    partial.replace(path)
+                    break
+                offset = partial.stat().st_size if partial.exists() else 0
+                if offset >= entry["size"]:
+                    partial.unlink()
+                    offset = 0
+                headers = {"User-Agent": "AIESummit-BenchmarkBootstrap/1.0"}
+                if offset:
+                    headers["Range"] = f"bytes={offset}-"
+                request = urllib.request.Request(entry["url"], headers=headers)
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    append = offset and response.status == 206
+                    if append and not response.headers.get("Content-Range", "").startswith(f"bytes {offset}-"):
+                        raise ValueError("Unexpected download range response")
+                    with partial.open("ab" if append else "wb") as out:
+                        shutil.copyfileobj(response, out, 4 * 1024 * 1024)
                 if not valid(partial, entry):
+                    partial.unlink()
                     raise ValueError(f"Download checksum mismatch: {entry['path']}")
                 partial.replace(path)
                 break

@@ -1,28 +1,22 @@
-# AIESummit
+# Legal Contract Risk & Clause Auditing
 
-Contract intake and analysis project for legal contract risk and clause auditing.
+This project will ingest contracts and extract evidence for reviewing indemnity and liability limits, non-compete restrictions, renewal dates, and termination triggers. The initial business focus is master service agreements (MSAs) and NDAs.
 
-Initial extraction targets are indemnity and liability limits, non-compete restrictions, renewal dates, and termination triggers in MSAs and NDAs. Extraction evidence (document, page when available, and quoted text) must remain separate from risk interpretations. Model output is not legal advice.
+The application will use **C# and .NET 10**. This repository currently contains benchmark data preparation and project guidance; the application has not been scaffolded.
 
-## Current status
+## Getting started
 
-The repository contains benchmark preparation tooling and a .NET SDK configuration. The application has not been scaffolded; contract ingestion, extraction, risk analysis, and evaluation are not implemented yet.
+- Install a stable .NET 10 SDK. `global.json` selects SDK 10.0.403 with forward roll to later stable .NET 10 feature bands.
+- Use Python 3.12 or later for the dependency-free dataset preparation utility.
+- Read [AGENTS.md](AGENTS.md) for working conventions and the requirement to maintain these instructions alongside project changes.
 
-The planned application stack is C# and .NET 10 (`net10.0`). `global.json` selects SDK 10.0.403 with `latestFeature` roll-forward. There are no application build or test commands yet.
-
-## Benchmark preparation
-
-Use Python 3.12+; the download utility uses only the standard library. Python is used for dataset preparation, not the application.
-
-```sh
+```powershell
 python scripts/download_benchmarks.py
 python scripts/download_benchmarks.py --verify-only
 ```
 
-Downloads are pinned in `corporea/sources.lock.json`. The utility checks upstream sizes and checksums and writes a local verification report to `corporea/manifest.json`. See [dataset documentation](corporea/README.md) for provenance and limitations. Dataset downloads can be large; completion must be checked in the generated report.
+The first command downloads all pinned CUAD, MAUD, and EDGAR-CORPUS files into `corporea/` and extracts the archives. Allow approximately 11.2 GB for downloads plus space for extracted data. Existing valid downloads are reused; interrupted downloads resume when the server supports byte ranges. The second command checks payload checksums and extracted file integrity without network access. Either command returns a nonzero exit code if verification fails and writes a local `corporea/manifest.json` report. Download concurrency can be adjusted with `--workers` (default: 6).
 
-## Contributing
+See [the benchmark catalog](corporea/README.md) for original-PDF availability, sources, licenses, and evaluation limitations. Dataset payloads are excluded from Git; download tooling, documentation, and source pins are tracked.
 
-This project is hosted publicly at [10sirey123/AIESummit](https://github.com/10sirey123/AIESummit). Read [AGENTS.md](AGENTS.md) before making changes, and keep project documentation current.
-
-Keep raw datasets, generated outputs, private contracts, credentials, and personal data out of Git. Preserve upstream evaluation splits and keep transformations and model outputs separate from raw data. Do not send contract contents to external services without authorization.
+No .NET build or test command exists until the application is created.
