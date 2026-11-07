@@ -189,8 +189,13 @@ public sealed class MongoInstrumentation
                         .Where(a => a.GetProperty("id").GetInt32() == prompt.GetProperty("documentID").GetInt32())
                         .Select(a => (JsonElement?)a.GetProperty("definitions").Clone()).SingleOrDefault();
                 edges.AddRange(parents.Select(parent => new { from = parent, to = nodeId, relation = "depends_on" }));
+                var nativeStatus = prompt.TryGetProperty("processingStatus", out var status) ? status.GetInt32() : -1;
+                double? lifecycleSeconds = prompt.TryGetProperty("dateCreated", out var created) && prompt.TryGetProperty("lastModified", out var modified)
+                    && modified.ValueKind == JsonValueKind.String ? (DateTimeOffset.Parse(modified.GetString()!) - DateTimeOffset.Parse(created.GetString()!)).TotalSeconds : null;
                 await Upsert("evaluation_steps", nodeId, new { runId = RunId, documentRunId, workflowId = WorkflowId,
                     stepTag = prompt.GetProperty("step").GetString(), kind = "llm", parentNodeIds = parents, prompt,
+                    state = nativeStatus == 200 ? "succeeded" : nativeStatus == 500 ? "failed" : nativeStatus == 0 ? "queued" : "unknown",
+                    observedLifecycleSeconds = lifecycleSeconds,
                     model = prompt.GetProperty("model").GetString(),
                     targetDefinitions = definitions,
                     modelVersion = (string?)null, modelVersionStatus = "Configured model name retained; immutable provider model revision is not exposed by the current framework.",

@@ -5,6 +5,7 @@ using Blueshift.Domain.Infrastructure;
 namespace AIESummit.Domain;
 
 [DisplayMetadata("lucide:List", MenuName = "Analysis target results")]
+[ForeignTypes(typeof(Extraction), nameof(Extraction.TargetResult), ForeignConnectionTypes.Direct, Title = "Findings", Order = 10)]
 [Microsoft.EntityFrameworkCore.Index(nameof(AnalysisId), nameof(ExtractionTypeId), IsUnique = true)]
 public sealed class AnalysisTargetResult : BasePersistenceObject
 {

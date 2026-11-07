@@ -1,5 +1,9 @@
 # AIESummit.Domain entity guide
 
+The extraction model is implemented: `ExtractionType`, `DocumentAnalysis : ILlmCapable`, `AnalysisTargetResult`, `Extraction`, `ExtractionEvidence` and `PageTextRevision`. See [contract extraction](../docs/contract-extraction.md). Keep analysis prompts separately mapped, snapshot text immutable, values validated and owner access rooted through the upload. `Document.IsCurrent` retains superseded split versions. Upgrade 003 preserves data; extraction seeds are missing-only.
+
+The extraction model is implemented: `ExtractionType`, `DocumentAnalysis : ILlmCapable`, `AnalysisTargetResult`, `Extraction`, `ExtractionEvidence` and `PageTextRevision`. See [contract extraction](../docs/contract-extraction.md). Register all in `AIESummitDb`; keep the analysis prompt FK separate, snapshot text immutable, values validated and owner access rooted through the document upload. `Document.IsCurrent` retains superseded split versions. Upgrade 003 preserves existing data; startup seeds are missing-only.
+
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
 
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
@@ -149,7 +153,7 @@ Database cascades and framework cleanup are distinct mechanisms. Neither a `Fore
 
 `IHaveUniqueTag` declares a mutable string `Tag` contract and expects implementations to add a unique index. It does not enforce uniqueness by itself. Use stable tags for code-defined configuration references that must survive different database IDs. Do not turn user filenames or document titles into configuration identifiers.
 
-Bootstrap currently resolves existing model and step rows by tag and creates missing rows under a PostgreSQL transaction and advisory lock. Existing operator configuration is preserved. A tag rename can therefore create a second row and leave consumers referring to the old one. Treat tag changes as data transitions. There is no local CLI project or automatic tagged-sample synchronization workflow to invoke.
+Bootstrap currently resolves existing model and step rows by tag and creates missing rows under a PostgreSQL transaction and advisory lock. Existing operator configuration is preserved. A tag rename can therefore create a second row and leave consumers referring to the old one. Treat tag changes as data transitions. The configuration exporter/Blueshift CLI uses reviewed seeding; the evaluation CLI runs document tests. Neither overwrites extraction catalog seeds on startup.
 
 ## Verification before completion
 

@@ -6,9 +6,13 @@ namespace AIESummit.Domain;
 
 [DisplayMetadata("lucide:FileText", MenuName = "Documents",
     MenuDescription = "Logical documents identified within uploads, with inclusive page ranges and extracted text.")]
+[ForeignTypes(typeof(DocumentAnalysis), nameof(DocumentAnalysis.Document), ForeignConnectionTypes.Direct,
+    Title = "Contract analyses", Icon = "lucide:BrainCircuit", Order = 10)]
 /// <summary>A logical document produced by applying the source upload's split result.</summary>
 public sealed class Document : BasePersistenceObject
 {
+    [Display(Name = "Current split version", Description = "False when a later split supersedes this document; retained analyses keep their source identity.")]
+    [DisplayMetadata("", IsEditable = false)]
     public bool IsCurrent { get; set; } = true;
     [Display(Name = "Upload identifier", Description = "Stored foreign key to the source upload.")]
     [DisplayMetadata("lucide:FileInput", IsHidden = true, IsEditable = false)]

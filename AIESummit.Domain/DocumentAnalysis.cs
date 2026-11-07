@@ -8,6 +8,9 @@ using Blueshift.Domain.LLM;
 namespace AIESummit.Domain;
 
 [DisplayMetadata("lucide:BrainCircuit", MenuName = "Document analyses")]
+[ForeignTypes(typeof(AnalysisTargetResult), nameof(AnalysisTargetResult.Analysis), ForeignConnectionTypes.Direct, Title = "Target results", Order = 10)]
+[ForeignTypes(typeof(PageTextRevision), nameof(PageTextRevision.Analysis), ForeignConnectionTypes.Direct, Title = "Source snapshots", Order = 20)]
+[ForeignTypes(typeof(LLMPrompt), nameof(LLMPrompts), ForeignConnectionTypes.MultipleIndirect, Title = "Processing prompts", Order = 30)]
 [Microsoft.EntityFrameworkCore.Index(nameof(DocumentId), nameof(RequestKey), IsUnique = true)]
 public sealed class DocumentAnalysis : BasePersistenceObject, ILlmCapable
 {

@@ -5,6 +5,7 @@ using Blueshift.Domain.Infrastructure;
 namespace AIESummit.Domain;
 
 [DisplayMetadata("lucide:FileText", MenuName = "Extractions")]
+[ForeignTypes(typeof(ExtractionEvidence), nameof(ExtractionEvidence.Extraction), ForeignConnectionTypes.Direct, Title = "Source evidence", Order = 10)]
 public sealed class Extraction : BasePersistenceObject
 {
     [Display(Name = "Target Result Id", Description = "Parent target result identifier.")]

@@ -96,12 +96,13 @@ internal static class ExtractionEndpoints
                 modelTag = p.UsedModel == null ? null : p.UsedModel.Tag,
                 provider = p.UsedModel == null ? (LLMAPIProvider?)null : p.UsedModel.Provider,
                 stepId = p.LLMStep_ID, p.SystemPrompt, p.ExpectedResponseJsonFormat, p.Prompt,
-                p.InputTokens, p.OutputTokens, p.Tokens,
+                p.Temperature, p.ReasoningEffort, p.InputTokens, p.OutputTokens, p.Tokens,
                 p.AccumulatedTokens, p.ApiAttemps, p.ProcessingStatus, p.DateCreated, p.LastModified }).ToListAsync(ct);
         var prompts = raw.Select(p => new { p.id, p.DocumentType, p.DocumentID, p.step, p.stepId, p.model,
             p.modelTag, provider = p.provider?.ToString(), modelVersion = (string?)null,
             systemPromptHash = AnalysisFactory.Hash(p.SystemPrompt), inputPromptHash = AnalysisFactory.Hash(p.Prompt),
             outputSchemaHash = AnalysisFactory.Hash(p.ExpectedResponseJsonFormat),
+            generationParameters = new { p.Temperature, p.ReasoningEffort },
             p.InputTokens, p.OutputTokens, p.Tokens, p.AccumulatedTokens, p.ApiAttemps, p.ProcessingStatus, p.DateCreated, p.LastModified }).ToArray();
         return Results.Ok(new { prompts, reportedInputTokens = prompts.Sum(p => p.InputTokens),
             reportedOutputTokens = prompts.Sum(p => p.OutputTokens), reportedTotalTokens = prompts.Sum(p => p.Tokens),

@@ -62,6 +62,8 @@ public sealed class PersistenceTests
         Assert.Equal(evidence.Quote, evidence.PageTextRevision.Markdown[evidence.StartOffset..evidence.EndOffset]);
         evidence.PageTextRevision.Markdown = "changed";
         await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync()); db.ChangeTracker.Clear();
+        await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"PageTextRevisions\" SET \"Markdown\" = 'changed' WHERE \"ID\" = {evidence.PageTextRevisionId}"));
 
         // Historical documents coexist with a current replacement, and analysis keeps its original source identity.
         var old = await db.Documents.SingleAsync(); old.IsCurrent = false;

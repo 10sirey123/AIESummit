@@ -1,5 +1,7 @@
 # Local deployment and container topology
 
+Contract extraction adds the `documentanalysis` queue subject to the worker overlay and emulator, with native pending-work recovery. Admin exposes extraction catalog/history/evidence read-only. Tester MongoDB is not the application database or part of this Compose stack; see [contract extraction](../docs/contract-extraction.md).
+
 Meta Muse Wonder uses the native page LLMStep and persisted APIInfo; see [Meta setup](../docs/meta-analysis.md) for version provenance, explicit key import, model selection and verification. The reader labels are provider-neutral.
 
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.

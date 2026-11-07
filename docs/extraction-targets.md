@@ -1,6 +1,6 @@
 # Contract extraction targets
 
-Status: proposed product specification, November 7, 2026. These targets describe future extraction and application cards; they are not implemented detections or a completed evaluation.
+Status: product specification, November 7, 2026. B01–B10 now have a naive backend implementation and a 20-document evaluation; see [the backend guide](contract-extraction.md) and [baseline results](extraction-baseline-results.md). Remaining targets and frontend cards are future work.
 
 ## Scope and selection
 
@@ -121,4 +121,4 @@ For dates, keep explicit and computed values separate. For example, an illustrat
 - `corporea/benchmarks/edgar-corpus/*.json`: all 100 prepared sidecars inspected; no gold detection list.
 - [Preparation utility](../scripts/prepare_benchmarks.py): transformation and source-row retention, including MAUD `main` filtering. These local TXT files are reference text, not guaranteed OCR outputs.
 
-No datasets were downloaded, modified or newly annotated for this proposal. No model inference or application implementation was performed.
+The original taxonomy proposal did not download, modify or annotate datasets. Subsequent B01–B10 implementation and provider-backed evaluation are documented in the linked guides.

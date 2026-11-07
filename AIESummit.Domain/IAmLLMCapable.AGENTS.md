@@ -1,5 +1,9 @@
 # LLM-capable upload subjects
 
+Current additional subject: `DocumentAnalysis : ILlmCapable` runs `extract-contract-targets`, pins page/target definitions, and maps prompts through `DocumentAnalysis_ID`. `OcrPage` is also registered. `Document` itself remains the split output. See [contract extraction](../docs/contract-extraction.md); historical examples below do not mean only uploads are registered.
+
+Current additional subject: `DocumentAnalysis : ILlmCapable` runs `extract-contract-targets`, pins page/target definitions, and maps prompts through `DocumentAnalysis_ID`. `OcrPage` is also registered for page sections. `Document` itself remains the split output. See [contract extraction](../docs/contract-extraction.md); the historical new-subject examples below are not a claim that only uploads are registered.
+
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
 This filename retains the Horus term for discoverability. AIESummit implements `Blueshift.Domain.LLM.ILlmCapable`, not Horus's `IAmLLMCapable`. Read [AGENTS.md](AGENTS.md) before changing the model, then [SplitStep.AGENTS.md](../AIESummit.Agents/SplitStep.AGENTS.md) and [Metadata.AGENTS.md](../AIESummit.Agents/Metadata.AGENTS.md) for processing changes.
@@ -140,7 +144,7 @@ Avoid writing real document text, prompt bodies or provider keys into fixtures, 
 
 `Document` is currently an output of the upload step. If a document-level step is introduced, reload the persisted `Document` by ID with its mapped prompt collection in the step policy. Use its title, Markdown, and inclusive page range as input. Load the source upload and range-scoped page or image references only when the step needs them. Register a document-specific prompt hydration branch and metadata type, and define the transition that makes a newly created document eligible. Coordinate that transition with replacement of documents during an upload rerun so pending work cannot apply to an obsolete document.
 
-This checklist describes future work. AIESummit currently has only `UploadedFile` registered as its application LLM subject.
+This historical checklist describes further subjects. Current subjects are `UploadedFile`, `OcrPage` and `DocumentAnalysis`.
 
 1. Add a concrete `BasePersistenceObject` implementing the three current interface properties and register it in `AIESummitDb`.
 2. Map its prompt navigation explicitly and plan schema evolution. Do not reuse another subject's shadow foreign key without a deliberate model design.

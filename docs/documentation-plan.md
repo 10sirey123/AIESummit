@@ -75,3 +75,7 @@ Authors checked the relevant current implementation and reported their source ev
 The historical CLI-absent statements above describe the original documentation pass. The current implementation is documented in [configuration-seeding.md](configuration-seeding.md), linked from the root [AGENTS.md](../AGENTS.md) routing table, README and install guide. It covers the bundled CLI, actual step definitions, generated structured JSON and metadata application, managed fields, policies, reviewed preview tokens, optional bindings, schema-versus-data boundaries, deployment, troubleshooting and isolated PostgreSQL/CLI checks. [The exporter guide](../AIESummit.Configuration/AGENTS.md) records implementation constraints. Focused step, metadata, stable-tag, persistence, bootstrap, deployment and script guides route to the same operating instructions.
 
 This update changes documentation only. It does not apply a configuration plan, change credentials or invoke a provider.
+
+## Contract extraction and evaluation extension
+
+[Contract extraction](contract-extraction.md) owns the entities, target schemas, native analysis subject, additive upgrade, seeding and CLI. [Evaluation instrumentation](evaluation-instrumentation.md) owns MongoDB collections, graph directions, artifact retention, replay and consumer queries. [Baseline results](extraction-baseline-results.md) records actual measurements and failures. These guides supersede older split-only extension examples where implementation has advanced.

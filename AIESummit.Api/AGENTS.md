@@ -1,5 +1,9 @@
 # AIESummit.Api
 
+`ExtractionEndpoints.cs` implements owner-scoped analysis requests, results and sanitized metrics, plus authenticated catalog reads. See [contract extraction](../docs/contract-extraction.md) and the matching ApiSpec fragments. Bootstrap applies additive upgrade 003 and missing-only seeds. Diagnostic model-reported outcomes are explicitly unvalidated; never present them as accepted findings.
+
+`ExtractionEndpoints.cs` implements owner-scoped analysis requests, results and sanitized metrics, plus authenticated target catalog reads. See [contract extraction](../docs/contract-extraction.md) and the matching `ApiSpec` extraction fragments. Bootstrap applies additive upgrade 003 and missing-only extraction seeds. Model-reported diagnostic outcomes are explicitly unvalidated; never present them as accepted findings.
+
 Meta configuration is described in [the Meta guide](../docs/meta-analysis.md). Bootstrap seeds only missing disabled APIInfo/model records and never imports a Meta environment key. The explicit analysis endpoint checks the APIInfo corresponding to the enabled page step's selected provider, including Meta; do not hardcode Gemini availability.
 
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
