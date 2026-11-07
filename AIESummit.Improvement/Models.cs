@@ -38,6 +38,8 @@ public sealed class Attempt
     public JsonNode? Results { get; set; }
     public JsonNode? BaselineResults { get; set; }
     public JsonNode? Comparison { get; set; }
+    public JsonNode? PlanningUsage { get; set; }
+    public JsonNode? ImplementationUsage { get; set; }
     public List<string> Logs { get; set; } = [];
     public string CalculateApprovalHash() => ImprovementJson.Hash(Proposal!.ToJsonString() + "|" + BaseCommit + "|" + ParentGraphHash + "|" + ManifestHash);
 }

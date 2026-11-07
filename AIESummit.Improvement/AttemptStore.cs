@@ -49,6 +49,19 @@ public sealed class AttemptStore(WorkbenchOptions options)
         var path = Path.Combine(options.AttemptFolder(id), "attempt.json");
         if (!File.Exists(path)) throw new KeyNotFoundException("Unknown attempt.");
         var item = JsonSerializer.Deserialize<Attempt>(await File.ReadAllTextAsync(path), ImprovementJson.Options)!;
+        foreach (var phase in new[] { "plan", "implement" })
+        {
+            var log = Path.Combine(options.AttemptFolder(id), phase + ".log");
+            if (!File.Exists(log)) continue;
+            foreach (var line in File.ReadLines(log))
+                try
+                {
+                    var row = System.Text.Json.Nodes.JsonNode.Parse(line);
+                    if (row?["type"]?.GetValue<string>() != "turn.completed" || row["usage"] == null) continue;
+                    if (phase == "plan") item.PlanningUsage = row["usage"]!.DeepClone(); else item.ImplementationUsage = row["usage"]!.DeepClone();
+                }
+                catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException) { }
+        }
         return item;
     }
     public async Task Save(Attempt attempt)

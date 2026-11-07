@@ -9,10 +9,12 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
 {
     private readonly Channel<(string Id, string Action)> jobs = Channel.CreateUnbounded<(string, string)>();
     private readonly SemaphoreSlim transitions = new(1);
+    private readonly TaskCompletionSource initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private const string AllowedFile = "improvement/workflow.json";
 
     public async Task<Attempt> Create(CreateAttempt request)
     {
+        await initialized.Task;
         var instructions = request.Instructions ?? "";
         if (instructions.Length > 12000) throw new InvalidDataException("Keep instructions under 12,000 characters.");
         var parent = request.ParentAttemptId == null ? null : await store.Get(request.ParentAttemptId);
@@ -23,6 +25,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
 
     public async Task<Attempt> Approve(string id, string hash)
     {
+        await initialized.Task;
         await transitions.WaitAsync();
         try
         {
@@ -43,6 +46,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
 
     public async Task<Attempt> Reject(string id)
     {
+        await initialized.Task;
         await transitions.WaitAsync();
         try
         {
@@ -55,6 +59,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
 
     public async Task<Attempt> Promote(string id)
     {
+        await initialized.Task;
         await transitions.WaitAsync();
         try
         {
@@ -89,9 +94,15 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
     {
         Directory.CreateDirectory(options.State);
         try { await store.ReplayJournal(); } catch { /* Keep the durable journal; history availability is reported by the UI. */ }
-        foreach (var item in await store.All())
+        foreach (var stored in await store.All())
+        {
+            var item = await store.Get(stored.Id);
+            var changed = stored.PlanningUsage == null && item.PlanningUsage != null || stored.ImplementationUsage == null && item.ImplementationUsage != null;
             if (item.Status is "planning" or "approved" or "implementing" or "evaluating")
-            { item.Status = "interrupted"; item.Error = "The workbench restarted. Retained files and database records were preserved; start a new attempt to continue."; await store.Save(item); }
+            { item.Status = "interrupted"; item.Error = "The workbench restarted. Retained files and database records were preserved; start a new attempt to continue."; changed = true; }
+            if (changed) await store.Save(item);
+        }
+        initialized.TrySetResult();
         await foreach (var job in jobs.Reader.ReadAllAsync(stoppingToken))
         {
             var item = await store.Get(job.Id);
@@ -174,6 +185,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
             These endpoints have no mutation or approval operations. Do not read credentials, .env or private configuration.
             Only improvement/workflow.json may change in an experiment. Existing extraction target
             definitions, native validators, scorer, OCR, gold labels and model provider integration are fixed.
+            Never embed benchmark sample IDs, filenames, expected labels or gold answers in prompts.
             Graphs must be acyclic and partition the ten existing target tags exactly once. Nodes may use
             Muse models only. Prefer one small testable change; quantify expected quality/token tradeoffs.
             A found extraction means accepted evidence, not just a raw model prediction. Preserve unknowns.
@@ -209,6 +221,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
             Read AIESummit.WorkflowRunner source for the graph contract. All model names must be Muse.
             Preserve the ten-target coverage partition and DAG. Keep unchanged nodes byte-semantically identical
             for cache reuse. User instruction: {item.Instructions}
+            Do not hardcode benchmark cases, filenames, expected labels or gold answers into the workflow.
             Use curl with the isolated read-only MongoDB reader at
             http://127.0.0.2:18112/history?kind=missing
             (also runs/documents/steps/workflows/expectations/observations with runId/sampleId/sourceSha256/limit).
@@ -277,6 +290,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
         var permissions = "permissions={improvement={extends=\":read-only\",filesystem={\":root\"=\"deny\",\":minimal\"=\"read\",\":workspace_roots\"=" + workspacePermissions + "},network={enabled=true,domains={\"127.0.0.2\"=\"allow\"}}}}";
         var args = new List<string> { script, "exec", "--json", "--ignore-user-config", "--disable", "apps", "--disable", "plugins", "--disable", "multi_agent", "-m", item.Model, "-C", RuntimePath(cwd),
             "-c", "approval_policy=\"never\"", "-c", "web_search=\"disabled\"",
+            "-c", "shell_environment_policy={inherit=\"core\",ignore_default_excludes=false,filters={\"MONGODB_*\"=\"exclude\",\"ConnectionStrings*\"=\"exclude\"}}",
             "-c", "default_permissions=\"improvement\"", "-c", permissions, "-c", "features.network_proxy=true",
             "-c", "model_provider=\"meta\"", "-c", "model_providers.meta.name=\"Meta\"", "-c", "model_providers.meta.base_url=\"https://api.meta.ai/v1\"",
             "-c", "model_providers.meta.env_key=\"MODEL_API_KEY\"", "-c", "model_providers.meta.wire_api=\"responses\"", "-o", RuntimePath(final) };
@@ -301,6 +315,8 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
         var result = await processes.Run(executable, args, cwd, prompt, environment,
             onLine: line => { lock (item.Logs) File.AppendAllText(live, Sanitize(line) + "\n"); }, timeoutSeconds: 1200, cancellationToken: token);
         await WriteLog(item, phase, result.Output);
+        var retained = await store.Get(item.Id);
+        item.PlanningUsage = retained.PlanningUsage; item.ImplementationUsage = retained.ImplementationUsage;
         if (result.ExitCode != 0 || !File.Exists(final)) throw new InvalidDataException($"Muse {phase} session failed. See the retained {phase} log; no fallback model was used.");
         if (result.Output.Contains("rejected: blocked by policy", StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException($"Muse {phase} could not access the approved source environment. Its output was retained but will not be executed.");

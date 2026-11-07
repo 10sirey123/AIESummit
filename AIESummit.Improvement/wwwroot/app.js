@@ -80,6 +80,7 @@ function renderMain() {
   $('comparison').innerHTML = attempt?.comparison ? `<div class="comparison-note">${escape(typeof attempt.comparison === 'string' ? attempt.comparison : attempt.comparison.summary || JSON.stringify(attempt.comparison))}</div>` : '';
   const graph = attempt?.graph || attempt?.proposal?.graph || attempt?.parentGraph || run?.graph || run?.workflow || state.dashboard?.graph || state.dashboard?.workflow;
   renderGraph(graph);
+  $('workflow-json').textContent = graph ? JSON.stringify(graph, null, 2) : 'Workflow snapshot unavailable.';
   $('workflow-note').textContent = attempt?.graph ? 'Candidate snapshot' : attempt?.parentGraph ? 'Frozen parent snapshot' : 'Current Muse graph; historical runs retain their original models';
   $('parent-workflow').hidden = !attempt?.graph || !attempt?.parentGraph;
   if (attempt?.graph && attempt?.parentGraph) renderGraph(attempt.parentGraph, $('parent-graph'));
@@ -89,6 +90,8 @@ function renderMain() {
   const logs = attempt?.logs || attempt?.events || [];
   $('execution-details').hidden = !logs.length && !attempt?.error;
   $('execution-log').textContent = asArray(logs).map(x => typeof x === 'string' ? x : `${x.timestamp || x.at || ''} ${x.message || x.text || JSON.stringify(x)}`).join('\n') + (attempt?.error ? `\n${attempt.error}` : '');
+  const overhead = [['Planning', attempt?.planningUsage], ['Implementation', attempt?.implementationUsage]].filter(([, usage]) => usage);
+  if (overhead.length) $('execution-log').textContent += '\n\nModel overhead (separate from extraction):\n' + overhead.map(([phase, usage]) => `${phase}: ${num(usage.input_tokens)} input (${num(usage.cached_input_tokens)} cached), ${num(usage.output_tokens)} output`).join('\n');
   renderActions();
 }
 function renderActions() {

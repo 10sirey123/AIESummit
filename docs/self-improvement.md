@@ -10,7 +10,7 @@ Start the ordinary stack first (`./start.ps1`), prepare the existing benchmark c
 ./scripts/start-improvement.ps1
 ```
 
-Open <http://127.0.0.1:18110>. The workbench is a loopback-only operator surface; it does not accept remote access. It reads the existing local `MONGODB_URI`/`MONGODB_DATABASE`; Codex receives the local `META_API_KEY` only through its process environment. On Windows, Node.js and Codex CLI run inside the existing `Ubuntu-Codex` WSL2 distribution; set the process variable `AIESUMMIT_CODEX_DISTRIBUTION` for another prepared distribution. The Windows host runs the web UI and read-only history tools. `AIESUMMIT_CODEX_HOST=windows` selects a native CLI only on machines whose configured Windows isolation supports the required filesystem rules; `AIESUMMIT_CODEX_JS` can override that launcher path. Unsupported isolation stops the attempt rather than running with unrestricted access. No fallback provider or fabricated proposal is used when Muse fails.
+Open <http://127.0.0.1:18110>. The workbench is a loopback-only operator surface; it does not accept remote access. It reads the existing local `MONGODB_URI`/`MONGODB_DATABASE`; Codex receives the local `META_API_KEY` only through its process environment. The supported setup runs the web UI on Windows and Node.js/Codex CLI plus a .NET 10 read-only history reader inside the existing `Ubuntu-Codex` WSL2 distribution. Set `AIESUMMIT_CODEX_DISTRIBUTION` for another prepared distribution, or `AIESUMMIT_WSL_DOTNET` for a nonstandard Linux runtime path. The history reader uses invariant globalization so it also works in the supplied WSL reference environment without ICU. Unsupported isolation stops the attempt rather than running with unrestricted access. No fallback provider or fabricated proposal is used when Muse fails.
 
 The script builds both projects and captures effective persisted extraction prompts/settings into `improvement/workflow.json` only when the file does not exist. The experimental baseline explicitly selects Muse; it does not change the normal application's configured model. `-ImportBaseline` enriches the original retained 20-file baseline with expected/observed snapshots without new inference. Historical GPT baseline totals and new Muse evaluations remain separate runs.
 
@@ -34,13 +34,17 @@ Every evaluation retains the graph definition and exact execution nodes/edges, s
 
 Logical tokens include reused responses. Newly consumed counters exclude reused results. A native completion-policy extension preserves provider-reported input/output counters that the pinned worker otherwise omits. Historical cached counters stay unknown; the UI never substitutes zero. Multi-attempt usage is conservative where directional totals are incomplete. Scoring includes all selected documents, including failed ones; raw model classifications never count as accepted findings. Quality and efficiency comparisons use validated TP/FP/FN and logical input/output, not warm-cache cost. Promotion remains a human decision.
 
+Codex planning and implementation usage is retained separately in attempt records and the execution-log disclosure. These counters include the CLI's reported cached-input usage; they are not added to extraction benchmark usage or treated as invoice verification.
+
 `Use as baseline` copies the evaluated graph into the working baseline after checking that its parent graph remains current. It updates the workbench's comparison baseline; it does not merge unrelated changes or alter the normal application's persisted step selection. Worktrees and failed attempts are retained.
 
 ## Read-only learning access
 
 Codex sessions can query the loopback endpoint `/api/history?kind=missing` with optional `runId`, `sampleId`, `sourceSha256`, and `limit` (1–200). Supported views are runs, documents, steps, workflows, expectations, observations, missing and events. No arbitrary MongoDB commands, pipelines or writes are exposed.
 
-The workbench also exposes a stdio MCP server with `query_history`, `document_matrix` and `attempt_history`. Codex receives this connection explicitly per session; the tool host loads local settings itself, so the model never receives a MongoDB URI. Shell access to the network is disabled. Planning can read its frozen source archive; implementation can write only the candidate workflow file. User-wide app/plugin tools are excluded from these focused sessions.
+Muse's Codex sessions use a dedicated read-only reader on WSL loopback `127.0.0.2:18112`, exposing only GET `/history`, `/matrix/{sha}` and `/attempts`. A per-session network proxy permits only that literal address, keeping the approval UI on `127.0.0.1:18110` outside the model's allowed network destinations. The reader loads local settings itself; the model never receives a MongoDB URI. Its lifetime is limited to the session and cleanup targets its verified process identity. Planning can read its frozen source archive; implementation can write only the candidate workflow file. User-wide app/plugin tools are excluded from these focused sessions.
+
+There is also an optional stdio MCP server (`--mcp <repository-root>`) with `query_history`, `document_matrix` and `attempt_history`. Its flat strict schemas accept explicit nulls for unused filters. Direct protocol reads are verified; Muse/Codex currently misroutes namespaced MCP calls, so the workbench uses the isolated HTTP reader rather than relying on that integration.
 
 The existing evaluator also offers:
 

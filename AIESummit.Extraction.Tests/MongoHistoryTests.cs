@@ -8,6 +8,39 @@ namespace AIESummit.Extraction.Tests;
 public sealed class MongoHistoryTests
 {
     [MongoDatabaseFact]
+    public async Task RunSelectionResolvesSnapshotsAndWorkflowsThroughUsageWithoutExposingConfirmation()
+    {
+        var db = new MongoClient(Environment.GetEnvironmentVariable("AIESUMMIT_MONGO_TEST_URI")!)
+            .GetDatabase("aiesummit_history_selection_" + Guid.NewGuid().ToString("N"));
+        await db.GetCollection<BsonDocument>("evaluation_runs").InsertManyAsync([
+            new() { { "_id", "run-a" }, { "runId", "run-a" }, { "partition", "development" }, { "workflowId", "workflow-a" } },
+            new() { { "_id", "run-b" }, { "runId", "run-b" }, { "partition", "development" }, { "workflowId", "workflow-b" } },
+            new() { { "_id", "secret-run" }, { "runId", "secret-run" }, { "workflowId", "workflow-a" }, { "configuration", new BsonDocument("partition", "confirmation") } }
+        ]);
+        await db.GetCollection<BsonDocument>("evaluation_workflows").InsertManyAsync([
+            new() { { "_id", "workflow-a" } }, new() { { "_id", "workflow-b" } }
+        ]);
+        await db.GetCollection<BsonDocument>("evaluation_expectations").InsertManyAsync([
+            Expected("label-a", "development"), Expected("label-b", "development")
+        ]);
+        await db.GetCollection<BsonDocument>("evaluation_documents").InsertManyAsync([
+            Document("document-a", "run-a", "label-a"), Document("document-b", "run-b", "label-b"),
+            Document("secret-document", "secret-run", "label-a")
+        ]);
+        var history = new MongoHistory(db);
+        var selectedLabels = await history.QueryAsync("expectations", runId: "run-a");
+        Assert.Equal("label-a", Assert.Single(selectedLabels.EnumerateArray()).GetProperty("_id").GetString());
+        var selectedWorkflows = await history.QueryAsync("workflows", runId: "run-b");
+        Assert.Equal("workflow-b", Assert.Single(selectedWorkflows.EnumerateArray()).GetProperty("_id").GetString());
+        Assert.Empty((await history.QueryAsync("expectations", runId: "secret-run")).EnumerateArray());
+        Assert.Empty((await history.QueryAsync("workflows", runId: "secret-run")).EnumerateArray());
+        Assert.Empty((await history.QueryAsync("expectations", runId: "unknown")).EnumerateArray());
+        Assert.Empty((await history.QueryAsync("workflows", runId: "unknown")).EnumerateArray());
+        await Assert.ThrowsAsync<InvalidDataException>(() => history.QueryAsync("workflows", sampleId: "0001"));
+        await Assert.ThrowsAsync<InvalidDataException>(() => history.QueryAsync("workflows", sourceSha256: "abc"));
+    }
+
+    [MongoDatabaseFact]
     public async Task EveryHistoryViewHidesConfirmationRunsIncludingLegacyRowsAndUnclassifiedGold()
     {
         var db = new MongoClient(Environment.GetEnvironmentVariable("AIESUMMIT_MONGO_TEST_URI")!)

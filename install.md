@@ -1,6 +1,6 @@
 # Install AIESummit from scratch
 
-The optional [self-improvement workbench](docs/self-improvement.md) additionally needs Codex CLI and Node.js inside a WSL2 Linux distribution on Windows. This machine uses the existing `Ubuntu-Codex` distribution from the optimization reference. Set the process variable `AIESUMMIT_CODEX_DISTRIBUTION` to use another prepared distribution. The web UI runs on the Windows .NET 10 host; its Codex sessions use Linux filesystem isolation and a read-only MongoDB tool connection. This optional requirement does not change ordinary application startup.
+The optional [self-improvement workbench](docs/self-improvement.md) additionally needs Codex CLI, Node.js and the .NET 10 runtime inside a WSL2 Linux distribution on Windows. This machine uses the existing `Ubuntu-Codex` distribution from the optimization reference. Set the process variable `AIESUMMIT_CODEX_DISTRIBUTION` to use another prepared distribution. The web UI runs on the Windows .NET 10 host; its Codex sessions use Linux filesystem isolation and a separate read-only MongoDB history reader. This optional requirement does not change ordinary application startup.
 
 This guide sets up the complete local development environment on Windows x64, starting with only Docker Desktop installed and running. Run the commands in order. A web browser, internet access, access to this AIESummit repository, and Azure Foundry credentials with usable OCR and LLM deployments are also needed. Blueshift binaries are included in this repository; no private framework repository or private package-feed access is required. The current app performs document intake, OCR and splitting; contract risk analysis is future work.
 
@@ -69,7 +69,7 @@ Set-Location AIESummit
 dotnet --version
 ```
 
-If Git requests authentication for AIESummit, use an account granted access to this repository. Do not put a token in the clone URL or a tracked file. GitHub CLI is not required. There are no submodules to initialize. The checksum verification must report seven valid artifacts from `dependencies/blueshift`; its manifest records the upstream `net10` revision. See [the bundle guide](dependencies/blueshift/README.md) for details. The local NuGet feed is configured automatically by the repository's `NuGet.Config`.
+If Git requests authentication for AIESummit, use an account granted access to this repository. Do not put a token in the clone URL or a tracked file. GitHub CLI is not required. There are no submodules to initialize. The checksum verification must report eight valid artifacts from `dependencies/blueshift`; its manifest records the upstream `net10` revision. See [the bundle guide](dependencies/blueshift/README.md) for details. The local NuGet feed is configured automatically by the repository's `NuGet.Config`.
 
 Run `dotnet --version` **inside this repository** to verify the SDK selected by `global.json`. Confirm `AIESummit.slnx`, `start.ps1`, `compose.yaml` and `web/package-lock.json` exist. If they are absent, obtain the application branch containing the intake scaffold before continuing.
 
@@ -232,3 +232,5 @@ After normal startup, follow [configuration-seeding.md](docs/configuration-seedi
 ## Optional configuration CLI
 
 After normal startup, follow [configuration-seeding.md](docs/configuration-seeding.md) to build the one-off CLI image, add the seed registry and review/apply code-defined workflow settings. The bundled Linux CLI uses Docker and needs no additional tool installation or private package access. `./scripts/admin.ps1 build` prepares it; `export`, `validate` and `plan` prepare a review, and `apply` requires its preview token. The isolated acceptance check is `./scripts/test-seeding.ps1 -VerifyCli` after building the image.
+
+SubQ Preview: after startup, use `./scripts/configure-subq.ps1 -ImportLocalKey -SelectPageStep` to import `SUBQ_API_KEY` from the private `.env` and select low reasoning on the page step. See [SubQ setup](docs/subq-analysis.md).

@@ -44,10 +44,11 @@ public sealed class HistoryBridgeLease : IAsyncDisposable
     private readonly string distribution;
     private readonly CancellationTokenSource cancellation;
     private readonly Task<ProcessResult> execution;
+    private readonly string instance;
     private int pid;
     private HistoryBridgeLease(ProcessRunner processes, string root, string distribution,
-        CancellationTokenSource cancellation, Task<ProcessResult> execution)
-        => (this.processes, this.root, this.distribution, this.cancellation, this.execution) = (processes, root, distribution, cancellation, execution);
+        CancellationTokenSource cancellation, Task<ProcessResult> execution, string instance)
+        => (this.processes, this.root, this.distribution, this.cancellation, this.execution, this.instance) = (processes, root, distribution, cancellation, execution, instance);
 
     public static async Task<HistoryBridgeLease> Start(ProcessRunner processes, WorkbenchOptions options, CancellationToken token)
     {
@@ -63,13 +64,13 @@ public sealed class HistoryBridgeLease : IAsyncDisposable
         var execution = processes.Run("wsl.exe", ["-d", distribution, "--exec", "env", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1",
             runtime, ImprovementService.ToWslPath(typeof(HistoryBridge).Assembly.Location), "--history-bridge", ImprovementService.ToWslPath(options.Root), instance], options.Root,
             timeoutSeconds: 1500, cancellationToken: cancellation.Token);
-        var lease = new HistoryBridgeLease(processes, options.Root, distribution, cancellation, execution);
+        var lease = new HistoryBridgeLease(processes, options.Root, distribution, cancellation, execution, instance);
         try
         {
-            for (var i = 0; i < 20; i++)
+            for (var i = 0; i < 150; i++)
             {
                 if (execution.IsCompleted) throw new InvalidDataException("The isolated history reader could not start. Check the WSL .NET 10 runtime.");
-                var health = await processes.Run("wsl.exe", ["-d", distribution, "--exec", "curl", "--max-time", "2", "-fsS", HistoryBridge.Address + "/health"], options.Root,
+                var health = await processes.Run("wsl.exe", ["-d", distribution, "--exec", "curl", "--noproxy", "127.0.0.2", "--max-time", "2", "-fsS", HistoryBridge.Address + "/health"], options.Root,
                     timeoutSeconds: 5, cancellationToken: token);
                 if (health.ExitCode == 0)
                 {
@@ -79,7 +80,7 @@ public sealed class HistoryBridgeLease : IAsyncDisposable
                     lease.pid = doc.RootElement.GetProperty("processId").GetInt32();
                     return lease;
                 }
-                await Task.Delay(100, token);
+                await Task.Delay(250, token);
             }
             throw new InvalidDataException("The isolated history reader did not become ready.");
         }
@@ -87,10 +88,19 @@ public sealed class HistoryBridgeLease : IAsyncDisposable
     }
     public async ValueTask DisposeAsync()
     {
-        if (!execution.IsCompleted && pid > 0)
-            await processes.Run("wsl.exe", ["-d", distribution, "--exec", "kill", "-TERM", pid.ToString(System.Globalization.CultureInfo.InvariantCulture)], root, timeoutSeconds: 5);
-        cancellation.Cancel();
-        try { await execution; } catch (OperationCanceledException) { }
-        cancellation.Dispose();
+        try
+        {
+            if (!execution.IsCompleted && pid > 0)
+                await processes.Run("wsl.exe", ["-d", distribution, "--exec", "kill", "-TERM", pid.ToString(System.Globalization.CultureInfo.InvariantCulture)], root, timeoutSeconds: 5);
+            else if (!execution.IsCompleted)
+                // The random instance marker identifies only this owned process even before HTTP readiness.
+                await processes.Run("wsl.exe", ["-d", distribution, "--exec", "pkill", "-TERM", "-f", "--", instance], root, timeoutSeconds: 5);
+        }
+        finally
+        {
+            cancellation.Cancel();
+            try { await execution; } catch (OperationCanceledException) { }
+            finally { cancellation.Dispose(); }
+        }
     }
 }

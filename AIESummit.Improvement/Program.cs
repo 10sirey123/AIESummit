@@ -24,6 +24,8 @@ var builder = WebApplication.CreateBuilder(args);
 var root = builder.Configuration["repo"] ?? Directory.GetCurrentDirectory();
 if (!File.Exists(Path.Combine(root, "AIESummit.slnx"))) root = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".."));
 var options = new WorkbenchOptions(root);
+Directory.CreateDirectory(options.State);
+using var hostLease = new FileStream(Path.Combine(options.State, "host.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 builder.WebHost.UseUrls("http://127.0.0.1:18110");
 builder.Services.AddSingleton(options);
 builder.Services.AddSingleton<ProcessRunner>();

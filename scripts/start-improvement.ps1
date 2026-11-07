@@ -3,6 +3,10 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 Push-Location $repoRoot
 try {
+    try {
+        $existing = Invoke-RestMethod http://127.0.0.1:18110/health -TimeoutSec 2
+        if ($existing.service -eq 'AIESummit Improvement') { Write-Host 'The improvement workbench is already running: http://127.0.0.1:18110'; return }
+    } catch { }
     & "$PSScriptRoot/verify-dependencies.ps1"
     if ($LASTEXITCODE) { throw 'Dependency verification failed.' }
     $stateRoot = Join-Path $repoRoot 'artifacts/improvement'

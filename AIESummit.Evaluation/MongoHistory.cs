@@ -33,7 +33,9 @@ public sealed class MongoHistory(IMongoDatabase database)
         var filter = Builders<BsonDocument>.Filter.Ne("partition", "confirmation") & Builders<BsonDocument>.Filter.Ne("configuration.partition", "confirmation");
         // Label-bearing records require an explicit development designation; missing metadata is not permission to expose gold.
         if (kind is "expectations" or "observations" or "missing") filter &= Builders<BsonDocument>.Filter.Eq("partition", "development");
-        if (!string.IsNullOrWhiteSpace(runId)) filter &= Builders<BsonDocument>.Filter.Eq("runId", runId);
+        if (kind == "workflows" && (!string.IsNullOrWhiteSpace(sampleId) || !string.IsNullOrWhiteSpace(sourceSha256)))
+            throw new InvalidDataException("Workflow queries support runId selection. Use documents to resolve a sample or source to its run first.");
+        if (!string.IsNullOrWhiteSpace(runId) && kind is not ("expectations" or "workflows")) filter &= Builders<BsonDocument>.Filter.Eq("runId", runId);
         if (!string.IsNullOrWhiteSpace(sampleId)) filter &= Builders<BsonDocument>.Filter.Eq("sampleId", sampleId);
         if (!string.IsNullOrWhiteSpace(sourceSha256)) filter &= Builders<BsonDocument>.Filter.Eq("sourceSha256", sourceSha256.ToLowerInvariant());
         if (kind == "missing") filter &= Builders<BsonDocument>.Filter.ElemMatch<BsonDocument>("targets", new BsonDocument {
@@ -44,10 +46,12 @@ public sealed class MongoHistory(IMongoDatabase database)
             if (kind == "expectations")
             {
                 // Snapshots have no runId: require a development document using them in a visible run.
+                var usageFilter = new BsonDocument { { "$expr", new BsonDocument("$eq", new BsonArray { "$expectationId", "$$expectation" }) }, { "partition", "development" } };
+                if (!string.IsNullOrWhiteSpace(runId)) usageFilter["runId"] = runId;
                 stages.Add(new("$lookup", new BsonDocument {
                     { "from", "evaluation_documents" }, { "let", new BsonDocument("expectation", "$_id") },
                     { "pipeline", new BsonArray {
-                        new BsonDocument("$match", new BsonDocument { { "$expr", new BsonDocument("$eq", new BsonArray { "$expectationId", "$$expectation" }) }, { "partition", "development" } }),
+                        new BsonDocument("$match", usageFilter),
                         VisibleRunLookup("runId", "_id"), new BsonDocument("$match", new BsonDocument("_visibleRuns.0", new BsonDocument("$exists", true))),
                         new BsonDocument("$limit", 1), new BsonDocument("$project", new BsonDocument("_id", 1)) } }, { "as", "_visibleUsage" } }));
                 stages.Add(new("$match", new BsonDocument("_visibleUsage.0", new BsonDocument("$exists", true))));
@@ -55,7 +59,7 @@ public sealed class MongoHistory(IMongoDatabase database)
             }
             else if (kind != "runs")
             {
-                stages.Add(kind == "workflows" ? VisibleRunLookup("_id", "workflowId") : VisibleRunLookup("runId", "_id"));
+                stages.Add(kind == "workflows" ? VisibleRunLookup("_id", "workflowId", runId) : VisibleRunLookup("runId", "_id"));
                 stages.Add(new("$match", new BsonDocument("_visibleRuns.0", new BsonDocument("$exists", true))));
                 stages.Add(new("$unset", "_visibleRuns"));
             }
@@ -105,9 +109,13 @@ public sealed class MongoHistory(IMongoDatabase database)
 
     private static JsonElement Serialize(IEnumerable<BsonDocument> rows) => JsonSerializer.SerializeToElement(rows.Select(row => BsonTypeMapper.MapToDotNetValue(row)), Json);
 
-    private static BsonDocument VisibleRunLookup(string localField, string foreignField) => new("$lookup", new BsonDocument {
+    private static BsonDocument VisibleRunLookup(string localField, string foreignField, string? runId = null)
+    {
+        var filter = new BsonDocument { { "partition", new BsonDocument("$ne", "confirmation") }, { "configuration.partition", new BsonDocument("$ne", "confirmation") } };
+        if (!string.IsNullOrWhiteSpace(runId)) filter["_id"] = runId;
+        return new("$lookup", new BsonDocument {
         { "from", "evaluation_runs" }, { "localField", localField }, { "foreignField", foreignField },
-        { "pipeline", new BsonArray { new BsonDocument("$match", new BsonDocument {
-            { "partition", new BsonDocument("$ne", "confirmation") }, { "configuration.partition", new BsonDocument("$ne", "confirmation") } }),
+        { "pipeline", new BsonArray { new BsonDocument("$match", filter),
             new BsonDocument("$limit", 1), new BsonDocument("$project", new BsonDocument("_id", 1)) } }, { "as", "_visibleRuns" } });
+    }
 }
