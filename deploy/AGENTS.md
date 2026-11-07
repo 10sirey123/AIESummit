@@ -1,5 +1,7 @@
 # Local deployment and container topology
 
+Meta Muse Wonder uses the native page LLMStep and persisted APIInfo; see [Meta setup](../docs/meta-analysis.md) for version provenance, explicit key import, model selection and verification. The reader labels are provider-neutral.
+
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
 
 Use this guide for the checked-in AIESummit Compose stack, image builds, and bounded diagnostics. Start from the repository root with [start.ps1](../start.ps1). Follow [Admin.AGENTS.md](Admin.AGENTS.md), [Worker.AGENTS.md](Worker.AGENTS.md), and [Firebase.AGENTS.md](Firebase.AGENTS.md) for the individual service contracts.
@@ -156,3 +158,7 @@ After a deployment change, verify the affected images build, expected containers
 This guide draws structural lessons from the complete Horus Containers guide and Cite8's `deploy/AGENTS.md` at commit `903626a9bb4ce471bccc28490b857886d6aa5c78`, the supplied Erick reference. Cite8's packed-build approach informed the distinction between image contents and live host mounts. Its ports, scripts, profiles, initialization strategy, and optional services were not transplanted into AIESummit instructions.
 
 Keep venture deployment changes in these files and the root Compose/startup configuration. Shared framework files are references unless a framework change is explicitly part of the task.
+
+## Configuration seeding
+
+See [the implemented seeding workflow](../docs/configuration-seeding.md). `AIESummit.Configuration` exports the existing step definitions; the bundled Blueshift CLI performs validation, read-only planning and previewed transactional application. `SeedIdentities` and the idempotent `SeedSchema` upgrade support registry provenance. Default exports preserve model/enabled selections and all credentials. No publishers or provider calls run in the seed host. The one-off Docker configuration image and isolated PostgreSQL tests are documented there.

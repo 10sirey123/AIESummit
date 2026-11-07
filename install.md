@@ -219,4 +219,14 @@ For the emulator recovery above, commands are `docker compose restart emulator`,
 
 ## Enable per-page section analysis
 
+Meta Muse Wonder is also supported. After startup, run `./scripts/configure-meta.ps1 -ImportLocalKey` to explicitly import local `META_API_KEY` into persisted APIInfo and select Muse Wonder on the native page step, then `docker compose restart worker`. For a private key file, use `-KeyFile C:\private\meta-key.txt`. See [Meta setup and model-specific verification](docs/meta-analysis.md). The runtime does not read the Meta key from `.env`.
+
 After the first startup, follow [docs/page-analysis.md](docs/page-analysis.md) to configure `geminiapi` in Blueshift Admin. Store the Gemini key in `APIInfo.AppKey`, select an available Gemini model and enable `classify-page-sections`. Runtime agents use this database record, not the environment. A one-time setup helper is `./scripts/configure-gemini.ps1 -KeyFile C:\private\gemini-key.txt`; `-ImportLocalKey` explicitly imports an already supplied local key instead. Blank/omitted secret edits preserve stored values; API responses never expose them. Restart the worker after rotation. You can instead select the Azure model on the same native page step. The reader works without page analysis configuration.
+
+## Optional configuration CLI
+
+After normal startup, follow [configuration-seeding.md](docs/configuration-seeding.md) to build the one-off CLI image, add the seed registry and review/apply code-defined workflow settings. The bundled Linux CLI uses Docker and needs no additional tool installation or private package access. `./scripts/admin.ps1 build` prepares it; `export`, `validate` and `plan` prepare a review, and `apply` requires its preview token. The isolated acceptance check is `./scripts/test-seeding.ps1 -VerifyCli` after building the image.
+
+## Optional configuration CLI
+
+After normal startup, follow [configuration-seeding.md](docs/configuration-seeding.md) to build the one-off CLI image, add the seed registry and review/apply code-defined workflow settings. The bundled Linux CLI uses Docker and needs no additional tool installation or private package access. `./scripts/admin.ps1 build` prepares it; `export`, `validate` and `plan` prepare a review, and `apply` requires its preview token. The isolated acceptance check is `./scripts/test-seeding.ps1 -VerifyCli` after building the image.

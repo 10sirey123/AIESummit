@@ -1,5 +1,7 @@
 # Startup bootstrap and persisted configuration
 
+Meta Muse Wonder uses the native page LLMStep and persisted APIInfo; see [Meta setup](../docs/meta-analysis.md) for version provenance, explicit key import, model selection and verification. The reader labels are provider-neutral.
+
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
 
 Read this guide when changing startup, initial credentials, model/step seeds, agent configuration, or rotation behavior. [Bootstrap.cs](Bootstrap.cs) inserts missing configuration into `AIESummitDb`. It does not synchronize existing rows with source defaults or environment variables.
@@ -134,3 +136,7 @@ For code changes, build the API and affected agent/domain projects and use targe
 The complete Horus configuration guide was reviewed for validation and masking practices. Its required-field annotations, ASCII startup tables, section-registration types, and legacy `ConfigurationManager` bridge are not implemented by this bootstrap. Current behavior is defined by [Bootstrap.cs](Bootstrap.cs), [Program.cs](Program.cs), [compose.yaml](../compose.yaml), and [.env.example](../.env.example).
 
 Keep application-specific seed changes in this repository. Do not modify the shared framework or weaken authentication to compensate for missing or stale startup configuration.
+
+## Configuration seeding
+
+See [the implemented seeding workflow](../docs/configuration-seeding.md). `AIESummit.Configuration` exports the existing step definitions; the bundled Blueshift CLI performs validation, read-only planning and previewed transactional application. `SeedIdentities` and the idempotent `SeedSchema` upgrade support registry provenance. Default exports preserve model/enabled selections and all credentials. No publishers or provider calls run in the seed host. The one-off Docker configuration image and isolated PostgreSQL tests are documented there.

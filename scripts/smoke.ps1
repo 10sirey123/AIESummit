@@ -1,4 +1,5 @@
-param([int]$TimeoutSeconds = 180, [switch]$VerifyPageSections, [switch]$KeepTestSession, [switch]$ContractFixture)
+param([int]$TimeoutSeconds = 180, [switch]$VerifyPageSections, [switch]$KeepTestSession, [switch]$ContractFixture,
+    [string]$ExpectedPageModel)
 $ErrorActionPreference = 'Stop'
 $origin = 'http://localhost:18080'
 $auth = 'http://localhost:19099/identitytoolkit.googleapis.com/v1/accounts:'
@@ -126,6 +127,15 @@ try {
             Where-Object { $_.DocumentID -in $result.pages.id }
         if (@($pagePrompts).Count -ne 3 -or @($pagePrompts | Where-Object { $_.ProcessingStatus -ne 'Processed' -or !$_.UsedModel }).Count) {
             throw 'Admin must show three processed page prompts with a linked used model.'
+        }
+        if ($ExpectedPageModel) {
+            foreach ($pagePrompt in $pagePrompts) {
+                $usedModel = Invoke-RestMethod "http://localhost:13088/admin/v1/entities/LLMModel/$($pagePrompt.UsedModel.id)" -Headers $adminHeaders
+                if ($usedModel.Name -ne $ExpectedPageModel -or ($ExpectedPageModel -like 'muse-*' -and $usedModel.Provider -ne 'Meta')) {
+                    throw "Page prompt $($pagePrompt.ID) did not resolve through the expected model/provider."
+                }
+            }
+            Write-Host "Verified all three page prompts used $ExpectedPageModel. Prompt IDs: $($pagePrompts.ID -join ', ')."
         }
         Write-Host "Verified source-byte fidelity/ownership and three completed native page-section workflows for upload $id."
     }

@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="AIESummit.Agents/AIESummit.Agents.csproj" />
+  <Project Path="AIESummit.Configuration/AIESummit.Configuration.csproj" />
   <Project Path="AIESummit.Api/AIESummit.Api.csproj" />
   <Project Path="AIESummit.Domain/AIESummit.Domain.csproj" />
   <Project Path="AIESummit.Tests/AIESummit.Tests.csproj" />

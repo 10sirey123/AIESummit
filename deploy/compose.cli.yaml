@@ -1,0 +1,12 @@
+services:
+  configuration:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: configuration
+    environment:
+      ConnectionStrings__AIESummitDb: Host=postgres;Database=aiesummit;Username=aiesummit;Password=aiesummit-local
+    volumes:
+      - ./artifacts/seeding:/seeds
+    entrypoint: [dotnet, /cli/Blueshift.CLI.dll]

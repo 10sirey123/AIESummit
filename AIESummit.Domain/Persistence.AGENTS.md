@@ -10,7 +10,7 @@ The authoritative context is `AIESummitDb` in [AIESummitDb.cs](AIESummitDb.cs). 
 
 ## Current database lifecycle
 
-`Bootstrap.InitializeAsync` calls `db.Database.EnsureCreatedAsync()` at API startup. This initializes an empty database model. It does not compare an existing schema with changed classes and apply upgrades. There is no application migrations directory, model snapshot, migration command wrapper or established migration baseline in this repository.
+`Bootstrap.InitializeAsync` calls `db.Database.EnsureCreatedAsync()` at API startup. This initializes an empty database model. It does not compare an existing schema with changed classes and apply upgrades. The API has an explicit page-section SQL upgrade, and `SeedSchema` adds the registry table/indexes. These targeted upgrades are not a general migration pipeline or model snapshot.
 
 Do not claim that restarting the API applies entity changes. A build can pass while the database still has the old column, index or foreign-key shape. Similarly, `EnsureCreatedAsync` returning without an error is not evidence that an existing database matches the new model.
 
@@ -181,3 +181,7 @@ Current application evidence is [AIESummitDb.cs](AIESummitDb.cs), [Program.cs](.
 Framework evidence is [EFBaseDbContext.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBaseDbContext.cs), [EFBasePersistenceRepository.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/EFBasePersistenceRepository.cs) and [CommitPublications.cs](https://github.com/10123IO/10.Blueshift.123/blob/cc69aa4da64bf313ec7120711624816c7f9d4254/Blueshift.Domain/Concrete/CommitPublications.cs). Inspect the pinned dependency read-only unless the task explicitly concerns a framework change.
 
 The complete reference `../../horus/Horus.Domain/Entities/migrations.AGENTS.md` motivates the build, inspect, apply and verify discipline. Its EF6 commands, environment details, credential examples, temporary naming convention and history-repair procedures are not portable instructions for this repository. This guide deliberately supplies no copied credential or unverified migration command.
+
+## Configuration seeding
+
+See [the implemented seeding workflow](../docs/configuration-seeding.md). `AIESummit.Configuration` exports the existing step definitions; the bundled Blueshift CLI performs validation, read-only planning and previewed transactional application. `SeedIdentities` and the idempotent `SeedSchema` upgrade support registry provenance. Default exports preserve model/enabled selections and all credentials. No publishers or provider calls run in the seed host. The one-off Docker configuration image and isolated PostgreSQL tests are documented there.

@@ -542,7 +542,7 @@
             "description": "Upload not found for this owner"
           },
           "409": {
-            "description": "Gemini APIInfo or page LLMStep is not configured/enabled"
+            "description": "Selected model APIInfo or page LLMStep is not configured/enabled"
           }
         }
       }

@@ -1,5 +1,7 @@
 # AIESummit
 
+Meta Muse Wonder is available through the same native Blueshift page-section LLMStep. See [Meta configuration and verification](docs/meta-analysis.md) for the bundled version, explicit `.env`-to-APIInfo import and the model-specific acceptance check.
+
 AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Per-page section descriptions are implemented; specialized clause extraction and legal risk analysis remain future work. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
 
 ## Run locally
@@ -112,3 +114,7 @@ The first command downloads all pinned CUAD, MAUD, and EDGAR-CORPUS files into `
 See [the benchmark catalog](corporea/README.md) for original-PDF availability, sources, licenses, and evaluation limitations. Dataset payloads are excluded from Git; download tooling, documentation, and source pins are tracked.
 
 Build the application with `dotnet build AIESummit.slnx --nologo`. Run `dotnet test AIESummit.Tests/AIESummit.Tests.csproj` for focused section-validation and mapping tests.
+
+## Synchronize workflow configuration from code
+
+The bundled Blueshift CLI supports reviewed, transactional code-to-database configuration updates. Run `./scripts/admin.ps1 build`, `schema`, `export`, then `plan`; apply with `./scripts/admin.ps1 apply -Preview <reviewed-token>`. Default exports update the actual LLMStep definitions while preserving credentials, selected models, enabled settings and prompt history. See [configuration seeding](docs/configuration-seeding.md) for the complete flow, optional model bindings, policies and isolated verification. No private Blueshift access is required.

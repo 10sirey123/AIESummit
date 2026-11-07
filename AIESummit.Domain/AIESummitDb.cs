@@ -21,6 +21,7 @@ public sealed class AIESummitDb(DbContextOptions options) : EFBaseDbContext(opti
     public DbSet<OcrAgentConfig> OcrAgentConfigs => Set<OcrAgentConfig>();
     public DbSet<BackendActivity> BackendActivities => Set<BackendActivity>();
     public DbSet<LogLineStore> LogLineStores => Set<LogLineStore>();
+    public DbSet<SeedIdentity> SeedIdentities => Set<SeedIdentity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,15 @@ public sealed class AIESummitDb(DbContextOptions options) : EFBaseDbContext(opti
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        // SeedImporter constructs detached records; initialize legacy nonnullable diagnostics
+        // without managing or overwriting existing operator values.
+        foreach (var entry in ChangeTracker.Entries<LLMStep>().Where(e => e.State == EntityState.Added))
+        {
+            var step = entry.Entity;
+            step.Description ??= ""; step.LambdaValidation ??= ""; step.DTOResponseTypeValidation ??= "";
+            step.LatestError ??= ""; step.SystemRoleTemplateValidation ??= ""; step.TemplateValidation ??= "";
+            step.Parser ??= ""; step.ReasoningEffort ??= ""; step.MultimodalLambda ??= "";
+        }
         foreach (var entry in ChangeTracker.Entries<LLMPrompt>()
                      .Where(entry => entry.State is EntityState.Added or EntityState.Modified))
         {

@@ -136,7 +136,7 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
       </article>
       <aside key={page.number} className="annotation-panel" id={`annotations-${uploadId}`} aria-labelledby={`annotations-title-${uploadId}`} hidden={!annotations}>
         <h3 id={`annotations-title-${uploadId}`}>Page sections</h3>
-        <p className="annotation-context">Page {page.number} · Gemini analysis</p>
+        <p className="annotation-context">Page {page.number} · AI analysis</p>
         {page.analysisStatus === 'ready' ? <>
           <p className="analysis-status" role="status">Analysis complete · {page.sections.length} sections</p>
           {!page.sections.length && <p className="annotation-empty">No identifiable sections were returned for this page.</p>}
@@ -148,8 +148,8 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
         </> : <div className="annotation-empty">
           <MessageSquare size={23} aria-hidden="true" />
           <h4>{page.analysisStatus === 'analyzing' ? 'Analyzing this page…' : page.analysisStatus === 'failed' ? 'Analysis needs attention' : 'No section analysis yet'}</h4>
-          <p>{page.error ?? (page.analysisStatus === 'analyzing' ? 'The section classifications and summaries will appear automatically.' : 'Analyze this upload with Gemini to identify and summarize the sections on each page.')}</p>
-          {page.analysisStatus === 'not_started' && <button className="button secondary" disabled={queuing} onClick={() => void analyze()}>{queuing ? 'Queuing…' : 'Analyze pages with Gemini'}</button>}
+          <p>{page.error ?? (page.analysisStatus === 'analyzing' ? 'The section classifications and summaries will appear automatically.' : 'Analyze this upload to identify and summarize the sections on each page.')}</p>
+          {page.analysisStatus === 'not_started' && <button className="button secondary" disabled={queuing} onClick={() => void analyze()}>{queuing ? 'Queuing…' : 'Analyze pages'}</button>}
         </div>}
         {analysisError && <p role="alert" className="error">{analysisError}</p>}
       </aside>

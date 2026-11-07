@@ -181,3 +181,7 @@ The full reference guide at `../../horus/Horus.Domain/Entities/AGENTS.md` motiva
 | Put `NotMapped` on display collections | Decide persistence independently and keep real relationships mapped |
 | Use the historical LLM interface name | Implement current `ILlmCapable` plus registered policies |
 | Require nested public DTOs | Preserve explicit API projections and matching OpenAPI contracts |
+
+## Configuration seeding
+
+See [the implemented seeding workflow](../docs/configuration-seeding.md). `AIESummit.Configuration` exports the existing step definitions; the bundled Blueshift CLI performs validation, read-only planning and previewed transactional application. `SeedIdentities` and the idempotent `SeedSchema` upgrade support registry provenance. Default exports preserve model/enabled selections and all credentials. No publishers or provider calls run in the seed host. The one-off Docker configuration image and isolated PostgreSQL tests are documented there.

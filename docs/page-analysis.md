@@ -13,13 +13,13 @@ This is the supplied Blueshift LLMStep system, not a separate LLM execution loop
 1. OCR persists each `OcrPage` and sets its `LLMStepStatus` to `CheckForPrompts`.
 2. Framework `LLMStepAgent<OcrPage>` hydrates the full page and its mapped `LLMPrompts` collection.
 3. The persisted, code-backed `LLMStep` tagged `classify-page-sections` creates one `LLMPrompt` per page through `LLMPromptFactory`.
-4. Framework `LlmPromptAgent` / `LlmPromptWorker` resolves that prompt through the configured Gemini provider.
+4. Framework `LlmPromptAgent` / `LlmPromptWorker` resolves that prompt through the configured provider (Gemini, Meta or Azure/OpenAI). See [Meta Muse Wonder setup](meta-analysis.md).
 5. `PageSectionsResult.ConnectTo` validates the response and stores the sections on that page. Summaries/classifications are generated descriptions; each separate `quote` must be an exact substring of that page's original Markdown. Invalid evidence is rejected before applying any result. There are no legal risk scores or legal advice.
 6. The framework re-evaluates the subject and reaches `Processed` after its prompts resolve. The API exposes per-page state/results; the browser polls while analysis is pending.
 
 The existing `split-upload` step remains on `UploadedFile` and continues using Azure. Its result/state is separate from page-section analysis. `UploadedFile_ID` and `OcrPage_ID` are separate persisted prompt relationships; `DocumentType`/`DocumentID` are the framework's logical dispatch identity. Worker queues and recovery include `ocrpage`, and telemetry correlates page runs/prompts to their root upload.
 
-Existing pages are **not** automatically backfilled or sent to a newly configured provider. The owner can explicitly use **Analyze pages with Gemini**, which posts to `/api/v1/uploads/{id}/analyze`. This queues only pages without existing analysis or prompts. Failed prompts are retained for inspection and are not silently reset or deleted. New uploads use the enabled page step automatically. An unconfigured/disabled step leaves pages without analysis; configure it before queueing work.
+Existing pages are **not** automatically backfilled or sent to a newly configured provider. The owner can explicitly use **Analyze pages**, which posts to `/api/v1/uploads/{id}/analyze`. This queues only pages without existing analysis or prompts. Failed prompts are retained for inspection and are not silently reset or deleted. New uploads use the enabled page step automatically. An unconfigured/disabled step leaves pages without analysis; configure it before queueing work.
 
 ## Configure Gemini as APIInfo
 

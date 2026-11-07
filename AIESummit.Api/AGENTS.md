@@ -1,5 +1,7 @@
 # AIESummit.Api
 
+Meta configuration is described in [the Meta guide](../docs/meta-analysis.md). Bootstrap seeds only missing disabled APIInfo/model records and never imports a Meta environment key. The explicit analysis endpoint checks the APIInfo corresponding to the enabled page step's selected provider, including Meta; do not hardcode Gemini availability.
+
 Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
 
 This .NET 10 ASP.NET Core application serves the browser client and its Firebase-authenticated upload API. It uses handwritten minimal endpoints, PostgreSQL through EF Core, and BlueShift publishers for background processing. The separate central BlueShift Admin host owns operator configuration and processing inspection.

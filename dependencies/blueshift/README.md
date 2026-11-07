@@ -11,6 +11,8 @@ The bundle is built from the `net10` source revision recorded in [manifest.json]
 | `worker-linux-x64.tar.gz` | Shared worker host and all its publish dependencies |
 | `admin-api-linux-x64.tar.gz` | Shared Admin API and all its publish dependencies |
 | `admin-web.tar.gz` | Built Admin website |
+| `cli-linux-x64.tar.gz` | One-off configuration/repository CLI host |
+| `cli-linux-x64.tar.gz` | One-off configuration/repository CLI host |
 | `bootstrap-admin-auth.ps1` | Local operator settings/token generation |
 | `nginx.conf` | Admin website proxy configuration |
 
@@ -36,7 +38,7 @@ From the AIESummit repository root, pass that checkout's absolute path:
 ./scripts/verify-dependencies.ps1
 ```
 
-The packaging script rejects a mismatched revision or dirty checkout, builds in Linux containers using [Blueshift.Bundle.Dockerfile](../../deploy/Blueshift.Bundle.Dockerfile), exports to an ignored staging directory, then copies the seven expected artifacts and records hashes/provenance in the manifest. It does not fetch or advance a branch automatically. It builds NuGet libraries, the two Linux hosts and the Admin website from the same source revision. Sources and credentials are not published in the bundle. Compiler warnings remain visible in the build output.
+The packaging script rejects a mismatched revision or dirty checkout, builds in Linux containers using [Blueshift.Bundle.Dockerfile](../../deploy/Blueshift.Bundle.Dockerfile), exports to an ignored staging directory, then copies the eight expected artifacts and records hashes/provenance in the manifest. It does not fetch or advance a branch automatically. It builds NuGet libraries, the worker, Admin API and CLI Linux hosts and the Admin website from the same source revision. Sources and credentials are not published in the bundle. Compiler warnings remain visible in the build output.
 
 For an upgrade, pass explicit `-ExpectedCommit` and a new unique `-Version`, update the exact package versions in both application project files, and deliberately remove obsolete `.nupkg` files. Never replace a package with different bytes under a previously used version: NuGet caches packages by identity/version. Check the generated package dependencies as well as the manifest, then build the solution and all Docker targets, start the stack and run the synthetic provider-backed smoke test. Commit the packages, archives, manifest, corresponding reference changes and updated documentation together. Each artifact must stay below GitHub's 100 MiB file limit.
 
@@ -44,6 +46,10 @@ For an upgrade, pass explicit `-ExpectedCommit` and a new unique `-Version`, upd
 
 Blueshift is authored by 10.123 Ventures; source repository: [10123IO/10.Blueshift.123](https://github.com/10123IO/10.Blueshift.123). The source revision and branch are provenance, not a consumer access requirement. Distribution of this bundle in AIESummit was explicitly requested by the repository owner. No license file was found at the source repository root at this revision; do not infer that Blueshift is open source. Third-party components retain their own licenses. NuGet package metadata/dependency groups and the hosts' `.deps.json` files identify their dependencies. Do not publish secrets, real documents, source maps or local authentication configuration in a refreshed bundle.
 
-## API-key Gemini and Admin compatibility patches
+## Meta, API-key Gemini and Admin compatibility patches
 
-The current bundle is built from the recorded upstream commit plus the two patches listed under `sourcePatches` in the manifest. `gemini-api-key.patch` adds official Developer API key/JSON-schema support without changing the Vertex service-account path and records the actual selected model on Gemini responses. `admin-apiinfo-secrets.patch` makes APIInfo credentials write-only editable in Admin; generic reads and broadcasts continue to exclude them. The packaging Dockerfile applies these tracked patches to a clean source context; normal consumers use only the resulting binaries. Patch bytes are preserved by `.gitattributes`. See `../../docs/page-analysis.md` for setup and validation.
+The current bundle (`10.0.0-aiesummit.cc69aa4.meta1`) is built from the recorded upstream commit plus three patches listed under `sourcePatches` in the manifest. `meta-provider.patch` captures the sibling framework's `10.0.0-preview.meta.1` source changes: Meta enum/factory registration and the native Responses adapter. It is a snapshot of local source changes, not a newer published upstream commit. `gemini-api-key.patch` adds official Developer API key/JSON-schema support without changing the Vertex service-account path and records the actual selected model on Gemini responses. `admin-apiinfo-secrets.patch` makes APIInfo credentials write-only editable in Admin; generic reads and broadcasts continue to exclude them. The packaging Dockerfile normalizes source line endings and applies these tracked patches to a clean source context; normal consumers use only the resulting binaries. Patch bytes are preserved by `.gitattributes`. See [page analysis](../../docs/page-analysis.md) and [Meta setup](../../docs/meta-analysis.md).
+
+The bundled CLI is used by [configuration seeding](../../docs/configuration-seeding.md); its native framework seed commands are exposed through `scripts/admin.ps1`. It uses the same recorded source revision, patches and version as the other hosts.
+
+The bundled CLI is used by [configuration seeding](../../docs/configuration-seeding.md); its native framework seed commands are exposed through `scripts/admin.ps1`. It uses the same recorded source revision, patches and version as the other hosts.

@@ -93,9 +93,17 @@ internal static class UploadEndpoints
     private static async Task<IResult> AnalyzePages(int id, ClaimsPrincipal user, AIESummitDb db, CancellationToken token)
     {
         if (!await db.Uploads.AnyAsync(u => u.ID == id && u.OwnerId == Owner(user), token)) return Results.NotFound();
-        if (!await db.APIInfos.AnyAsync(a => a.Identifier == "geminiapi" && a.Enabled && a.AppKey != "", token)
-            || !await db.LLMSteps.AnyAsync(s => s.Tag == "classify-page-sections" && s.Enabled, token))
-            return Results.Problem("Configure and enable Gemini APIInfo and the page classification step in Admin first.", statusCode: 409);
+        var step = await db.LLMSteps.Include(s => s.Model)
+            .SingleOrDefaultAsync(s => s.Tag == "classify-page-sections" && s.Enabled, token);
+        var identifier = step?.Model?.Provider switch
+        {
+            LLMAPIProvider.Gemini => "geminiapi",
+            LLMAPIProvider.Meta => "meta",
+            LLMAPIProvider.OpenAI => "openai",
+            _ => null
+        };
+        if (identifier is null || !await db.APIInfos.AnyAsync(a => a.Identifier == identifier && a.Enabled && a.AppKey != "", token))
+            return Results.Problem("Configure and enable the page classification step, its model and the matching APIInfo in Admin first.", statusCode: 409);
         var pages = await db.Pages.Include(p => p.LLMPrompts).Where(p => p.UploadId == id).ToListAsync(token);
         foreach (var page in pages.Where(p => p.SectionsJson == "" && p.LLMPrompts.Count == 0))
             page.LLMStepStatus = StepProcessingStatus.CheckForPrompts;

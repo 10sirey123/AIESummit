@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)][string]$SourcePath,
     [string]$ExpectedCommit = 'cc69aa4da64bf313ec7120711624816c7f9d4254',
-    [string]$Version = '10.0.0-aiesummit.cc69aa4.gemini3'
+    [string]$Version = '10.0.0-aiesummit.cc69aa4.meta1'
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -19,7 +19,7 @@ if ($LASTEXITCODE) { throw 'Blueshift bundle build failed; existing dependencies
 $expectedFiles = @(
     "packages/10123.Blueshift.Domain.$Version.nupkg",
     "packages/10123.Blueshift.Agents.$Version.nupkg",
-    'worker-linux-x64.tar.gz', 'admin-api-linux-x64.tar.gz', 'admin-web.tar.gz',
+    'worker-linux-x64.tar.gz', 'admin-api-linux-x64.tar.gz', 'admin-web.tar.gz', 'cli-linux-x64.tar.gz',
     'bootstrap-admin-auth.ps1', 'nginx.conf'
 )
 $inventory = foreach ($relativePath in $expectedFiles) {

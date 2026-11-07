@@ -16,6 +16,7 @@ internal static class Bootstrap
         var key = config["AZURE_FOUNDRY_KEY"] ?? throw new InvalidOperationException("Foundry key is required.");
         await using var transaction = await db.Database.BeginTransactionAsync();
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(825833001)");
+        await SeedSchema.ApplyInTransactionAsync(db);
         await using (var migration = typeof(Bootstrap).Assembly.GetManifestResourceStream("AIESummit.Api.Migrations.001-page-sections.sql")
             ?? throw new InvalidOperationException("Page sections upgrade is missing."))
         using (var reader = new StreamReader(migration))
@@ -23,6 +24,12 @@ internal static class Bootstrap
         await AddCredential("mistral-ocr", config["OCR_ENDPOINT"] ?? endpoint + "/providers/mistral/azure/ocr",
             config["OCR_MODEL"] ?? "mistral-ocr-4-0");
         await AddCredential("openai", config["LLM_ENDPOINT"] ?? endpoint, null);
+        // Provision provider identity only; keys are deliberately imported through Admin.
+        if (!await db.APIInfos.AnyAsync(a => a.Identifier == "meta"))
+            db.APIInfos.Add(new APIInfo { Identifier = "meta", BaseURI = "https://api.meta.ai/v1",
+                AppKey = "", AppSecret = "", Enabled = false, AuthorizationType = ApiAuthorizationType.ApiKey });
+        if (!await db.LLMModels.AnyAsync(m => m.Tag == "meta-muse-wonder"))
+            db.LLMModels.Add(new LLMModel { Tag = "meta-muse-wonder", Name = "muse-wonder-1.0", Provider = LLMAPIProvider.Meta });
         if (!await db.APIInfos.AnyAsync(a => a.Identifier == "geminiapi"))
             db.APIInfos.Add(new APIInfo { Identifier = "geminiapi", BaseURI = "https://generativelanguage.googleapis.com/v1beta/models/",
                 AppKey = "", AppSecret = "", Enabled = false, AuthorizationType = ApiAuthorizationType.ApiKey });

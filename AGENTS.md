@@ -34,7 +34,7 @@ Unlinked focused companion filenames in a row are relative to that row's directo
 
 | Path | Responsibility |
 | --- | --- |
-| `AIESummit.slnx` | Application projects plus BlueShift domain and agents library references |
+| `AIESummit.slnx` | Application, configuration exporter and test projects plus BlueShift library references |
 | `AIESummit.Domain/` | One source file per entity, plus `AIESummitDb.cs` for table registration and EF mappings |
 | `AIESummit.Agents/OcrAgent.cs` | OCR agent and API browser integration |
 | `AIESummit.Agents/SplitStep.cs` | Code-defined split step, structured result, subject policies and agent pack services |
@@ -197,7 +197,7 @@ The current Cite8 reference is Erick's most recently authored branch head found 
 
 Cite8 confirms the modern shared Admin, EF Core/PostgreSQL domain pack and BlueShift worker arrangement. Its product App, CLI overlays, migration pipeline, authored skills, Stripe/Auth0 setup and issue-management workflow are Cite8-specific and are not implemented or mandated here. Recheck recent branch activity before a later reference refresh. Do not change AIESummit's dependency pin merely to match a reference branch.
 
-Current local evidence is `README.md`, `AIESummit.slnx`, `compose.yaml`, the implementation paths listed above, `deploy/Dockerfile`, `deploy/worker.overlay.json`, `start.ps1`, `scripts/smoke.ps1`, `.gitignore`, and the bundled Blueshift package contracts. Features such as a standalone CLI, general migration pipeline, generated C# API implementation or upload deletion workflow require implementation work before they can be documented as available.
+Current local evidence is `README.md`, `AIESummit.slnx`, `compose.yaml`, the implementation paths listed above, `deploy/Dockerfile`, `deploy/worker.overlay.json`, `start.ps1`, `scripts/smoke.ps1`, `.gitignore`, and the bundled Blueshift package contracts. Features such as a general migration pipeline, generated C# API implementation or upload deletion workflow require implementation work before they can be documented as available. The bundled operator CLI and configuration exporter are documented below.
 
 ## Contract-analysis scope and benchmark guidance
 
@@ -245,8 +245,18 @@ The intake scaffold above was imported from the working tree of `../hackathon` (
 
 ## Page reader and section-analysis workflow
 
+Meta support is bundled as `10.0.0-aiesummit.cc69aa4.meta1`, combining the sibling framework's `10.0.0-preview.meta.1` changes with existing compatibility patches. Read [Meta setup and validation](docs/meta-analysis.md). Bootstrap seeds disabled empty-key `APIInfo(meta)` and `LLMModel(meta-muse-wonder)` without changing existing selections. `scripts/configure-meta.ps1 -ImportLocalKey` explicitly imports local `META_API_KEY` into write-only APIInfo and selects `muse-wonder-1.0` on the native page LLMStep. Workers resolve the persisted key. Keep the Meta patch, package pins, all hosts and manifest together. Use `-ExpectedPageModel muse-wonder-1.0` with the page smoke to assert the actual used model/provider, not only a successful response. Five focused .NET tests cover evidence/mapping and the Meta transport contract.
+
 Read [docs/page-analysis.md](docs/page-analysis.md) for the original-source endpoint, one-page PDF/Markdown reader, Gemini APIInfo setup, native LLMStep processing, additive schema upgrade and validation. `OcrPage` now implements `ILlmCapable` with its own mapped `LLMPrompts` (`OcrPage_ID`), step state, result JSON, validated section JSON and error. `PageSectionsStep` (`classify-page-sections`) runs through framework `LLMStepAgent<OcrPage>`, `LLMPromptFactory` and `LlmPromptAgent`; it is not an application provider loop. Its generated summaries/classifications must retain separately validated exact source quotes. Telemetry resolves page subjects/prompts to the root upload; worker/recovery include `ocrpage` queues.
 
 Gemini configuration is the persisted APIInfo with identifier `geminiapi`, official Developer API models endpoint and key in write-only `AppKey`, plus the `gemini-page-sections` model. Bootstrap creates a disabled empty-key record and preserves operator edits. Runtime never reads a Gemini key from `.env`; `scripts/configure-gemini.ps1` offers an explicit one-time import or private key-file input through Admin. The bundle records compatibility patches for Developer API-key authentication/structured JSON and Admin write-only APIInfo secrets. Keep patches, package references, hosts and manifest in sync; use new package versions for changed binaries.
 
 New uploads use enabled page analysis. Existing pages are never automatically backfilled into a new external provider. The owner's explicit `/uploads/{id}/analyze` action queues only pages without prompts/results, preserving failures for Admin diagnosis. Test with `./scripts/smoke.ps1 -VerifyPageSections -KeepTestSession -ContractFixture`; this uses synthetic MSA/NDA material, live configured providers, and saves only synthetic test-login information under ignored artifacts. Do not send private documents to a new provider merely to verify a workflow.
+
+## Code-to-database configuration seeding
+
+The bundled Blueshift CLI and `AIESummit.Configuration` exporter are implemented; see [configuration-seeding.md](docs/configuration-seeding.md). `scripts/admin.ps1 build`, `schema`, `export`, `validate`, `plan`, and `apply -Preview <token>` operate through a one-off Docker service. Export actual C# step definitions; use framework SeedPlanner/SeedImporter, never a second importer. Default updates preserve credentials, model choices and enabled flags; optional `export -IncludeBindings` deliberately manages model/enabled settings too. New default-export steps remain disabled/unbound. Model/API seed records use keep policy.
+
+`AIESummitDb.SeedIdentities` maps the provenance registry. `SeedSchema` adds only its table/indexes, under the existing bootstrap advisory lock or through the explicit schema command. Startup remains missing-only for configuration. Seed apply uses a dedicated context and no queue publishers; it never replays LLMPrompts or invokes providers. Planning is read-only; application requires the same manifest/policy and reviewed preview token.
+
+The bundle now includes eight checksummed artifacts, adding `cli-linux-x64.tar.gz`. `AIESummit.Configuration` is included in the solution; normal users need no private framework access. Run `scripts/test-seeding.ps1 -VerifyCli` after building the configuration image for isolated PostgreSQL/CLI acceptance. It creates and removes only its own disposable test container. Ordinary `dotnet test` skips the explicit PostgreSQL test unless its dedicated test connection is set.

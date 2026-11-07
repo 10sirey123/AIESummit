@@ -1,0 +1,6 @@
+{
+  "domainPack": "/packs/AIESummit.Domain.dll",
+  "dbContext": "AIESummit.Domain.AIESummitDb",
+  "connectionStringName": "AIESummitDb",
+  "venturePrefix": "aiesummit"
+}

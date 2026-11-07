@@ -1,0 +1,193 @@
+diff --git a/Blueshift.Agents/AgentServiceCollectionExtensions.cs b/Blueshift.Agents/AgentServiceCollectionExtensions.cs
+index 15c8e8b..811d3a5 100644
+--- a/Blueshift.Agents/AgentServiceCollectionExtensions.cs
++++ b/Blueshift.Agents/AgentServiceCollectionExtensions.cs
+@@ -36,6 +36,7 @@ public static class AgentServiceCollectionExtensions
+         services.AddHttpClient(nameof(OpenSearchLogManager));
+         services.AddHttpClient(LlmProviderFactory.OpenAIClientName);
+         services.AddHttpClient(LlmProviderFactory.GeminiClientName);
++        services.AddHttpClient(LlmProviderFactory.MetaClientName);
+         services.TryAddSingleton<ILlmProviderFactory>(sp =>
+             new LlmProviderFactory(
+                 sp.GetRequiredService<IHttpClientFactory>(),
+diff --git a/Blueshift.Agents/LLM/LlmPromptContracts.cs b/Blueshift.Agents/LLM/LlmPromptContracts.cs
+index 74c38f3..05fe06e 100644
+--- a/Blueshift.Agents/LLM/LlmPromptContracts.cs
++++ b/Blueshift.Agents/LLM/LlmPromptContracts.cs
+@@ -17,6 +17,7 @@ namespace Blueshift.Agents.LLM
+     public interface ILlmProviderFactory
+     {
+         OpenAI.OpenAIAPI CreateOpenAI();
++        Meta.MetaAPI CreateMeta() => new();
+         Gemini.GeminiAPI CreateGemini();
+         Mock.MockAPI CreateMock();
+     }
+diff --git a/Blueshift.Agents/LLM/LlmPromptWorker.cs b/Blueshift.Agents/LLM/LlmPromptWorker.cs
+index 95b8a82..f7a432a 100644
+--- a/Blueshift.Agents/LLM/LlmPromptWorker.cs
++++ b/Blueshift.Agents/LLM/LlmPromptWorker.cs
+@@ -386,7 +386,11 @@ namespace Blueshift.Agents.LLM
+             switch (provider)
+             {
+                 case LLMAPIProvider.OpenAI:
+-                    identifier = providers.CreateOpenAI().APIIdentifier?.ToLower();
++                case LLMAPIProvider.Meta:
++                    Func<OpenAIAPI> createResponsesProvider = provider == LLMAPIProvider.Meta
++                        ? () => providers.CreateMeta()
++                        : providers.CreateOpenAI;
++                    identifier = provider == LLMAPIProvider.Meta ? "meta" : "openai";
+ 
+                     // obtain from database or cache only what matters from ApiInfo
+                     api_info = GetApiProjection(
+@@ -407,12 +411,12 @@ namespace Blueshift.Agents.LLM
+                     //    .Objects
+                     //    .FirstOrDefault((APIInfo a) => a.Identifier.ToLower() == identifier);
+ 
+-                    OpenAIAPI apiOpenAI = await getAPI(api_info, providers.CreateOpenAI);
+-                    apiOpenAI.SetModel(model);
+-                    apiOpenAI.Logger = message => Log(obj, message, LogLineType.Trace);
++                    OpenAIAPI apiOpenAI = await getAPI(api_info, createResponsesProvider);
+                     if (apiOpenAI != null)
+                     {
+-                        Log(obj, $"calling OpenAI API at " + apiOpenAI.ApiBaseUri);
++                        apiOpenAI.SetModel(model);
++                        apiOpenAI.Logger = message => Log(obj, message, LogLineType.Trace);
++                        Log(obj, $"calling {provider} API at " + apiOpenAI.ApiBaseUri);
+                         return await apiOpenAI.GetResponse(obj, multimodalFiles);
+                     }
+                     break;
+diff --git a/Blueshift.Agents/LLM/LlmProviderFactory.cs b/Blueshift.Agents/LLM/LlmProviderFactory.cs
+index 7e4aeda..fcf1114 100644
+--- a/Blueshift.Agents/LLM/LlmProviderFactory.cs
++++ b/Blueshift.Agents/LLM/LlmProviderFactory.cs
+@@ -7,6 +7,7 @@ public sealed class LlmProviderFactory : ILlmProviderFactory
+ {
+     public const string OpenAIClientName = "Blueshift.LLM.OpenAI";
+     public const string GeminiClientName = "Blueshift.LLM.Gemini";
++    public const string MetaClientName = "Blueshift.LLM.Meta";
+ 
+     private readonly IHttpClientFactory httpClients;
+     private readonly IConfiguration configuration;
+@@ -20,6 +21,9 @@ public sealed class LlmProviderFactory : ILlmProviderFactory
+     public OpenAI.OpenAIAPI CreateOpenAI()
+         => new(httpClients.CreateClient(OpenAIClientName));
+ 
++    public Meta.MetaAPI CreateMeta()
++        => new(httpClients.CreateClient(MetaClientName));
++
+     public Gemini.GeminiAPI CreateGemini()
+         => new(
+             httpClients.CreateClient(GeminiClientName),
+diff --git a/Blueshift.Agents/LLM/Meta/MetaAPI.cs b/Blueshift.Agents/LLM/Meta/MetaAPI.cs
+new file mode 100644
+index 0000000..d10991f
+--- /dev/null
++++ b/Blueshift.Agents/LLM/Meta/MetaAPI.cs
+@@ -0,0 +1,37 @@
++using System.Net.Http.Headers;
++using Blueshift.Agents.LLM.OpenAI;
++using Blueshift.Domain.Entities;
++
++namespace Blueshift.Agents.LLM.Meta;
++
++/// <summary>Meta Model API using the shared Responses protocol and persisted APIInfo credentials.</summary>
++public class MetaAPI : OpenAIAPI
++{
++    public MetaAPI() { }
++    public MetaAPI(HttpClient client) : base(client) { }
++
++    public override string APIIdentifier => "meta";
++    protected override LLMAPIProvider Provider => LLMAPIProvider.Meta;
++
++    protected override void ConfigureAuthentication(HttpClient client)
++    {
++        client.DefaultRequestHeaders.Remove("api-key");
++        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AppKey);
++    }
++
++    protected override string GetResponsesEndpoint()
++    {
++        var endpoint = AzureEndpoint ?? ApiBaseUri?.ToString();
++        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
++            || uri.Scheme != Uri.UriSchemeHttps || uri.Host != "api.meta.ai"
++            || !uri.IsDefaultPort || !string.IsNullOrEmpty(uri.UserInfo)
++            || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment)
++            || uri.AbsolutePath.TrimEnd('/') is not ("" or "/v1" or "/v1/responses"))
++            throw new InvalidOperationException("Meta APIInfo.BaseURI must be https://api.meta.ai/v1.");
++
++        return "https://api.meta.ai/v1/responses";
++    }
++
++    protected override string GetAudioTranscriptionsEndpoint()
++        => throw new NotSupportedException("Meta audio transcription is not supported by this adapter. Use text or image inputs through LLMPrompt.");
++}
+diff --git a/Blueshift.Agents/LLM/OpenAI/OpenAI.cs b/Blueshift.Agents/LLM/OpenAI/OpenAI.cs
+index be91094..fa3320a 100644
+--- a/Blueshift.Agents/LLM/OpenAI/OpenAI.cs
++++ b/Blueshift.Agents/LLM/OpenAI/OpenAI.cs
+@@ -40,6 +40,7 @@ namespace Blueshift.Agents.LLM.OpenAI
+         public string Model { get; set; }
+         public string AzureEndpoint { get; set; }
+         public int? MaxOutputTokens { get; set; }
++        protected virtual LLMAPIProvider Provider => LLMAPIProvider.OpenAI;
+ 
+         public OpenAIAPI(string appkey) : this(appkey, null, null) { }
+ 
+@@ -67,13 +68,19 @@ namespace Blueshift.Agents.LLM.OpenAI
+             var client = httpClient ?? new HttpClient();
+             client.Timeout = TimeSpan.FromMinutes(3);
+ 
+-            client.DefaultRequestHeaders.Remove("api-key");
+-            client.DefaultRequestHeaders.TryAddWithoutValidation("api-key", AppKey);
++            ConfigureAuthentication(client);
+             client.DefaultRequestHeaders.Accept.Clear();
+             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+             return client;
+         }
+ 
++        protected virtual void ConfigureAuthentication(HttpClient client)
++        {
++            client.DefaultRequestHeaders.Authorization = null;
++            client.DefaultRequestHeaders.Remove("api-key");
++            client.DefaultRequestHeaders.TryAddWithoutValidation("api-key", AppKey);
++        }
++
+         public void SetModel(LLMModel model)
+             => Model = model.Name;
+ 
+@@ -128,10 +135,10 @@ namespace Blueshift.Agents.LLM.OpenAI
+             return $"{uri.Scheme}://{uri.Host}{portPart}{path}";
+         }
+ 
+-        private string GetResponsesEndpoint()
++        protected virtual string GetResponsesEndpoint()
+             => $"{GetAzureBaseEndpoint().TrimEnd('/')}{AzureResponsesPath}";
+ 
+-        private string GetAudioTranscriptionsEndpoint()
++        protected virtual string GetAudioTranscriptionsEndpoint()
+             => $"{GetAzureBaseEndpoint().TrimEnd('/')}{AzureAudioTranscriptionsPath}?api-version={AzureAudioApiVersion}";
+ 
+         private static string getStorageUrl(BasePersistenceFile file)
+@@ -559,7 +566,7 @@ namespace Blueshift.Agents.LLM.OpenAI
+                 TokensUsed = apiResponse?.Usage?.TotalTokens ?? 0,
+                 InputTokens = apiResponse?.Usage?.InputTokens ?? 0,
+                 OutputTokens = apiResponse?.Usage?.OutputTokens ?? 0,
+-                ModelUsed = new LLMModel { Name = Model, Provider = LLMAPIProvider.OpenAI }
++                ModelUsed = new LLMModel { Name = Model, Provider = Provider }
+             };
+         }
+ 
+diff --git a/Blueshift.Domain/Entities/LLMModel.cs b/Blueshift.Domain/Entities/LLMModel.cs
+index a7ac91b..a8bc839 100644
+--- a/Blueshift.Domain/Entities/LLMModel.cs
++++ b/Blueshift.Domain/Entities/LLMModel.cs
+@@ -15,7 +15,8 @@ namespace Blueshift.Domain.Entities
+         Gemini,
+         Mock,
+         Other,
+-        Unknown
++        Unknown,
++        Meta = 5
+     }
+ 
+     [DisplayMetadata(Blueshift.Domain.Entities.EntityIcons.LLMModel, MenuName = "LLM Model", MenuDescription = "LLM Model Configuration")]

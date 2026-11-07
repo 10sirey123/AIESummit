@@ -5,8 +5,12 @@ COPY dependencies/blueshift/packages/ dependencies/blueshift/packages/
 COPY AIESummit.Domain/ AIESummit.Domain/
 COPY AIESummit.Agents/ AIESummit.Agents/
 COPY AIESummit.Api/ AIESummit.Api/
+COPY AIESummit.Configuration/ AIESummit.Configuration/
 RUN --mount=type=cache,id=aiesummit-nuget,target=/root/.nuget/packages,sharing=locked dotnet publish AIESummit.Api/AIESummit.Api.csproj -c Release -o /out/api --nologo -v:q /clp:ErrorsOnly
 RUN --mount=type=cache,id=aiesummit-nuget,target=/root/.nuget/packages,sharing=locked dotnet publish AIESummit.Agents/AIESummit.Agents.csproj -c Release -o /out/packs --nologo -v:q /clp:ErrorsOnly
+
+FROM build AS configuration-build
+RUN --mount=type=cache,id=aiesummit-nuget,target=/root/.nuget/packages,sharing=locked dotnet publish AIESummit.Configuration/AIESummit.Configuration.csproj -c Release -o /out/configuration --nologo
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
@@ -16,6 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-
 FROM runtime AS api
 COPY --from=build /out/api .
 ENTRYPOINT ["dotnet","AIESummit.Api.dll"]
+
+FROM runtime AS configuration
+ADD dependencies/blueshift/cli-linux-x64.tar.gz /cli/
+COPY --from=configuration-build /out/configuration /configuration
+COPY --from=build /out/packs /packs
+COPY deploy/cli/aiesummit.overlay.json /config/aiesummit.overlay.json
+ENV BLUESHIFT_CLI_CONFIG=/config/aiesummit.overlay.json
+ENTRYPOINT ["dotnet", "/cli/Blueshift.CLI.dll"]
 
 FROM runtime AS worker
 ADD dependencies/blueshift/worker-linux-x64.tar.gz ./

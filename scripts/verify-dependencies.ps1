@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $bundleRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../dependencies/blueshift'))
 $manifest = Get-Content -LiteralPath "$bundleRoot/manifest.json" -Raw | ConvertFrom-Json
-if ($manifest.schemaVersion -ne 1 -or $manifest.artifacts.Count -ne 7) { throw 'Unsupported or incomplete dependency manifest.' }
+if ($manifest.schemaVersion -ne 1 -or $manifest.artifacts.Count -ne 8 -or 'cli-linux-x64.tar.gz' -notin $manifest.artifacts.path) { throw 'Unsupported or incomplete dependency manifest.' }
 foreach ($artifact in $manifest.artifacts) {
     $path = [IO.Path]::GetFullPath((Join-Path $bundleRoot $artifact.path))
     if (-not $path.StartsWith($bundleRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid dependency path.' }

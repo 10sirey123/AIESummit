@@ -1,6 +1,6 @@
 # Verification scripts
 
-This directory contains the local end-to-end acceptance script, `smoke.ps1`. It is not a .NET test project. `AIESummit.slnx` currently includes application projects and framework library references, with no dedicated AIESummit unit-test project or application CLI.
+This directory contains the local end-to-end acceptance script, `smoke.ps1`. It is not a .NET test project. `AIESummit.slnx` includes application projects, `AIESummit.Configuration`, focused `AIESummit.Tests`, and framework library references. The bundled Blueshift CLI runs through `admin.ps1`.
 
 Read [smoke.AGENTS.md](smoke.AGENTS.md) before changing or running the live acceptance flow, and [../Startup.AGENTS.md](../Startup.AGENTS.md) for startup, shutdown and private local configuration. The guide below separates compilation, static checks, isolated behavior checks and real provider acceptance.
 
@@ -160,8 +160,14 @@ The complete Horus reference `../../horus/Voiston.Agents.Tests/AGENTS.md` motiva
 
 ## Bundled framework maintenance
 
-Run `./scripts/verify-dependencies.ps1` to verify all seven committed Blueshift artifacts against `dependencies/blueshift/manifest.json`; startup runs this too. Only maintainers need `./scripts/package-blueshift.ps1 -SourcePath <separate-checkout>` and private source access to refresh binaries. The pinned-source container build is `deploy/Blueshift.Bundle.Dockerfile`. See `../dependencies/blueshift/README.md` for versioning, provenance and validation. Normal builds consume the local NuGet feed and prebuilt Linux hosts/site without a submodule.
+Run `./scripts/verify-dependencies.ps1` to verify all eight committed Blueshift artifacts against `dependencies/blueshift/manifest.json`; startup runs this too. Only maintainers need `./scripts/package-blueshift.ps1 -SourcePath <separate-checkout>` and private source access to refresh binaries. The pinned-source container build is `deploy/Blueshift.Bundle.Dockerfile`. See `../dependencies/blueshift/README.md` for versioning, provenance and validation. Normal builds consume the local NuGet feed and prebuilt Linux hosts/site without a submodule.
 
 ## Native page analysis checks
 
+Meta support: `configure-meta.ps1` imports `META_API_KEY` only with explicit `-ImportLocalKey` (or reads `-KeyFile`), persists write-only `APIInfo(meta)`, and selects `meta-muse-wonder` on the existing page step. `smoke.ps1 -VerifyPageSections -ExpectedPageModel muse-wonder-1.0 -ContractFixture` additionally resolves all used-model links and requires the Meta provider. Read [Meta configuration](../docs/meta-analysis.md); five focused tests now include an intercepted Meta transport contract. Runtime keys never come directly from environment variables.
+
 `configure-gemini.ps1` explicitly imports a private key file or supplied local key into write-only Admin APIInfo, configures the Gemini model and enables the native page LLMStep. Runtime agents never read a Gemini environment key. `smoke.ps1 -VerifyPageSections -KeepTestSession -ContractFixture` exercises synthetic MSA/NDA pages, original source fidelity/ownership, all page classifications, exact source quotes and Admin runs. It retains test data; optional synthetic login details go only to ignored artifacts. `dotnet test AIESummit.Tests/AIESummit.Tests.csproj` checks section validation and EF prompt mapping. See `../docs/page-analysis.md`.
+
+## Configuration seeding
+
+See [the implemented seeding workflow](../docs/configuration-seeding.md). `AIESummit.Configuration` exports the existing step definitions; the bundled Blueshift CLI performs validation, read-only planning and previewed transactional application. `SeedIdentities` and the idempotent `SeedSchema` upgrade support registry provenance. Default exports preserve model/enabled selections and all credentials. No publishers or provider calls run in the seed host. The one-off Docker configuration image and isolated PostgreSQL tests are documented there.

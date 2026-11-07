@@ -1,5 +1,7 @@
 # AIESummit React workspace
 
+Meta Muse Wonder uses the native page LLMStep and persisted APIInfo; see [Meta setup](../docs/meta-analysis.md) for version provenance, explicit key import, model selection and verification. The reader labels are provider-neutral.
+
 Read [the product/design brief](../docs/ui.md) and [UI workflow](../docs/ui-workflow.md) before visual changes. Preserve authenticated owner-scoped requests. Document content and model output are untrusted.
 
 `document-viewer.tsx` selects one persisted OCR page across Original PDF / Markdown tabs. `pdf-page.tsx` uses local PDF.js and a local worker to draw exactly one canvas, fitted to the stage width and height. Never use a continuous iframe PDF viewer or render adjacent pages. PDF bytes come from the protected original-source endpoint, stay in memory, and are not sent to a third-party viewer. Clean up PDF tasks, render tasks, requests and object URLs on changes/unmount. PNG/JPEG originals use a fitted image. Page changes reset the bounded Markdown scroll region; Markdown comes directly from `UploadDetail.pages`, not inferred splits of document Markdown.
