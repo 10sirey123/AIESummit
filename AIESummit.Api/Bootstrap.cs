@@ -37,6 +37,11 @@ internal static class Bootstrap
             config["OCR_MODEL"] ?? "mistral-ocr-4-0");
         await AddCredential("openai", config["LLM_ENDPOINT"] ?? endpoint, null);
         // Provision provider identity only; keys are deliberately imported through Admin.
+        if (!await db.APIInfos.AnyAsync(a => a.Identifier == "subq"))
+            db.APIInfos.Add(new APIInfo { Identifier = "subq", BaseURI = "https://api.subq.ai/v1",
+                AppKey = "", AppSecret = "", Enabled = false, AuthorizationType = ApiAuthorizationType.ApiKey });
+        if (!await db.LLMModels.AnyAsync(m => m.Tag == "subq-preview"))
+            db.LLMModels.Add(new LLMModel { Tag = "subq-preview", Name = "subq-preview", Provider = LLMAPIProvider.SubQ });
         if (!await db.APIInfos.AnyAsync(a => a.Identifier == "meta"))
             db.APIInfos.Add(new APIInfo { Identifier = "meta", BaseURI = "https://api.meta.ai/v1",
                 AppKey = "", AppSecret = "", Enabled = false, AuthorizationType = ApiAuthorizationType.ApiKey });

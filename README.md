@@ -1,5 +1,7 @@
 # AIESummit
 
+The local [self-improvement workbench](docs/self-improvement.md) is available with `./scripts/start-improvement.ps1` at `http://127.0.0.1:18110`. It uses Muse/Codex to propose extraction-step changes, waits for approval, implements only the workflow graph in an isolated worktree, and evaluates through the current harness. Compare versioned expected/found targets per document, token usage, cached nodes and complete graphs without recreating the database.
+
 Meta Muse Wonder is available through the same native Blueshift page-section LLMStep. See [Meta configuration and verification](docs/meta-analysis.md) for the bundled version, explicit `.env`-to-APIInfo import and the model-specific acceptance check.
 
 AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Per-page section descriptions and a first ten-target contract extraction backend are implemented. Legal risk analysis and frontend extraction cards remain future work. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
@@ -57,6 +59,8 @@ cd web
 npm ci
 npm run build
 npm run test:viewer
+npm run test:processing
+npm run test:extraction-progress
 cd ..
 ```
 

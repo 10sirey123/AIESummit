@@ -1,5 +1,7 @@
 # Install AIESummit from scratch
 
+The optional [self-improvement workbench](docs/self-improvement.md) additionally needs Codex CLI and Node.js inside a WSL2 Linux distribution on Windows. This machine uses the existing `Ubuntu-Codex` distribution from the optimization reference. Set the process variable `AIESUMMIT_CODEX_DISTRIBUTION` to use another prepared distribution. The web UI runs on the Windows .NET 10 host; its Codex sessions use Linux filesystem isolation and a read-only MongoDB tool connection. This optional requirement does not change ordinary application startup.
+
 This guide sets up the complete local development environment on Windows x64, starting with only Docker Desktop installed and running. Run the commands in order. A web browser, internet access, access to this AIESummit repository, and Azure Foundry credentials with usable OCR and LLM deployments are also needed. Blueshift binaries are included in this repository; no private framework repository or private package-feed access is required. The current app performs document intake, OCR and splitting; contract risk analysis is future work.
 
 ## 1. Check Docker Desktop

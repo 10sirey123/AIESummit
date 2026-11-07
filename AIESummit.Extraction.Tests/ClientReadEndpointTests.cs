@@ -43,6 +43,11 @@ public sealed class ClientReadEndpointTests
         var latest = new DocumentAnalysis { Document = document, RequestKey = "retry", Error = "Rejected evidence",
             LLMStepStatus = StepProcessingStatus.PermanentError };
         db.DocumentAnalyses.Add(latest); await db.SaveChangesAsync();
+        // A newer successful experiment must not replace the ordinary reader's failed/latest selection.
+        var experimental = new DocumentAnalysis { Document = document,
+            RequestKey = AnalysisFactory.ImprovementRequestPrefix + "synthetic-node-cache-key",
+            CompletedAt = DateTime.UtcNow, LLMStepStatus = StepProcessingStatus.Processed };
+        db.DocumentAnalyses.Add(experimental); await db.SaveChangesAsync();
         ClaimsPrincipal User(string sub) => new(new ClaimsIdentity([new Claim("sub", sub)], "test"));
         Assert.IsType<NotFound>(await ExtractionReadEndpoints.Summary(upload.ID, User("other"), db, default));
         var result = await ExtractionReadEndpoints.Summary(upload.ID, User("owner"), db, default);

@@ -40,7 +40,9 @@ export function ExtractionStatus({ session, uploadId, state, documents }: { sess
   const failedDocs = summary.documents.filter(doc => doc.analysis.status === 'failed');
   let content: React.ReactNode;
   if (!summary.availability.available) content = <><AlertTriangle size={14} aria-hidden="true" /> Contract extraction is not enabled on the server.</>;
-  else if (x.status === 'waiting_for_documents') content = <><Loader2 size={14} className="spin" aria-hidden="true" /> Waiting for OCR and document splitting…</>;
+  else if (x.status === 'waiting_for_documents') content = <><Loader2 size={14} className="spin" aria-hidden="true" /> {summary.ocrStatus === 'ready'
+    ? 'OCR complete · Finding document boundaries before extracting terms…'
+    : 'Reading source pages before finding documents and extracting terms…'}</>;
   else if (x.status === 'analyzing') content = <><Loader2 size={14} className="spin" aria-hidden="true" /> Extracting terms · {x.readyDocuments} of {x.totalDocuments} document{x.totalDocuments === 1 ? '' : 's'} done</>;
   else if (x.status === 'ready') content = <><CheckCircle2 size={14} className="ok" aria-hidden="true" /> Terms extracted from {x.totalDocuments} document{x.totalDocuments === 1 ? '' : 's'}</>;
   else if (x.status === 'not_started') content = <>No extraction has run for this upload yet.</>;

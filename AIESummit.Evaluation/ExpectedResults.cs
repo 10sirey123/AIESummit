@@ -43,17 +43,24 @@ public static class ExpectedResults
             ? a.EnumerateArray().Where(x => !x.TryGetProperty("isCurrent", out var current) || current.ValueKind == JsonValueKind.True).ToArray() : [];
         var failed = result.TryGetProperty("status", out var status) && status.GetString() == "failed";
         return expected.Targets.Select(target => {
-            var matches = analyses.SelectMany(x => Rows(x, "targets")).Where(x => x.TryGetProperty("tag", out var t) && t.GetString() == target.Tag).ToArray();
-            var raw = analyses.SelectMany(x => Rows(x, "modelReportedOutcomes")).Any(x => x.TryGetProperty("tag", out var t) && t.GetString() == target.Tag && Outcome(x) == "detected");
+            bool HasTag(JsonElement row) => row.TryGetProperty("tag", out var t) && t.GetString() == target.Tag;
+            bool AnalysisFailed(JsonElement analysis) => analysis.TryGetProperty("status", out var state) && state.ValueKind == JsonValueKind.String
+                ? state.GetString() == "failed" : failed;
+            var relevant = analyses.Where(x => Rows(x, "targets").Any(HasTag) || Rows(x, "definitions").Any(HasTag)
+                || Rows(x, "modelReportedOutcomes").Any(HasTag)).ToArray();
+            var matches = relevant.SelectMany(x => Rows(x, "targets")).Where(HasTag).ToArray();
+            var targetFailed = relevant.Length == 0 ? failed : relevant.Any(AnalysisFailed);
+            var raw = relevant.Where(AnalysisFailed).SelectMany(x => Rows(x, "modelReportedOutcomes")).Any(x => HasTag(x) && Outcome(x) == "detected");
             var found = matches.Any(x => Outcome(x) == "detected");
             var extractions = matches.Where(x => Outcome(x) == "detected").SelectMany(x => Rows(x, "extractions")).Select(e => (object)new {
                 id = Value(e, "id"), title = Value(e, "title"), values = Value(e, "values"),
-                evidence = Rows(e, "evidence").Select(v => new { id = Value(v, "id"), page = Value(v, "page"), pageRevisionId = Value(v, "pageRevisionId"),
-                    startOffset = Value(v, "startOffset"), endOffset = Value(v, "endOffset"), role = Value(v, "role") }).ToArray()
+                evidence = Rows(e, "evidence").Select(v => new { id = Value(v, "id"), page = Value(v, "page"), pageTextRevisionId = Value(v, "pageTextRevisionId"),
+                    contentHash = Value(v, "contentHash"), startOffset = Value(v, "startOffset"), endOffset = Value(v, "endOffset"),
+                    role = Value(v, "role"), supportedFields = Value(v, "supportedFields") }).ToArray()
             }).ToArray();
             var outcome = found ? "detected" : matches.Length == 0 ? "not_analyzed" : string.Join(",", matches.Select(Outcome).Distinct());
             var state = found ? target.Expected is false ? "false_positive" : "found"
-                : raw ? "rejected_evidence" : failed ? "failed" : outcome == "not_analyzed" ? "not_analyzed"
+                : raw ? "rejected_evidence" : targetFailed ? "failed" : outcome == "not_analyzed" ? "not_analyzed"
                 : target.Expected is true ? "missed" : target.Expected is false ? "correct_absence" : "unknown";
             return new ObservedTarget(target.Tag, target.Category, target.Expected, found, raw, outcome, state, extractions.Length, extractions);
         }).ToArray();

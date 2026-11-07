@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)][string]$SourcePath,
     [string]$ExpectedCommit = 'cc69aa4da64bf313ec7120711624816c7f9d4254',
-    [string]$Version = '10.0.0-aiesummit.cc69aa4.meta1'
+    [string]$Version = '10.0.0-aiesummit.cc69aa4.subq1'
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

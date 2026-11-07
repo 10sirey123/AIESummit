@@ -1,5 +1,7 @@
 # Verification scripts
 
+The improvement UI starts with `./scripts/start-improvement.ps1`; read [self-improvement](../docs/self-improvement.md). `./scripts/measure-improvement-baseline.ps1` measures the frozen 20-file dataset through the native Muse graph while preserving PostgreSQL/cache; `-CacheOnly` forbids model calls. Run only one measurement at a time and preserve its artifacts. Candidate attempts never modify these scripts or scoring.
+
 `test-extractions.ps1` runs `AIESummit.Extraction.Tests` against uniquely named disposable PostgreSQL and MongoDB containers. The provider-backed tester is `AIESummit.Evaluation`: see [commands and evidence boundaries](../docs/contract-extraction.md) and [instrumentation schema](../docs/evaluation-instrumentation.md). Preserve generated run folders; do not resume dataset downloads for these checks.
 
 This directory contains the local end-to-end acceptance script, `smoke.ps1`. It is not a .NET test project. `AIESummit.slnx` includes application projects, `AIESummit.Configuration`, focused `AIESummit.Tests`, and framework library references. The bundled Blueshift CLI runs through `admin.ps1`.

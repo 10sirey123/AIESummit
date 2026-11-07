@@ -1490,6 +1490,7 @@
       "get": {
         "operationId": "getExtractions",
         "summary": "Get owner-scoped analyses, validated findings and explicitly unvalidated model presence outcomes",
+        "description": "Application analysis history excludes isolated self-improvement executions whose request keys use the reserved improvement/ prefix.",
         "tags": [
           "Extractions"
         ],
@@ -1542,7 +1543,7 @@
           {
             "name": "requestKey",
             "in": "query",
-            "description": "Same document/key reuses an existing analysis; use a new key for a deliberate reanalysis.",
+            "description": "Same document/key reuses an existing analysis; use a new key for a deliberate reanalysis. The improvement/ prefix is reserved and returns 400.",
             "schema": {
               "type": "string",
               "default": "initial",
@@ -1562,6 +1563,9 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request key or reserved improvement/ prefix"
+          },
           "401": {
             "description": "Authentication required"
           },
@@ -1578,6 +1582,7 @@
       "get": {
         "operationId": "getUploadMetrics",
         "summary": "Get owner-scoped prompt token counters, model identifiers and definition hashes; no prompt text",
+        "description": "Counters exclude isolated self-improvement execution prompts; experiment metrics are recorded by the improvement runner separately.",
         "tags": [
           "Extractions"
         ],
@@ -1680,6 +1685,7 @@
       "get": {
         "operationId": "getUploadAnalysisSummary",
         "summary": "Get owner-scoped branch progress and latest/last-successful analysis selections without findings or prompts",
+        "description": "Latest and last-successful selections exclude isolated self-improvement executions, preserving ordinary reader state.",
         "tags": [
           "Extractions"
         ],

@@ -7,7 +7,7 @@ import { errorMessage, type AnalysisSummary, type ExtractionResults, type Extrac
  */
 export type UploadExtractions = { results?: ExtractionResults; summary?: AnalysisSummary; error?: string; loading: boolean; polling: boolean };
 
-type Entry = UploadExtractions & { session?: Session; timer?: number; deadline?: number; controller?: AbortController };
+type Entry = UploadExtractions & { session?: Session; timer?: number; deadline?: number; controller?: AbortController; fetchedAt?: number };
 const entries = new Map<number, Entry>();
 const listeners = new Set<() => void>();
 let version = 0;
@@ -31,7 +31,7 @@ async function fetchOnce(session: Session, id: number) {
     if (controller.signal.aborted) return;
     const current = entries.get(id)!;
     const keepPolling = summary.extraction.canPoll && Date.now() < (current.deadline ?? Date.now() + pollFor);
-    entries.set(id, { ...current, summary, results, error: undefined, loading: false, polling: keepPolling,
+    entries.set(id, { ...current, summary, results, error: undefined, loading: false, polling: keepPolling, controller: undefined, fetchedAt: Date.now(),
       deadline: keepPolling ? current.deadline ?? Date.now() + pollFor : undefined });
     emit();
     if (keepPolling) {
@@ -41,15 +41,16 @@ async function fetchOnce(session: Session, id: number) {
   } catch (failure) {
     if (controller.signal.aborted) return;
     const current = entries.get(id)!;
-    entries.set(id, { ...current, error: errorMessage(failure), loading: false, polling: false });
+    entries.set(id, { ...current, error: errorMessage(failure), loading: false, polling: false, controller: undefined });
     emit();
   }
 }
 
-/** Load (once) the results for an upload; `refresh` forces a new fetch and restarts polling. */
+/** Revalidate cached results on reopening; `refresh` forces a new fetch and restarts polling. */
 export function loadExtractions(session: Session, id: number, refresh = false) {
   const entry = entries.get(id);
-  if (entry && entry.session === session && !refresh && (entry.results || entry.loading || entry.polling)) return;
+  if (entry && entry.session === session && !refresh && (entry.controller || entry.loading || entry.polling
+    || (!entry.error && entry.results && Date.now() - (entry.fetchedAt ?? 0) < pollEvery))) return;
   if (refresh && entry) { window.clearTimeout(entry.timer); entry.deadline = undefined; }
   void fetchOnce(session, id);
 }

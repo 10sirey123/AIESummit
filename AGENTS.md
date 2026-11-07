@@ -1,5 +1,9 @@
 # AIESummit repository guide
 
+## Self-improvement workbench
+
+`AIESummit.Improvement` is the local approval-driven operator UI on `http://127.0.0.1:18110`; start with `./scripts/start-improvement.ps1`. Read [the improvement guide](docs/self-improvement.md), [workbench guide](AIESummit.Improvement/AGENTS.md), and [native workflow runner guide](AIESummit.WorkflowRunner/AGENTS.md). Candidates change only `improvement/workflow.json` in approved worktrees. Native experiment analyses use reserved `improvement/` request keys, remain excluded from ordinary reader results, and reuse terminal node results without deleting PostgreSQL data. MongoDB retains full benchmark expectations, per-attempt observations and exact graphs; bounded read-only history supports Codex learning. Logical and newly consumed token metrics are separate. Historical unreported directional usage remains unknown.
+
 ## Purpose and scope
 
 AIESummit turns a user's PDF or image into ordered Markdown documents. Firebase identifies the user. PostgreSQL retains uploads, OCR pages, extracted images, prompts and document results. BlueShift agents call the configured OCR and language-model deployments. A separate BlueShift Admin service exposes configuration and operational telemetry to operators.
@@ -180,6 +184,8 @@ The smoke test creates two local Firebase accounts and a temporary synthetic thr
 The fixture file is deleted in `finally`. The created local accounts, uploaded records and execution logs remain. The script is tied to local emulator ports and does not validate hosted Firebase. Do not run it against an unrelated environment by casually changing URLs.
 
 `AIESummit.Tests` contains focused section-evidence validation and EF relationship-model tests. Run `dotnet test AIESummit.Tests/AIESummit.Tests.csproj`; the separate `AIESummit.Evaluation` CLI exercises the authenticated upload/OCR/split/extraction workflow. `AIESummit.Extraction.Tests` and `scripts/test-extractions.ps1` add deterministic and disposable PostgreSQL/MongoDB coverage. Do not report zero discovered tests as coverage. Add focused tests when changing meaningful logic and verify the full workflow when the change crosses authentication, persistence or agent boundaries. Browser layout, keyboard behavior and session-race interactions need browser checks beyond the smoke script.
+
+Run `npm run test:extraction-progress` from `web` for extraction status copy, OCR/splitting-to-extraction polling transitions and stale-cache recovery. OCR completion does not imply that the shared prompt queue has completed splitting or extraction; inspect prompt state before retrying a waiting upload.
 
 ## Troubleshooting and lessons to preserve
 

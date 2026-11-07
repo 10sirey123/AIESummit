@@ -6,6 +6,7 @@ namespace AIESummit.Domain;
 
 public static class AnalysisFactory
 {
+    public const string ImprovementRequestPrefix = "improvement/";
     public static DocumentAnalysis Create(Document document, IEnumerable<OcrPage> pages,
         IEnumerable<ExtractionType> types, string requestKey = "initial")
     {

@@ -100,6 +100,7 @@ internal static class UploadEndpoints
         {
             LLMAPIProvider.Gemini => "geminiapi",
             LLMAPIProvider.Meta => "meta",
+            LLMAPIProvider.SubQ => "subq",
             LLMAPIProvider.OpenAI => "openai",
             _ => null
         };

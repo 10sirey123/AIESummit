@@ -176,3 +176,35 @@ dotnet run --project AIESummit.Evaluation -- replay artifacts/extraction-evaluat
 The probe loads `.env` (or the file named by `MONGODB_ENV_FILE`), lets process settings override the URI/database, and prints primary status, the client address observed by MongoDB, and metadata/counts for the latest document run. It performs no writes and does not print credentials. Download mongosh from [MongoDB's official shell download](https://www.mongodb.com/try/download/shell) when it is absent.
 
 When diagnosing asymmetric node failures, compare all SRV nodes, use primary read preference for the write-path check, and compare source addresses rather than assuming a secondary read proves primary access. Any additional access-list entry requires the owner's explicit authorization; do not broaden the list automatically.
+
+## Improvement-cycle expectations and document matrices
+
+The evaluator now writes two additional benchmark-only collections. Existing v1 runs remain readable and are not rewritten automatically. Re-import retained results to attach versioned labels and observations without model inference.
+
+To enrich an existing run while preserving its original IDs, measurements, graph, and event timestamps:
+
+```powershell
+dotnet run --project AIESummit.Evaluation -- enrich-results artifacts/extraction-evaluation/manifest-final.json artifacts/extraction-evaluation/final --run ead9272caae140fcaf21df00b749b74c
+```
+
+This was executed for the retained 20-document baseline on November 7, 2026. It added expectation/observation records and document links, without creating a duplicate inference run. Its replayable enrichment outbox is under `artifacts/improvement-enrichment/<runId>/`.
+
+- `evaluation_expectations`: content-addressed snapshots keyed by dataset, source PDF SHA-256, exact label-file SHA-256, and development/confirmation partition. Stores sample identity, label schema version, upstream provenance, **all** supplied `expected_detections` (including answer spans and categories beyond the ten implemented targets), and the ten mapped target expectations. Each mapped expectation is `present`, `absent`, or `unknown`. Missing/ambiguous categories and unlabeled EDGAR remain unknown, never negative gold.
+- `evaluation_observations`: one document-run record referring to its immutable expectation ID and workflow ID. Contains every mapped target's expected state, validated presence, diagnostic model presence, outcome, matrix state, and accepted finding IDs/titles/typed values with source page/offset references. Source quotes and complete predictions remain in checksummed local result artifacts. Public benchmark gold answer text is intentionally retained in expectation snapshots; this is an explicit exception to the older metadata-only telemetry scope, not permission to copy arbitrary private documents into MongoDB.
+
+Matrix states distinguish `found`, `missed`, `false_positive`, `correct_absence`, `rejected_evidence`, `failed`, `not_run`, and `unknown`. Accepted findings survive in the matrix even if another analysis for the same source failed. “Found” is validated document/target presence; a target's `goldFindings` count is not proof of individual-clause matching. The scorer remains the existing presence evaluator.
+
+Failure state is derived from the analyses responsible for each target, rather than copied from the overall document. A successful independent branch returning no finding remains `missed` or `correct_absence` when another branch fails. Only failed relevant analyses contribute rejected model-reported detections. Read-only views also join through each run's top-level and configured partition, so old rows without their own partition do not expose confirmation outcomes. Label-bearing records require explicit development classification and visible development usage; missing partition metadata never grants access to gold.
+
+`RegisterExpectedAsync` runs before inference/finalization so a failed document still retains its expectations. A run cannot mix development and confirmation partitions. Read-only history excludes confirmation labels, observations, and run summaries. The actual instantiated workflow can be supplied to `OpenAsync(..., workflowDefinition: graph)`; `RecordGraphAsync` records the exact node membership and checks every edge endpoint. Consumers should prefer `graph.nodeIds` for exact graphs rather than assuming every retained stage-family node belongs to that graph.
+
+Codex and the web UI use `MongoHistory`, a bounded reader with no mutation, arbitrary command, or arbitrary pipeline surface. The CLI exposes the same views:
+
+```powershell
+dotnet run --project AIESummit.Evaluation -- history --kind runs --limit 20
+dotnet run --project AIESummit.Evaluation -- history --kind missing --sample 0201
+dotnet run --project AIESummit.Evaluation -- history --kind matrix --source PDF_SHA256
+dotnet run --project AIESummit.Evaluation -- history --kind steps --run RUN_ID
+```
+
+Views are `runs`, `documents`, `steps`, `workflows`, `expectations`, `observations`, `missing`, `events`, and `matrix`. Results are capped at 200 records; a matrix requires an exact source checksum and, when several label versions exist, `--expectation EXPECTATION_ID`. Queries read the existing URI without printing it. Give an external Codex environment access through this bounded service or a genuinely read-only database account, never by copying writer credentials into prompts or transcripts.

@@ -131,7 +131,7 @@ try {
         if ($ExpectedPageModel) {
             foreach ($pagePrompt in $pagePrompts) {
                 $usedModel = Invoke-RestMethod "http://localhost:13088/admin/v1/entities/LLMModel/$($pagePrompt.UsedModel.id)" -Headers $adminHeaders
-                if ($usedModel.Name -ne $ExpectedPageModel -or ($ExpectedPageModel -like 'muse-*' -and $usedModel.Provider -ne 'Meta')) {
+                if ($usedModel.Name -ne $ExpectedPageModel -or ($ExpectedPageModel -like 'muse-*' -and $usedModel.Provider -ne 'Meta') -or ($ExpectedPageModel -like 'subq-*' -and $usedModel.Provider -ne 'SubQ')) {
                     throw "Page prompt $($pagePrompt.ID) did not resolve through the expected model/provider."
                 }
             }

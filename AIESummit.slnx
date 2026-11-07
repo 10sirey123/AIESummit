@@ -4,6 +4,9 @@
   <Project Path="AIESummit.Api/AIESummit.Api.csproj" />
   <Project Path="AIESummit.Domain/AIESummit.Domain.csproj" />
   <Project Path="AIESummit.Evaluation/AIESummit.Evaluation.csproj" />
+  <Project Path="AIESummit.Improvement/AIESummit.Improvement.csproj" />
   <Project Path="AIESummit.Extraction.Tests/AIESummit.Extraction.Tests.csproj" />
   <Project Path="AIESummit.Tests/AIESummit.Tests.csproj" />
+  <Project Path="AIESummit.WorkflowRunner.Tests/AIESummit.WorkflowRunner.Tests.csproj" />
+  <Project Path="AIESummit.WorkflowRunner/AIESummit.WorkflowRunner.csproj" />
 </Solution>
