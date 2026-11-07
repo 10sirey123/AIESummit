@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDownToLine, ArrowUpRight, FileText, Image, UploadCloud } from 'lucide-react';
-import { errorMessage, type DocumentResult, type ImageReference, type Session, type Upload, type UploadDetail } from './api';
+import { ArrowUpRight, FileText, UploadCloud } from 'lucide-react';
+import { errorMessage, type Session, type Upload, type UploadDetail } from './api';
+import { DocumentViewer } from './document-viewer';
 
 const labels: Record<Upload['status'], string> = {
   queued: 'Waiting for OCR', splitting: 'Identifying documents', ready: 'Ready', failed: 'Failed',
@@ -101,6 +102,7 @@ export function Workspace({ session }: { session: Session }) {
 
   return (
     <main className="shell workspace">
+      <div className="workspace-intake">
       <div className="workspace-heading">
         <h1>Document workspace</h1>
         <p>Upload a file and review the documents AIESummit finds.</p>
@@ -119,6 +121,7 @@ export function Workspace({ session }: { session: Session }) {
           <button className="button primary" disabled={!file || sending}>{sending ? 'Uploading…' : 'Upload file'} <ArrowUpRight size={16} aria-hidden="true" /></button>
         </div>
       </form>
+      </div>
       <div className="workspace-grid">
         <section className="upload-list" aria-labelledby="uploads-title">
           <h2 id="uploads-title" tabIndex={-1} ref={uploadsTitle}>Uploads</h2>
@@ -179,7 +182,7 @@ function Results({ id, session, onUpload, titleRef, backToUploads }: {
         setError('');
         setResult(detail);
         onLatestUpload.current(detail.upload);
-        if (pending(detail.upload)) timer = window.setTimeout(load, 4000);
+        if (pending(detail.upload) || detail.pages.some(page => page.analysisStatus === 'analyzing')) timer = window.setTimeout(load, 4000);
       } catch (failure) {
         if (!controller.signal.aborted) setError(errorMessage(failure));
       }
@@ -199,62 +202,8 @@ function Results({ id, session, onUpload, titleRef, backToUploads }: {
         {result.upload.error && <p className="error">{result.upload.error}</p>}
         {pending(result.upload) && <p>Processing this upload. Results will appear here automatically.</p>}
         {result.upload.status === 'ready' && !result.documents.length && <p>No documents were returned for this upload.</p>}
-        {result.documents.map(doc => <Document key={doc.id} doc={doc} session={session} uploadId={id} />)}
+        {result.pages.length > 0 && <DocumentViewer documents={result.documents} pages={result.pages} session={session} uploadId={id} onAnalysisQueued={() => setAttempt(value => value + 1)} />}
       </>}
     </section>
-  );
-}
-
-function Document({ doc, session, uploadId }: { doc: DocumentResult; session: Session; uploadId: number }) {
-  return (
-    <article className="document">
-      <h3>{doc.title}</h3>
-      <p className="page-range">{doc.firstPage === doc.lastPage ? `Page ${doc.firstPage}` : `Pages ${doc.firstPage}–${doc.lastPage}`}</p>
-      <pre aria-label="Extracted Markdown">{doc.markdown}</pre>
-      <div className="document-actions">
-        <button className="button secondary" onClick={() => {
-          const url = URL.createObjectURL(new Blob([doc.markdown], { type: 'text/markdown;charset=utf-8' }));
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `document-${doc.id}.md`;
-          link.click();
-          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }}><ArrowDownToLine size={16} aria-hidden="true" /> Download Markdown</button>
-        {doc.images.map(image => <ExtractedImage key={image.id} session={session} uploadId={uploadId} image={image} />)}
-      </div>
-    </article>
-  );
-}
-
-function ExtractedImage({ session, uploadId, image }: { session: Session; uploadId: number; image: ImageReference }) {
-  const [src, setSrc] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const request = useRef<AbortController>(null);
-  const url = useRef('');
-  useEffect(() => () => {
-    request.current?.abort();
-    if (url.current) URL.revokeObjectURL(url.current);
-  }, []);
-
-  async function load() {
-    const controller = new AbortController();
-    request.current = controller;
-    setBusy(true);
-    setError('');
-    try {
-      const blob = await session.image(uploadId, image.id, controller.signal);
-      if (controller.signal.aborted) return;
-      url.current = URL.createObjectURL(blob);
-      setSrc(url.current);
-    } catch (failure) {
-      if (!controller.signal.aborted) setError(errorMessage(failure));
-    } finally {
-      if (!controller.signal.aborted) setBusy(false);
-    }
-  }
-
-  return src ? <figure><img src={src} alt={`Extracted image from page ${image.page}`} /><figcaption>Page {image.page} · {image.reference}</figcaption></figure> : (
-    <div><button className="button secondary" disabled={busy} onClick={() => void load()}><Image size={16} aria-hidden="true" /> {busy ? 'Loading image…' : `View image from page ${image.page}`}</button>{error && <p role="alert" className="error">{error}</p>}</div>
   );
 }

@@ -17,6 +17,8 @@ internal static class UploadEndpoints
         api.MapGet("/uploads", List);
         api.MapGet("/uploads/{id:int}", Get);
         api.MapGet("/uploads/{id:int}/images/{imageId:int}", GetImage);
+        api.MapGet("/uploads/{id:int}/source", GetSource);
+        api.MapPost("/uploads/{id:int}/analyze", AnalyzePages);
     }
 
     private static string Owner(ClaimsPrincipal user) => user.FindFirstValue("sub")!;
@@ -65,10 +67,40 @@ internal static class UploadEndpoints
             .Select(i => new ImageReference(i.ImageId, i.Page.Number, i.Reference)).ToListAsync(token);
         var documents = await db.Documents.Where(d => d.UploadId == id).OrderBy(d => d.FirstPage)
             .Select(d => new { id = d.ID, d.Title, d.FirstPage, d.LastPage, d.Markdown }).ToListAsync(token);
-        return Results.Ok(new { upload, documents = documents.Select(d => new {
+        var pages = await db.Pages.Where(p => p.UploadId == id).OrderBy(p => p.Number)
+            .Select(p => new { id = p.ID, p.Number, p.Markdown, p.SectionsJson, p.AnalysisError, p.LLMStepStatus }).ToListAsync(token);
+        return Results.Ok(new { upload, pages = pages.Select(p => new {
+            p.id, p.Number, p.Markdown, error = p.AnalysisError,
+            analysisStatus = p.AnalysisError != null || p.LLMStepStatus == StepProcessingStatus.PermanentError ? "failed"
+                : p.SectionsJson != "" ? "ready" : p.LLMStepStatus is StepProcessingStatus.New or StepProcessingStatus.Processed ? "not_started" : "analyzing",
+            sections = p.SectionsJson == "" ? Array.Empty<System.Text.Json.JsonElement>()
+                : System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(p.SectionsJson) ?? []
+        }), documents = documents.Select(d => new {
             d.id, d.Title, d.FirstPage, d.LastPage, d.Markdown,
             images = images.Where(i => i.Page >= d.FirstPage && i.Page <= d.LastPage)
         }) });
+    }
+
+    private static async Task<IResult> GetSource(int id, ClaimsPrincipal user, AIESummitDb db, HttpContext context, CancellationToken token)
+    {
+        var file = await db.Uploads.Where(u => u.ID == id && u.OwnerId == Owner(user))
+            .Select(u => new { u.Source, u.ContentType }).SingleOrDefaultAsync(token);
+        if (file is null) return Results.NotFound();
+        context.Response.Headers.CacheControl = "private, no-store";
+        return Results.File(file.Source, file.ContentType, enableRangeProcessing: true);
+    }
+
+    private static async Task<IResult> AnalyzePages(int id, ClaimsPrincipal user, AIESummitDb db, CancellationToken token)
+    {
+        if (!await db.Uploads.AnyAsync(u => u.ID == id && u.OwnerId == Owner(user), token)) return Results.NotFound();
+        if (!await db.APIInfos.AnyAsync(a => a.Identifier == "geminiapi" && a.Enabled && a.AppKey != "", token)
+            || !await db.LLMSteps.AnyAsync(s => s.Tag == "classify-page-sections" && s.Enabled, token))
+            return Results.Problem("Configure and enable Gemini APIInfo and the page classification step in Admin first.", statusCode: 409);
+        var pages = await db.Pages.Include(p => p.LLMPrompts).Where(p => p.UploadId == id).ToListAsync(token);
+        foreach (var page in pages.Where(p => p.SectionsJson == "" && p.LLMPrompts.Count == 0))
+            page.LLMStepStatus = StepProcessingStatus.CheckForPrompts;
+        await db.SaveChangesAsync(token);
+        return Results.Accepted($"/api/v1/uploads/{id}", new { id });
     }
 
     private static async Task<IResult> GetImage(int id, int imageId, ClaimsPrincipal user, AIESummitDb db, CancellationToken token)

@@ -26,8 +26,12 @@ public sealed class AIESummitDb(DbContextOptions options) : EFBaseDbContext(opti
     {
         modelBuilder.Entity<UploadedFile>().HasMany(file => file.LLMPrompts).WithOne()
             .HasForeignKey("UploadedFile_ID").OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<OcrPage>().HasMany(page => page.LLMPrompts).WithOne()
+            .HasForeignKey("OcrPage_ID").OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<LLMPrompt>().HasOne(prompt => prompt.UsedModel).WithMany()
             .HasForeignKey("UsedModelID").IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+        // Admin's generic relation projector cannot infer this legacy shadow FK by CLR naming.
+        modelBuilder.Entity<LLMPrompt>().Navigation(prompt => prompt.UsedModel).AutoInclude();
         base.OnModelCreating(modelBuilder);
     }
 

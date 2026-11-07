@@ -1,5 +1,7 @@
 # Pending-work queue recovery
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
 `UploadQueueRecovery` restores queue stimuli for durable work that is still eligible for processing. It exists because the local Service Bus emulator recreates its queues when it restarts while PostgreSQL retains uploads and prompts. It also helps recover pending work after a commit/publication interruption.

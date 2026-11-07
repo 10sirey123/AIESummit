@@ -74,7 +74,7 @@ public sealed class PageRange
     [JsonProperty("title", Required = Required.Always)] public string Title { get; set; } = "";
 }
 
-public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmPromptPolicy
+public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmStepSubjectPolicy<OcrPage>, ILlmPromptPolicy
 {
     public UploadedFile Hydrate(UploadedFile subject, IBasePersistenceRepository<UploadedFile> repository)
     {
@@ -89,7 +89,18 @@ public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmPromp
     public ILlmCapable Hydrate(Type type, int id, IBasePersistenceRepository<LLMPrompt> repository)
         => type == typeof(UploadedFile)
             ? repository.GetRepository<UploadedFile>().Objects.Single(file => file.ID == id)
+            : type == typeof(OcrPage) ? repository.GetRepository<OcrPage>().Objects.Single(page => page.ID == id)
             : throw new InvalidOperationException("Unsupported prompt subject.");
+
+    public OcrPage Hydrate(OcrPage subject, IBasePersistenceRepository<OcrPage> repository)
+        => repository.Objects.Include(page => page.LLMPrompts).Single(page => page.ID == subject.ID);
+
+    public void OnTerminalTransition(OcrPage subject, StepProcessingStatus status)
+    {
+        if (status == StepProcessingStatus.PermanentError) subject.AnalysisError = "Page analysis failed. Inspect its prompts in Admin.";
+    }
+    public void OnPromptsCleared(OcrPage subject, IBasePersistenceRepository<OcrPage> repository)
+    { subject.SectionsJson = ""; subject.AnalysisError = null; }
 
     public void OnTerminalTransition(UploadedFile subject, StepProcessingStatus status)
     {
@@ -112,6 +123,9 @@ public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmPromp
         if (prompt.ProcessingStatus == PromptProcessingStatus.PermanentError && prompt.DocumentType == nameof(UploadedFile))
             repository.GetRepository<UploadedFile>().Objects.Single(file => file.ID == prompt.DocumentID).Error =
                 "Document splitting failed. See the agent logs.";
+        if (prompt.ProcessingStatus == PromptProcessingStatus.PermanentError && prompt.DocumentType == nameof(OcrPage))
+            repository.GetRepository<OcrPage>().Objects.Single(page => page.ID == prompt.DocumentID).AnalysisError =
+                "Page analysis failed. Inspect its prompts in Admin.";
     }
 }
 
@@ -119,19 +133,21 @@ public sealed class AgentPack : IAgentPackStartup
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        var types = new LlmTypeRegistry([typeof(UploadedFile)], [typeof(SplitResult)]);
+        var types = new LlmTypeRegistry([typeof(UploadedFile), typeof(OcrPage)], [typeof(SplitResult), typeof(PageSectionsResult)]);
         var lambdas = new LambdaManipulation();
-        var codeSteps = new LlmCodeStepRegistry(types, [SplitStep.Definition()]);
+        var codeSteps = new LlmCodeStepRegistry(types, [SplitStep.Definition(), PageSectionsStep.Definition()]);
         var templates = new TemplateManipulation(types, assemblyReferenceTypes: [typeof(UploadedFile)],
             namespaceImports: ["AIESummit.Domain"]);
         var policy = new SplitPolicy();
         services.AddSingleton<ILlmStepSubjectPolicy<UploadedFile>>(policy);
+        services.AddSingleton<ILlmStepSubjectPolicy<OcrPage>>(policy);
         services.AddSingleton<ILlmPromptPolicy>(policy);
         services.AddSingleton(types);
         services.AddSingleton(lambdas);
         services.AddSingleton(codeSteps);
         services.AddSingleton(new LLMPromptFactory(types, lambdas, templates, codeSteps, () => 0,
-            (step, subject) => step.Template + "\n" + ((UploadedFile)subject).SplitInput));
+            (step, subject) => step.Template + "\n" + (subject is UploadedFile file ? file.SplitInput
+                : System.Text.Json.JsonSerializer.Serialize(new { page = ((OcrPage)subject).Number, markdown = ((OcrPage)subject).Markdown }).Replace("@", "\\u0040", StringComparison.Ordinal))));
         services.AddSingleton<IExecutionContextResolver, UploadExecutionContext>();
         services.AddSingleton<LlmPromptWorker>();
         if (Environment.GetEnvironmentVariable("AIESUMMIT_QUEUE_RECOVERY") == "true")

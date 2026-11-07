@@ -1,5 +1,7 @@
 # Startup bootstrap and persisted configuration
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Read this guide when changing startup, initial credentials, model/step seeds, agent configuration, or rotation behavior. [Bootstrap.cs](Bootstrap.cs) inserts missing configuration into `AIESummitDb`. It does not synchronize existing rows with source defaults or environment variables.
 
 The current application uses `WebApplication.CreateBuilder` and `IConfiguration` directly. It does not register Horus's `SharedConfig`, `BaseConfigSection`, `ConfigLogger`, or legacy configuration bridge. Borrow the Horus guide's attention to configuration validation and secret handling without adding those types or assuming their startup checks exist here.

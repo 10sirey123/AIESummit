@@ -1,5 +1,7 @@
 # AIESummit.Api
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 This .NET 10 ASP.NET Core application serves the browser client and its Firebase-authenticated upload API. It uses handwritten minimal endpoints, PostgreSQL through EF Core, and BlueShift publishers for background processing. The separate central BlueShift Admin host owns operator configuration and processing inspection.
 
 Read this guide before adding routes, changing public response fields, modifying authentication or changing startup behavior. Keep public contracts, owner scoping and processing publication aligned.

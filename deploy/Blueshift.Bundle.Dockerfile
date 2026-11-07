@@ -7,6 +7,8 @@ COPY Blueshift.Domain/ Blueshift.Domain/
 COPY Blueshift.Agents/ Blueshift.Agents/
 COPY Blueshift.Agents.Worker/ Blueshift.Agents.Worker/
 COPY Blueshift.Admin.Api/ Blueshift.Admin.Api/
+COPY --from=aiesummit deploy/patches/ /patches/
+RUN sed -i 's/\r$//' Blueshift.Agents/LLM/Gemini/Gemini.cs Blueshift.Agents/LLM/Gemini/GeminiModel.cs Blueshift.Admin.Api/Services/WriteOnlyCredentials.cs /patches/*.patch && git apply /patches/*.patch
 RUN --mount=type=cache,id=aiesummit-bundle-nuget,target=/root/.nuget/packages,sharing=locked dotnet pack Blueshift.Domain/Blueshift.Domain.csproj -c Release -o /bundle/packages -p:Version=$BUNDLE_VERSION -p:RepositoryCommit=$SOURCE_COMMIT -p:DebugType=None --nologo
 RUN --mount=type=cache,id=aiesummit-bundle-nuget,target=/root/.nuget/packages,sharing=locked dotnet pack Blueshift.Agents/Blueshift.Agents.csproj -c Release -o /bundle/packages -p:Version=$BUNDLE_VERSION -p:RepositoryCommit=$SOURCE_COMMIT -p:DebugType=None --nologo
 RUN --mount=type=cache,id=aiesummit-bundle-nuget,target=/root/.nuget/packages,sharing=locked dotnet publish Blueshift.Agents.Worker/Blueshift.Agents.Worker.csproj -c Release -r linux-x64 --self-contained false -o /worker -p:Version=$BUNDLE_VERSION -p:RepositoryCommit=$SOURCE_COMMIT -p:DebugType=None -p:UseAppHost=false --nologo

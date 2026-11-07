@@ -1,6 +1,6 @@
 # AIESummit
 
-AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Contract clause extraction and risk analysis are not implemented yet. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
+AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Per-page section descriptions are implemented; specialized clause extraction and legal risk analysis remain future work. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
 
 ## Run locally
 
@@ -31,6 +31,8 @@ Create an email/password account in the workspace. The local stack runs Firebase
 
 Read [the AIESummit design brief](docs/ui.md) and [the UI workflow](docs/ui-workflow.md) before changing the React workspace.
 
+The React workspace shows one source page at a time, with Original PDF and Markdown tabs that retain the same page selection. The PDF page is fitted completely; its matching OCR Markdown scrolls within the reader. The sidebar shows per-page section classifications, short summaries and expandable source quotes from the native Blueshift page-analysis step. See [page-analysis.md](docs/page-analysis.md) to persist the Gemini key as APIInfo, configure models/steps, inspect Admin and run the extended smoke test. Reviewer notes and legal risk scoring are not implemented. The original client on port 18080 remains separate.
+
 Paste the token in `artifacts/admin.token.local.txt` into Admin. Use **Operations → Agent Operations** to inspect runs and queue status. **Configuration** contains the OCR connection, language model, split step, and agent controls. The startup seed initializes credentials and deployment names once so operator edits survive restarts. Update those records in Admin when rotating keys or changing models. The local token is renewed each time `start.ps1` runs.
 
 ## Processing
@@ -52,6 +54,7 @@ docker compose config -q
 cd web
 npm ci
 npm run build
+npm run test:viewer
 cd ..
 ```
 
@@ -65,7 +68,9 @@ The smoke test creates two local Firebase accounts, uploads a synthetic three-pa
 
 The initial import passed the solution, shared worker and shared Admin API builds, React production build, OpenAPI generation, JavaScript/PowerShell syntax checks and Compose configuration validation. The solution emits existing nullable/obsolete API warnings, and the React build emits Lucide directive warnings.
 
-Local startup and the provider-backed smoke test passed on November 7, 2026 (synthetic upload 1): Firebase sign-up/sign-in, user isolation, Mistral OCR, document ranges 1–2 and 3, preserved Markdown and Admin telemetry. The workspace, proxied Firebase configuration, API health and Admin page returned HTTP 200. An initial Docker DNS failure cleared on retry; an emulator queue-creation conflict cleared after restarting the emulator and worker. Provider settings were reused from the sibling Hackathon project's local configuration into ignored `.env`. Browser interaction and layout remain unverified.
+Local startup and the provider-backed smoke test passed on November 7, 2026 (synthetic upload 1): Firebase sign-up/sign-in, user isolation, Mistral OCR, document ranges 1–2 and 3, preserved Markdown and Admin telemetry. The workspace, proxied Firebase configuration, API health and Admin page returned HTTP 200. An initial Docker DNS failure cleared on retry; an emulator queue-creation conflict cleared after restarting the emulator and worker. Azure provider settings were reused from the sibling Hackathon project's local configuration into ignored `.env`.
+
+The page-reader/analysis extension passed on November 7, 2026 using synthetic MSA/NDA upload 10: all three native page prompts completed with Gemini, exact evidence validation and source-access isolation passed, and Admin displayed the enabled step, processed prompts, selected model and successful agent execution. Desktop and 390px browser checks verified a single fitted PDF canvas, same-page tab switching, scrolling Markdown and scroll reset on page changes. Three focused .NET tests, the React build/viewer checks and bundled-dependency verification passed. Gemini credentials reside in persisted APIInfo; see [configuration and verification](docs/page-analysis.md).
 
 The binary dependency transition also passed on November 7, 2026: an exported Git checkout without framework source built successfully with an empty NuGet cache, all Docker targets rebuilt and started from the bundle, and the full provider-backed smoke test passed for synthetic upload 2. Dependency checksums passed after Git checkout, and the verifier rejected a deliberately modified disposable artifact.
 
@@ -78,7 +83,20 @@ Imported from the working tree of `../hackathon` (base commit `da68b8149fa1b825f
 
 The planned workflow will use BlueShift LLMSteps and LLMPrompts to extract indemnity and liability limits, non-compete restrictions, renewal dates and termination triggers from MSAs and NDAs. Extraction evidence (document, page when available and quoted text) must remain separate from risk interpretations. Model output is not legal advice.
 
+The [extraction target specification](docs/extraction-targets.md) preserves that original scope and proposes 15 benchmark-supported targets plus 10 additional healthcare targets, including planned card fields and evaluation boundaries. These are product targets, not implemented detections; EDGAR remains unlabeled.
+
 ## Benchmark preparation
+
+The prepared working collection lives in `corporea/benchmarks/`, with separate `cuad`, `maud`, and `edgar-corpus` folders. Each numbered PDF has a matching JSON label file and reference TXT: 510 CUAD contracts, 152 MAUD agreements, and 100 EDGAR reports. CUAD PDFs are original; MAUD/EDGAR PDFs are rendered from source text. EDGAR labels are explicitly unknown, not negative gold labels.
+
+Downloads have been stopped as requested; the current sources are sufficient for this collection. To prepare from the existing files without network access or model calls (after dependencies are installed):
+
+```powershell
+python -m pip install -r scripts/benchmark-requirements.txt
+python scripts/prepare_benchmarks.py
+```
+
+The commands below are for optional future full-release downloads. They are not required to use the prepared collection.
 
 - Install a stable .NET 10 SDK. `global.json` selects SDK 10.0.403 with forward roll to later stable .NET 10 feature bands.
 - Use Python 3.12 or later for the dependency-free dataset preparation utility.
@@ -93,4 +111,4 @@ The first command downloads all pinned CUAD, MAUD, and EDGAR-CORPUS files into `
 
 See [the benchmark catalog](corporea/README.md) for original-PDF availability, sources, licenses, and evaluation limitations. Dataset payloads are excluded from Git; download tooling, documentation, and source pins are tracked.
 
-Build the application with `dotnet build AIESummit.slnx --nologo`. No dedicated application unit-test project exists yet.
+Build the application with `dotnet build AIESummit.slnx --nologo`. Run `dotnet test AIESummit.Tests/AIESummit.Tests.csproj` for focused section-validation and mapping tests.

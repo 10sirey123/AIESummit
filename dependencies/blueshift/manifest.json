@@ -3,33 +3,43 @@
   "sourceRepository": "https://github.com/10123IO/10.Blueshift.123",
   "sourceBranch": "net10",
   "sourceCommit": "cc69aa4da64bf313ec7120711624816c7f9d4254",
-  "packageVersion": "10.0.0-aiesummit.cc69aa4",
+  "sourcePatches": [
+    {
+      "sha256": "ec7d76fd537f7a467f7c4194df03da95198e3fa1140e11412b1dc0e9d91a8193",
+      "path": "deploy/patches/admin-apiinfo-secrets.patch"
+    },
+    {
+      "sha256": "54d8f613fb7796755f754f54c6cbb6f8db01ea7893cac6098908e844278783ff",
+      "path": "deploy/patches/gemini-api-key.patch"
+    }
+  ],
+  "packageVersion": "10.0.0-aiesummit.cc69aa4.gemini3",
   "targetFramework": "net10.0",
   "hostRuntime": "linux-x64",
   "selfContained": false,
   "sdkImage": "mcr.microsoft.com/dotnet/sdk:10.0.403",
   "frontendImage": "node:22-alpine",
-  "builtAtUtc": "2026-11-07T19:03:54.5099410Z",
+  "builtAtUtc": "2026-11-07T19:57:25.2552247Z",
   "artifacts": [
     {
-      "path": "packages/10123.Blueshift.Domain.10.0.0-aiesummit.cc69aa4.nupkg",
-      "bytes": 217205,
-      "sha256": "e7d2e13c03b60e7327a411e2c03262e3421419f3bab543b70589340706d205fd"
+      "path": "packages/10123.Blueshift.Domain.10.0.0-aiesummit.cc69aa4.gemini3.nupkg",
+      "bytes": 217227,
+      "sha256": "77727e0849f63c4ac3a2a4f09b9e08e69e3792079bfc56dfea69897a3df5d75d"
     },
     {
-      "path": "packages/10123.Blueshift.Agents.10.0.0-aiesummit.cc69aa4.nupkg",
-      "bytes": 226229,
-      "sha256": "f789f030d7e0243fbd1825f34ba6438e2ad5ae3a51aa6442a1e1742f93b1ab43"
+      "path": "packages/10123.Blueshift.Agents.10.0.0-aiesummit.cc69aa4.gemini3.nupkg",
+      "bytes": 226515,
+      "sha256": "78b02f5e448414fa06e0f55365b09909cf60d07a3cc0670b4b780ce6a75a271b"
     },
     {
       "path": "worker-linux-x64.tar.gz",
-      "bytes": 12087938,
-      "sha256": "e2553b23964bb66d9d9773edfdd18186ffb9649b01ad10427cf05d8289bd0629"
+      "bytes": 12088001,
+      "sha256": "9fe8267f98d9bf43cef4997fece1fc0e3baf56e7d3a967632bf474467475f2bb"
     },
     {
       "path": "admin-api-linux-x64.tar.gz",
-      "bytes": 13086381,
-      "sha256": "dae30bc1012c4681ff9bfb43f8f16867c925b2412a9bfc3be2ddf920c84109bd"
+      "bytes": 13086305,
+      "sha256": "fd3970107da768dac1fc8a7e256bb3b06add4e622990606ddb762101c0375426"
     },
     {
       "path": "admin-web.tar.gz",

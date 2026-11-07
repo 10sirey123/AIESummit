@@ -46,7 +46,8 @@ public sealed class OcrAgent(ILogger logger, IBroadcaster broadcaster, IQueueMan
             var imageRows = new List<PageImage>();
             foreach (var source in pages)
             {
-                var page = new OcrPage { UploadId = file.ID, Number = source.Index + 1, Markdown = source.Markdown };
+                var page = new OcrPage { UploadId = file.ID, Number = source.Index + 1, Markdown = source.Markdown,
+                    LLMStepStatus = StepProcessingStatus.CheckForPrompts };
                 pageRows.Add(page);
                 foreach (var image in source.Images ?? [])
                 {

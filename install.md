@@ -170,7 +170,7 @@ Push-Location web
 try { npm run build } finally { Pop-Location }
 ```
 
-NuGet packages restore during the .NET build; no separate NuGet CLI is needed. There is no dedicated application unit-test project yet. Framework compiler warnings and Lucide build warnings may appear; check the exit status and errors rather than assuming every warning is fatal. The optional UI review harness can be installed using [the UI workflow](docs/ui-workflow.md); Codex and that harness are not prerequisites for running the application.
+NuGet packages restore during the .NET build; no separate NuGet CLI is needed. Run `dotnet test AIESummit.Tests/AIESummit.Tests.csproj` for focused section-evidence validation and persistence-mapping tests. Framework compiler warnings and Lucide build warnings may appear; check the exit status and errors rather than assuming every warning is fatal. The optional UI review harness can be installed using [the UI workflow](docs/ui-workflow.md); Codex and that harness are not prerequisites for running the application.
 
 ## 8. Optional benchmark tools
 
@@ -216,3 +216,7 @@ This retains named volumes and their uploaded documents, accounts, configuration
 | Admin rejects a previously working token | Rerun `./start.ps1` and copy the renewed token from its local file. |
 
 For the emulator recovery above, commands are `docker compose restart emulator`, inspect its readiness logs, then `docker compose restart worker`. Do not run the restart repeatedly while setup is still progressing. Review logs locally and redact credentials/document content before sharing them. For more detail, see [Startup.AGENTS.md](Startup.AGENTS.md), [deployment guidance](deploy/AGENTS.md) and [AGENTS.md](AGENTS.md).
+
+## Enable per-page section analysis
+
+After the first startup, follow [docs/page-analysis.md](docs/page-analysis.md) to configure `geminiapi` in Blueshift Admin. Store the Gemini key in `APIInfo.AppKey`, select an available Gemini model and enable `classify-page-sections`. Runtime agents use this database record, not the environment. A one-time setup helper is `./scripts/configure-gemini.ps1 -KeyFile C:\private\gemini-key.txt`; `-ImportLocalKey` explicitly imports an already supplied local key instead. Blank/omitted secret edits preserve stored values; API responses never expose them. Restart the worker after rotation. You can instead select the Azure model on the same native page step. The reader works without page analysis configuration.

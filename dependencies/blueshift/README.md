@@ -43,3 +43,7 @@ For an upgrade, pass explicit `-ExpectedCommit` and a new unique `-Version`, upd
 ## Provenance and distribution
 
 Blueshift is authored by 10.123 Ventures; source repository: [10123IO/10.Blueshift.123](https://github.com/10123IO/10.Blueshift.123). The source revision and branch are provenance, not a consumer access requirement. Distribution of this bundle in AIESummit was explicitly requested by the repository owner. No license file was found at the source repository root at this revision; do not infer that Blueshift is open source. Third-party components retain their own licenses. NuGet package metadata/dependency groups and the hosts' `.deps.json` files identify their dependencies. Do not publish secrets, real documents, source maps or local authentication configuration in a refreshed bundle.
+
+## API-key Gemini and Admin compatibility patches
+
+The current bundle is built from the recorded upstream commit plus the two patches listed under `sourcePatches` in the manifest. `gemini-api-key.patch` adds official Developer API key/JSON-schema support without changing the Vertex service-account path and records the actual selected model on Gemini responses. `admin-apiinfo-secrets.patch` makes APIInfo credentials write-only editable in Admin; generic reads and broadcasts continue to exclude them. The packaging Dockerfile applies these tracked patches to a clean source context; normal consumers use only the resulting binaries. Patch bytes are preserved by `.gitattributes`. See `../../docs/page-analysis.md` for setup and validation.

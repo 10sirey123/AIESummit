@@ -1,5 +1,7 @@
 # Persistence and schema evolution
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
 Read [AGENTS.md](AGENTS.md) for entity registration and [Relationships.AGENTS.md](Relationships.AGENTS.md) for relationship design. This guide covers the current EF Core/PostgreSQL persistence path and how to approach future schema changes without losing retained data.

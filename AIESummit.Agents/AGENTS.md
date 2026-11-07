@@ -1,5 +1,7 @@
 # AIESummit.Agents
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 This .NET 10 class library contains the application's OCR adapter, document-splitting policies, pack registration, recovery service and execution correlation. It references `AIESummit.Domain` and the pinned BlueShift agent framework. The long-running receiver is the bundled `Blueshift.Agents.Worker` host deployed by [deploy/Dockerfile](../deploy/Dockerfile). There is no application-specific executable host or local CLI project.
 
 Read this guide before changing background processing. The application sources and pinned framework contracts take precedence over analogous implementations in Horus or Cite8.

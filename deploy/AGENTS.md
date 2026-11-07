@@ -1,5 +1,7 @@
 # Local deployment and container topology
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Use this guide for the checked-in AIESummit Compose stack, image builds, and bounded diagnostics. Start from the repository root with [start.ps1](../start.ps1). Follow [Admin.AGENTS.md](Admin.AGENTS.md), [Worker.AGENTS.md](Worker.AGENTS.md), and [Firebase.AGENTS.md](Firebase.AGENTS.md) for the individual service contracts.
 
 The Compose project is `aiesummit`, defined in [compose.yaml](../compose.yaml). This is one local development stack. It does not use Cite8's Compose includes, profiles, operator script names, frontend ports, or separate database initialization image.

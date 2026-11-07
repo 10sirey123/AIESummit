@@ -16,9 +16,29 @@ internal static class Bootstrap
         var key = config["AZURE_FOUNDRY_KEY"] ?? throw new InvalidOperationException("Foundry key is required.");
         await using var transaction = await db.Database.BeginTransactionAsync();
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(825833001)");
+        await using (var migration = typeof(Bootstrap).Assembly.GetManifestResourceStream("AIESummit.Api.Migrations.001-page-sections.sql")
+            ?? throw new InvalidOperationException("Page sections upgrade is missing."))
+        using (var reader = new StreamReader(migration))
+            await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
         await AddCredential("mistral-ocr", config["OCR_ENDPOINT"] ?? endpoint + "/providers/mistral/azure/ocr",
             config["OCR_MODEL"] ?? "mistral-ocr-4-0");
         await AddCredential("openai", config["LLM_ENDPOINT"] ?? endpoint, null);
+        if (!await db.APIInfos.AnyAsync(a => a.Identifier == "geminiapi"))
+            db.APIInfos.Add(new APIInfo { Identifier = "geminiapi", BaseURI = "https://generativelanguage.googleapis.com/v1beta/models/",
+                AppKey = "", AppSecret = "", Enabled = false, AuthorizationType = ApiAuthorizationType.ApiKey });
+        var geminiModel = await db.LLMModels.SingleOrDefaultAsync(m => m.Tag == PageSectionsStep.ModelTag);
+        if (geminiModel is null)
+        {
+            geminiModel = new LLMModel { Tag = PageSectionsStep.ModelTag, Name = "gemini-3.8-flash", Provider = LLMAPIProvider.Gemini };
+            db.LLMModels.Add(geminiModel);
+        }
+        if (!await db.LLMSteps.AnyAsync(s => s.Tag == PageSectionsStep.Tag))
+        {
+            var pageStep = PageSectionsStep.Definition();
+            pageStep.Model = geminiModel;
+            pageStep.Enabled = await db.APIInfos.AnyAsync(a => a.Identifier == "geminiapi" && a.Enabled && a.AppKey != "");
+            db.LLMSteps.Add(pageStep);
+        }
         var samples = new TaggedSampleCatalog(new SplitSamples().ProvideSamples());
         var issues = samples.ValidateIntegrity();
         if (issues.Count != 0)

@@ -48,9 +48,9 @@ typography:
     fontSize: "0.8125rem"
     lineHeight: 1.55
   markdown:
-    fontFamily: "'Geist Mono', Menlo, monospace"
-    fontSize: "0.875rem"
-    lineHeight: 1.65
+    fontFamily: "Geist, 'Helvetica Neue', Arial, sans-serif"
+    fontSize: "0.9375rem"
+    lineHeight: 1.8
 rounded:
   panel: "6px"
   pill: "999px"
@@ -150,13 +150,13 @@ A near-black field gives document content room to breathe. Opaque graphite group
 
 ## Typography
 
-Geist is bundled for headings, reading, and form controls. Bundled Geist Mono distinguishes dates, upload metadata, page ranges, and literal Markdown. Form labels stay in Geist.
+Geist is bundled for headings, reading, and form controls. Bundled Geist Mono distinguishes dates, upload metadata, page ranges, and Markdown source. Form labels stay in Geist.
 
 The opening statement uses regular-weight type with tight tracking and near-single leading. It scales with the viewport using a desktop clamp of 3–6rem and a clamp of 2.75–5.5rem at 1180px and below. The workspace heading uses a separate 2.25–4.5rem clamp. The frontmatter records the shared type attributes, with fluid sizes here so the token fields remain portable.
 
 ## Layout
 
-A centered shell sets the outer edges of the header, workspace, and footer. At wide widths the sign-in grid gives the opening statement seven of twelve columns and the form five. The ruled workflow summary spans the shell. The signed-in workspace places the upload panel above an upload list and a wider results column.
+A centered shell sets the outer edges of the header, workspace, and footer. At wide widths the sign-in grid gives the opening statement seven of twelve columns and the form five. The ruled workflow summary spans the shell. The signed-in workspace places compact intake controls above an upload rail and a document reader. The reader pairs a Markdown preview with an annotations column; document selection and Preview/Markdown source controls sit above it.
 
 At 1180px the sign-in copy and form stack, with the form capped at 540px. At 900px the workflow summary steps from three columns to two. At 690px the results and upload list stack, upload actions can wrap, and a back-to-uploads control appears. At 560px the shell uses its narrow gutter and gap, and the workflow summary becomes a single column. The stylesheet implements these as viewport breakpoints.
 
@@ -174,7 +174,7 @@ The compact panel radius (6px) is shared by graphite panels, inputs, the brand i
 
 - **Buttons.** A bright filled pill marks the primary action. The outlined graphite pill handles secondary actions. Both have a 44px minimum height. Hover changes fill or border over 120ms with ease-out, and reduced-motion preferences disable the transition. Disabled buttons use the quiet control fill with read-gray text. Text actions such as the account switch and back-to-uploads control are underlined.
 - **Fields.** Sign-in fields use a ground fill, visible labels, and a clear neutral stroke. The global keyboard focus outline is 2px with a 4px offset. The file picker transfers the same outline to its visible label.
-- **Panels.** The sign-in form and upload controls use a graphite fill and stronger hairline. The Markdown block uses the same graphite with wrapped monospaced text.
+- **Panels.** The sign-in form and upload controls use a graphite fill and stronger hairline. The document reader uses graphite with proportional Geist for rendered Markdown and monospaced text for source/code. Its adjoining annotations column shows page-section classifications and summaries, with separately expandable source evidence. The original PDF tab fits one complete page; the matching Markdown tab scrolls within the reader.
 - **Upload navigation.** Ruled rows show a bright filename above monospaced metadata. Hover and the current row use graphite. The current row adds a mint arrow and carries the current-state attribute.
 - **Result status.** A labeled dot uses mint for Ready and coral for Failed. The remaining dot follows the text color.
 
@@ -182,6 +182,6 @@ The compact panel radius (6px) is shared by graphite panels, inputs, the brand i
 
 - **Do** reserve the bright fill for the primary action.
 - **Do** show keyboard focus with the offset icy blue outline.
-- **Do** keep generated Markdown readable as literal, wrapping text.
+- **Do** keep rendered Markdown readable, provide the original source, and preserve page boundaries.
 - **Don't** use colored glows, translucent surfaces, or decorative motion.
 - **Don't** use mint as a general accent or let a status dot stand alone.

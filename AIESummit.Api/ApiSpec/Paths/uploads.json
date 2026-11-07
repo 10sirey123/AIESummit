@@ -207,5 +207,100 @@
       },
       "description": "Returns an extracted image that belongs to the specified upload."
     }
+  },
+  "/api/v1/uploads/{id}/source": {
+    "get": {
+      "operationId": "getOriginalSource",
+      "summary": "Read the owned original file bytes",
+      "tags": [
+        "Uploads"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Original PDF, PNG or JPEG; private and not cached",
+          "content": {
+            "application/pdf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "206": {
+          "description": "Original file byte range"
+        },
+        "401": {
+          "description": "Firebase authentication required"
+        },
+        "404": {
+          "description": "Upload not found for this owner"
+        }
+      }
+    }
+  },
+  "/api/v1/uploads/{id}/analyze": {
+    "post": {
+      "operationId": "analyzeUploadPages",
+      "summary": "Queue unanalysed owned OCR pages using the configured native Blueshift page step",
+      "tags": [
+        "Uploads"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "202": {
+          "description": "Eligible pages queued; inspect per-page status on the detail endpoint",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptedUpload"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Firebase authentication required"
+        },
+        "404": {
+          "description": "Upload not found for this owner"
+        },
+        "409": {
+          "description": "Gemini APIInfo or page LLMStep is not configured/enabled"
+        }
+      }
+    }
   }
 }

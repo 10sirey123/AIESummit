@@ -80,3 +80,6 @@ Keep large areas neutral and opaque. Avoid colored glows, translucent glass, hea
 | --dp-motion-ease | ease-out |
 </design-system>
 </prompt>
+## Document review surface
+
+The signed-in React workspace is a reading surface: one source page at a time, Original PDF/Markdown tabs, fit-page PDF rendering, bounded Markdown scrolling and original document download. A neighboring annotations column shows native page-section classifications and summaries with expandable, separately validated source quotes; on phones it sits below the reader. Keep the existing dark palette, proportionate Geist reading type and Geist Mono page/source metadata. The original static client remains unchanged.

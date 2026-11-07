@@ -11,3 +11,9 @@ foreach ($artifact in $manifest.artifacts) {
     }
 }
 Write-Host "Verified $($manifest.artifacts.Count) Blueshift artifacts at $($manifest.sourceCommit)."
+foreach ($patch in $manifest.sourcePatches) {
+    $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $path = [IO.Path]::GetFullPath((Join-Path $repoRoot $patch.path))
+    if (-not $path.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
+        (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $patch.sha256) { throw 'Framework source patch integrity check failed.' }
+}

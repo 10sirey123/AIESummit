@@ -152,6 +152,8 @@ The complete Horus reference `../../horus/Voiston.Agents.Tests/AGENTS.md` motiva
 
 ## Benchmark preparation
 
+`prepare_benchmarks.py` builds the requested offline collection under `../corporea/benchmarks/`, with separate `cuad`, `maud`, and `edgar-corpus` folders. Each document has a numbered PDF, JSON sidecar, and reference TXT. Install dependencies from `benchmark-requirements.txt`; then run `python scripts/prepare_benchmarks.py`. It prepares all 510 CUAD and 152 MAUD documents and a deterministic, year-balanced sample of 100 already-downloaded EDGAR reports. It does not download, call models, or create application tests. Preserve gold provenance, exact reference-text spans, null EDGAR labels, and the distinction between original and rendered PDFs. See `../corporea/README.md` for the schema and source-selection details.
+
 `download_benchmarks.py` is the existing dependency-free Python 3.12+ utility for pinned benchmark downloads and integrity verification. Run `python scripts/download_benchmarks.py` or `python scripts/download_benchmarks.py --verify-only` from the root. Preserve its source lock, raw data and upstream splits; see `../corporea/README.md` and root benchmark policy. Python is for dataset preparation only.
 
 `test_download_benchmarks.py` checks recovery from prematurely ended responses and safe replacement when a server ignores a byte range. Run `python -m unittest discover -s scripts -p test_download_benchmarks.py -v`. It uses a local HTTP server and temporary synthetic bytes; it needs no provider credentials or external network access. Incomplete transfers must retain their partial bytes for subsequent range requests. Only discard a partial file when its full expected length fails checksum verification or its length exceeds the expected size.
@@ -159,3 +161,7 @@ The complete Horus reference `../../horus/Voiston.Agents.Tests/AGENTS.md` motiva
 ## Bundled framework maintenance
 
 Run `./scripts/verify-dependencies.ps1` to verify all seven committed Blueshift artifacts against `dependencies/blueshift/manifest.json`; startup runs this too. Only maintainers need `./scripts/package-blueshift.ps1 -SourcePath <separate-checkout>` and private source access to refresh binaries. The pinned-source container build is `deploy/Blueshift.Bundle.Dockerfile`. See `../dependencies/blueshift/README.md` for versioning, provenance and validation. Normal builds consume the local NuGet feed and prebuilt Linux hosts/site without a submodule.
+
+## Native page analysis checks
+
+`configure-gemini.ps1` explicitly imports a private key file or supplied local key into write-only Admin APIInfo, configures the Gemini model and enables the native page LLMStep. Runtime agents never read a Gemini environment key. `smoke.ps1 -VerifyPageSections -KeepTestSession -ContractFixture` exercises synthetic MSA/NDA pages, original source fidelity/ownership, all page classifications, exact source quotes and Admin runs. It retains test data; optional synthetic login details go only to ignored artifacts. `dotnet test AIESummit.Tests/AIESummit.Tests.csproj` checks section validation and EF prompt mapping. See `../docs/page-analysis.md`.

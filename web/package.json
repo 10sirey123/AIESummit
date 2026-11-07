@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test:viewer": "node scripts/test-document-viewer.mjs",
     "preview": "vite preview",
     "design:check": "cd .. && impeccable detect web/src"
   },
@@ -11,8 +12,11 @@
   "dependencies": {
     "geist": "^1.9.2",
     "lucide-react": "^1.70.0",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

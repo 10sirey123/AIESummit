@@ -1,2 +1,3 @@
 # Checksummed dependency artifacts must survive checkout byte-for-byte on Windows.
 dependencies/blueshift/** -text whitespace=cr-at-eol
+deploy/patches/*.patch -text whitespace=cr-at-eol

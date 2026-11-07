@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)][string]$SourcePath,
     [string]$ExpectedCommit = 'cc69aa4da64bf313ec7120711624816c7f9d4254',
-    [string]$Version = '10.0.0-aiesummit.cc69aa4'
+    [string]$Version = '10.0.0-aiesummit.cc69aa4.gemini3'
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -14,7 +14,7 @@ if ($LASTEXITCODE -or $sourceChanges) { throw 'Use a clean Blueshift source chec
 $outputRoot = Join-Path $repoRoot 'dependencies/blueshift'
 $stagingRoot = Join-Path $repoRoot ('artifacts/blueshift-bundle-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force $stagingRoot | Out-Null
-& docker build --file "$repoRoot/deploy/Blueshift.Bundle.Dockerfile" --build-arg "BUNDLE_VERSION=$Version" --build-arg "SOURCE_COMMIT=$sourceCommit" --output "type=local,dest=$stagingRoot" $sourceRoot
+& docker build --file "$repoRoot/deploy/Blueshift.Bundle.Dockerfile" --build-context "aiesummit=$repoRoot" --build-arg "BUNDLE_VERSION=$Version" --build-arg "SOURCE_COMMIT=$sourceCommit" --output "type=local,dest=$stagingRoot" $sourceRoot
 if ($LASTEXITCODE) { throw 'Blueshift bundle build failed; existing dependencies were not changed.' }
 $expectedFiles = @(
     "packages/10123.Blueshift.Domain.$Version.nupkg",
@@ -36,6 +36,7 @@ $manifest = [ordered]@{
     sourceRepository = 'https://github.com/10123IO/10.Blueshift.123'
     sourceBranch = 'net10'
     sourceCommit = $sourceCommit
+    sourcePatches = @(Get-ChildItem "$repoRoot/deploy/patches/*.patch" | Sort-Object Name | ForEach-Object { @{path="deploy/patches/$($_.Name)"; sha256=(Get-FileHash $_.FullName).Hash.ToLowerInvariant()} })
     packageVersion = $Version
     targetFramework = 'net10.0'
     hostRuntime = 'linux-x64'

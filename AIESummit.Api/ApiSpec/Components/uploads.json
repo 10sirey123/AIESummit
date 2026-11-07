@@ -58,7 +58,8 @@
     "type": "object",
     "required": [
       "upload",
-      "documents"
+      "documents",
+      "pages"
     ],
     "properties": {
       "upload": {
@@ -68,6 +69,12 @@
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/Document"
+        }
+      },
+      "pages": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OcrPage"
         }
       }
     }
@@ -131,6 +138,71 @@
         "minimum": 1
       },
       "reference": {
+        "type": "string"
+      }
+    }
+  },
+  "OcrPage": {
+    "type": "object",
+    "required": [
+      "id",
+      "number",
+      "markdown",
+      "analysisStatus",
+      "error",
+      "sections"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "number": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "markdown": {
+        "type": "string"
+      },
+      "analysisStatus": {
+        "type": "string",
+        "enum": [
+          "not_started",
+          "analyzing",
+          "ready",
+          "failed"
+        ]
+      },
+      "error": {
+        "type": "string",
+        "nullable": true
+      },
+      "sections": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PageSection"
+        }
+      }
+    }
+  },
+  "PageSection": {
+    "type": "object",
+    "required": [
+      "heading",
+      "classification",
+      "summary",
+      "quote"
+    ],
+    "properties": {
+      "heading": {
+        "type": "string"
+      },
+      "classification": {
+        "type": "string"
+      },
+      "summary": {
+        "type": "string"
+      },
+      "quote": {
         "type": "string"
       }
     }

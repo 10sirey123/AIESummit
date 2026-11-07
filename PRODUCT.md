@@ -20,7 +20,7 @@ Users sign in with email and password, upload a source file, track processing, a
 
 ## Capabilities and Constraints
 
-The existing API defines supported formats, file limits, result states and owner-scoped access. Keep result content readable as literal text and preserve page boundaries.
+The existing API defines supported formats, file limits, result states and owner-scoped access. The React reader switches between one fitted original PDF page and its scrolling OCR Markdown. Its sidebar displays native Blueshift page-section classifications, short summaries and separately expandable exact source quotes. Reviewer notes and legal risk scoring remain future work. Preserve the original Markdown and evidence provenance; see [page analysis](docs/page-analysis.md).
 
 ## Brand Commitments
 

@@ -1,0 +1,98 @@
+diff --git a/Blueshift.Agents/LLM/Gemini/Gemini.cs b/Blueshift.Agents/LLM/Gemini/Gemini.cs
+index 6502a95..a707720 100644
+--- a/Blueshift.Agents/LLM/Gemini/Gemini.cs
++++ b/Blueshift.Agents/LLM/Gemini/Gemini.cs
+@@ -26,6 +26,7 @@ namespace Blueshift.Agents.LLM.Gemini
+         public Action<string> Logger { set { toLog = value; } }
+ 
+         public string Model { get; set; }
++        private LLMModel selectedModel;
+         public string endpoint { get; set; }
+         public HttpClient client { get; set; }
+ 
+@@ -60,6 +61,16 @@ namespace Blueshift.Agents.LLM.Gemini
+             // Disable Expect100Continue to avoid HTTP 417 errors.
+             System.Net.ServicePointManager.Expect100Continue = false;
+ 
++            if (ApiBaseUri?.Scheme == "https" && ApiBaseUri.Host == "generativelanguage.googleapis.com")
++            {
++                client = httpClient ?? new HttpClient();
++                client.Timeout = TimeSpan.FromMinutes(3);
++                client.DefaultRequestHeaders.Authorization = null;
++                client.DefaultRequestHeaders.Remove("x-goog-api-key");
++                client.DefaultRequestHeaders.TryAddWithoutValidation("x-goog-api-key", AppKey);
++                return client;
++            }
++
+             GoogleCredential credential = GoogleCredential.FromJson(CredentialJsonProvider?.Invoke());
+             GoogleCredential credentialWithScope = credential.CreateScoped("https://www.googleapis.com/auth/cloud-platform");
+ 
+@@ -92,6 +103,7 @@ namespace Blueshift.Agents.LLM.Gemini
+         public void SetModel(LLMModel model)
+         {
+             Model = model.Name;
++            selectedModel = model;
+         }
+ 
+         public void SetEndPoint(string urlEndPoint)
+@@ -109,7 +121,7 @@ namespace Blueshift.Agents.LLM.Gemini
+ 
+             try
+             {
+-                string requestUrl = $"{endpoint}{Model}:generateContent";
++                string requestUrl = $"{(endpoint ?? ApiBaseUri?.ToString())?.TrimEnd('/')}/{Uri.EscapeDataString(Model)}:generateContent";
+                 var parts = new List<Part> { new Part { Text = prompt.Prompt } };
+ 
+                 if (!string.IsNullOrEmpty(fileUrl) && !string.IsNullOrEmpty(mimeType))
+@@ -140,7 +152,9 @@ namespace Blueshift.Agents.LLM.Gemini
+                 if (!string.IsNullOrEmpty(prompt.ExpectedResponseJsonFormat))
+                 {
+                     requestPayload.GenerationConfig.ResponseMimeType = "application/json";
+-                    requestPayload.GenerationConfig.ResponseSchema = JsonConvert.DeserializeObject(prompt.ExpectedResponseJsonFormat);
++                    if (ApiBaseUri?.Host == "generativelanguage.googleapis.com")
++                        requestPayload.GenerationConfig.ResponseJsonSchema = JsonConvert.DeserializeObject(prompt.ExpectedResponseJsonFormat);
++                    else requestPayload.GenerationConfig.ResponseSchema = JsonConvert.DeserializeObject(prompt.ExpectedResponseJsonFormat);
+                 }
+ 
+                 if (prompt.Temperature > 0)
+@@ -156,7 +170,7 @@ namespace Blueshift.Agents.LLM.Gemini
+ 
+                 if (!response.IsSuccessStatusCode)
+                 {
+-                    Log($"Gemini API request failed. StatusCode: {response.StatusCode}, Response: {responseString}", Blueshift.Domain.Abstract.LogLineType.Error);
++                    Log($"Gemini API request failed. StatusCode: {response.StatusCode}", Blueshift.Domain.Abstract.LogLineType.Error);
+                     return null;
+                 }
+                 
+@@ -175,7 +189,7 @@ namespace Blueshift.Agents.LLM.Gemini
+                 }
+                 catch (JsonReaderException)
+                 {
+-                    Log($"Could not parse the Gemini response to extract the 'data' property. Response: {completionText}", Blueshift.Domain.Abstract.LogLineType.Error);
++                    Log("Could not parse the Gemini structured response.", Blueshift.Domain.Abstract.LogLineType.Error);
+                 }
+ 
+                 int tokensUsed = gemini_response.UsageMetadata?.TotalTokenCount ?? 0;
+@@ -188,7 +202,7 @@ namespace Blueshift.Agents.LLM.Gemini
+                     TokensUsed = tokensUsed,
+                     InputTokens = inputTokens,
+                     OutputTokens = outputTokens,
+-                    ModelUsed = prompt.PreferedModel
++                    ModelUsed = selectedModel
+                 };
+             }
+             catch (Exception ex)
+diff --git a/Blueshift.Agents/LLM/Gemini/GeminiModel.cs b/Blueshift.Agents/LLM/Gemini/GeminiModel.cs
+index 34d9257..8020b42 100644
+--- a/Blueshift.Agents/LLM/Gemini/GeminiModel.cs
++++ b/Blueshift.Agents/LLM/Gemini/GeminiModel.cs
+@@ -48,6 +48,9 @@ namespace Blueshift.Agents.LLM.Gemini
+         [DataMember(Name = "responseMimeType", EmitDefaultValue = false)]
+         public string ResponseMimeType { get; set; }
+         
++        [DataMember(Name = "responseJsonSchema", EmitDefaultValue = false)]
++        public object ResponseJsonSchema { get; set; }
++
+         [DataMember(Name = "responseSchema", EmitDefaultValue = false)]
+         public object ResponseSchema { get; set; }
+     }

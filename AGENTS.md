@@ -79,7 +79,7 @@ All `/api/v1` routes require an authenticated principal with `sub`. Lists filter
 
 Uploads accept PDF, PNG and JPEG signatures and a maximum of 20 MiB. The server derives MIME type from bytes rather than trusting the submitted content type. Names are reduced to a filename and bounded to 255 characters. Keep transport overhead distinct from the file limit when adjusting Kestrel configuration.
 
-The API serves the original static browser client. The separate AIESummit React workspace in `web/` uses the same API and Firebase configuration. Keep authentication state in memory and preserve refresh coordination and stale-request protection when editing session behavior. Render uploaded names, model titles and Markdown as text. Introducing HTML or Markdown rendering requires deliberate handling of untrusted content. Revoke object URLs when images are cleared.
+The API serves the original static browser client. The separate AIESummit React workspace in `web/` uses the same API and Firebase configuration. Keep authentication state in memory and preserve refresh coordination and stale-request protection when editing session behavior. Render filenames and model titles as text. The React document viewer uses `react-markdown`/`remark-gfm`, skips raw HTML, restricts navigable link protocols and never loads Markdown image URLs; extracted images use the owner-scoped API. Revoke object URLs when images are cleared. Its sidebar shows per-page section classifications, generated summaries and separately quoted source evidence from the native page LLMStep. Reviewer notes and legal risk scoring are not implemented. See `web/AGENTS.md` for viewer checks and page provenance. The original static client retains literal Markdown display.
 
 `/health`, `/firebase-config` and the static assets are publicly readable by design. Firebase web configuration is client configuration. Foundry credentials and the Admin bearer token are not client configuration and must never be returned there.
 
@@ -120,7 +120,7 @@ For hosted Firebase, enable Email/Password in the intended project and configure
 
 `Bootstrap.InitializeAsync` calls `EnsureCreatedAsync`, then uses a PostgreSQL advisory transaction lock around seeds. Existing API connections, model and step records are preserved. Changing `.env` after initial creation does not rotate credentials already stored in `APIInfo`. Use Admin to update persisted configuration when rotating keys or changing deployments.
 
-There is no application migration project or established migration workflow yet. `EnsureCreated` initializes an empty database and does not upgrade an existing schema. Before changing a populated database, plan and validate an explicit migration that preserves data. Do not delete volumes to make a schema problem disappear.
+There is no general EF migration project. `EnsureCreated` initializes an empty database; bootstrap also applies the explicit idempotent additive upgrade in `AIESummit.Api/Migrations/001-page-sections.sql` under its PostgreSQL advisory lock. Before changing a populated database, plan and validate an explicit migration that preserves data. Do not delete volumes to make a schema problem disappear.
 
 ```powershell
 docker compose down
@@ -171,7 +171,7 @@ The smoke test creates two local Firebase accounts and a temporary synthetic thr
 
 The fixture file is deleted in `finally`. The created local accounts, uploaded records and execution logs remain. The script is tied to local emulator ports and does not validate hosted Firebase. Do not run it against an unrelated environment by casually changing URLs.
 
-There is no dedicated AIESummit unit-test project or application CLI in `AIESummit.slnx`. Do not report `dotnet test` with zero discovered tests as functional coverage. Add focused tests when changing meaningful logic and verify the full workflow when the change crosses authentication, persistence or agent boundaries. Browser layout, keyboard behavior and session-race interactions need browser checks beyond the smoke script.
+`AIESummit.Tests` contains focused section-evidence validation and EF relationship-model tests. Run `dotnet test AIESummit.Tests/AIESummit.Tests.csproj`; there is no application CLI. Do not report zero discovered tests as coverage. Add focused tests when changing meaningful logic and verify the full workflow when the change crosses authentication, persistence or agent boundaries. Browser layout, keyboard behavior and session-race interactions need browser checks beyond the smoke script.
 
 ## Troubleshooting and lessons to preserve
 
@@ -197,11 +197,11 @@ The current Cite8 reference is Erick's most recently authored branch head found 
 
 Cite8 confirms the modern shared Admin, EF Core/PostgreSQL domain pack and BlueShift worker arrangement. Its product App, CLI overlays, migration pipeline, authored skills, Stripe/Auth0 setup and issue-management workflow are Cite8-specific and are not implemented or mandated here. Recheck recent branch activity before a later reference refresh. Do not change AIESummit's dependency pin merely to match a reference branch.
 
-Current local evidence is `README.md`, `AIESummit.slnx`, `compose.yaml`, the implementation paths listed above, `deploy/Dockerfile`, `deploy/worker.overlay.json`, `start.ps1`, `scripts/smoke.ps1`, `.gitignore`, and the bundled Blueshift package contracts. Features such as a standalone CLI, migration pipeline, generated C# API implementation, upload deletion workflow or richer rendered Markdown viewer require implementation work before they can be documented as available.
+Current local evidence is `README.md`, `AIESummit.slnx`, `compose.yaml`, the implementation paths listed above, `deploy/Dockerfile`, `deploy/worker.overlay.json`, `start.ps1`, `scripts/smoke.ps1`, `.gitignore`, and the bundled Blueshift package contracts. Features such as a standalone CLI, general migration pipeline, generated C# API implementation or upload deletion workflow require implementation work before they can be documented as available.
 
 ## Contract-analysis scope and benchmark guidance
 
-The intake scaffold above was imported from the working tree of `../hackathon` (base commit `da68b8149fa1b825fb4b1735862c2d16dff81b39`), including its uncommitted React workspace and development harness, and renamed to AIESummit. Current processing performs OCR and document splitting. Contract clause extraction, risk interpretation and benchmark evaluation are future work. Extend the existing BlueShift LLM step/prompt policies for that work.
+The intake scaffold above was imported from the working tree of `../hackathon` (base commit `da68b8149fa1b825fb4b1735862c2d16dff81b39`), including its uncommitted React workspace and development harness, and renamed to AIESummit. Current processing performs OCR, document splitting and per-page section classification/summaries with exact source evidence. Specialized contract clause extraction, risk interpretation and benchmark evaluation are future work. Extend the existing BlueShift LLM step/prompt policies for that work.
 
 # Project guidance
 
@@ -220,6 +220,8 @@ The intake scaffold above was imported from the working tree of `../hackathon` (
 - Public GitHub repository: `https://github.com/10sirey123/AIESummit`; `origin` points to this repository.
 - `README.md`: project status, setup, and contribution guidance.
 - `corporea/`: benchmark datasets (spelling requested by the project owner).
+- `corporea/benchmarks/{cuad,maud,edgar-corpus}/`: numbered PDF/JSON/TXT pairs for 510 CUAD contracts, 152 MAUD agreements, and 100 EDGAR reports. See `corporea/README.md` for the label schema and provenance.
+- Prepare existing sources offline: `python -m pip install -r scripts/benchmark-requirements.txt`, then `python scripts/prepare_benchmarks.py`. No model inference or application tests are run by preparation.
 - `corporea/sources.lock.json`: pinned upstream downloads and integrity metadata.
 - `corporea/manifest.json`: generated local download and archive verification report.
 - `corporea/README.md`: dataset provenance, format availability, and benchmark limitations.
@@ -227,9 +229,12 @@ The intake scaffold above was imported from the working tree of `../hackathon` (
 - Download and verify: `python scripts/download_benchmarks.py`.
 - Recheck local payloads without downloading: `python scripts/download_benchmarks.py --verify-only`.
 - Check downloader recovery without external network access: `python -m unittest discover -s scripts -p test_download_benchmarks.py -v`. These checks use a local HTTP server to verify premature-response recovery and servers that ignore byte ranges.
-- Application build: `dotnet build AIESummit.slnx --nologo`. See the inherited verification commands above; there is no dedicated application unit-test project yet.
+- Application build: `dotnet build AIESummit.slnx --nologo`. See the inherited verification commands above; focused tests are in `AIESummit.Tests`.
 
 ## Benchmark policy
+- [Extraction targets](docs/extraction-targets.md) preserves the original analysis scope and proposes 15 selected CUAD/MAUD targets plus 10 healthcare-specific targets and future card/evidence requirements. This is a specification, not implemented extraction or completed evaluation. EDGAR contributes no gold targets; healthcare targets, indemnification and broader termination triggers require new annotations.
+- Bulk downloads were intentionally stopped at the owner's request. CUAD and MAUD are complete; eight EDGAR years are available. Do not automatically resume downloads during preparation, builds, or verification. The working collection uses only 100 EDGAR reports, with metadata and explicitly unknown detections.
+- Keep numbered PDF/label pairs separate from raw sources. CUAD uses original PDFs; MAUD and EDGAR use clearly identified text renderings. EDGAR `expected_detections: null` means unlabeled, never no clauses. Attach only MAUD's original `main` rows to full-document gold sidecars; retain edited/synthetic rows only in raw data.
 - Preserve original downloaded datasets and upstream train/dev/test splits. Keep transformations, OCR, model outputs, and evaluation results separate from raw files.
 - CUAD is the initial annotated clause extraction and original-PDF benchmark. MAUD covers merger agreement understanding. EDGAR-CORPUS provides annual-report text for ingestion and domain stress testing, not gold clause-risk annotations.
 - MAUD and EDGAR-CORPUS do not ship original contract/filing PDFs in these releases. Documentation PDFs do not count as input documents. Never label rendered text or synthetic PDFs as originals.
@@ -237,3 +242,11 @@ The intake scaffold above was imported from the working tree of `../hackathon` (
 - Raw downloads, extracted corpora, and generated reports are local and ignored by Git. Track download tooling, source locks, and dataset documentation.
 - Preserve long original filenames; several CUAD paths exceed the legacy Windows 260-character limit. Use tools that support long paths when counting or opening these files.
 - Do not place real private contracts, credentials, or personal data in Git. Do not send contract contents to an external service without authorization.
+
+## Page reader and section-analysis workflow
+
+Read [docs/page-analysis.md](docs/page-analysis.md) for the original-source endpoint, one-page PDF/Markdown reader, Gemini APIInfo setup, native LLMStep processing, additive schema upgrade and validation. `OcrPage` now implements `ILlmCapable` with its own mapped `LLMPrompts` (`OcrPage_ID`), step state, result JSON, validated section JSON and error. `PageSectionsStep` (`classify-page-sections`) runs through framework `LLMStepAgent<OcrPage>`, `LLMPromptFactory` and `LlmPromptAgent`; it is not an application provider loop. Its generated summaries/classifications must retain separately validated exact source quotes. Telemetry resolves page subjects/prompts to the root upload; worker/recovery include `ocrpage` queues.
+
+Gemini configuration is the persisted APIInfo with identifier `geminiapi`, official Developer API models endpoint and key in write-only `AppKey`, plus the `gemini-page-sections` model. Bootstrap creates a disabled empty-key record and preserves operator edits. Runtime never reads a Gemini key from `.env`; `scripts/configure-gemini.ps1` offers an explicit one-time import or private key-file input through Admin. The bundle records compatibility patches for Developer API-key authentication/structured JSON and Admin write-only APIInfo secrets. Keep patches, package references, hosts and manifest in sync; use new package versions for changed binaries.
+
+New uploads use enabled page analysis. Existing pages are never automatically backfilled into a new external provider. The owner's explicit `/uploads/{id}/analyze` action queues only pages without prompts/results, preserving failures for Admin diagnosis. Test with `./scripts/smoke.ps1 -VerifyPageSections -KeepTestSession -ContractFixture`; this uses synthetic MSA/NDA material, live configured providers, and saves only synthetic test-login information under ignored artifacts. Do not send private documents to a new provider merely to verify a workflow.

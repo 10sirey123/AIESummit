@@ -4,5 +4,5 @@
   "dbContext": "AIESummit.Domain.AIESummitDb",
   "connectionStringName": "AIESummitDb",
   "venturePrefix": "aiesummit",
-  "queueRegexGroup": ["^aiesummit-dev-(uploadedfile|llmprompt)-"]
+  "queueRegexGroup": ["^aiesummit-dev-(uploadedfile|ocrpage|llmprompt)-"]
 }

@@ -16,7 +16,9 @@ export type DocumentResult = {
   markdown: string;
   images: ImageReference[];
 };
-export type UploadDetail = { upload: Upload; documents: DocumentResult[] };
+export type PageSection = { heading: string; classification: string; summary: string; quote: string };
+export type PageResult = { id: number; number: number; markdown: string; analysisStatus: 'not_started' | 'analyzing' | 'ready' | 'failed'; error: string | null; sections: PageSection[] };
+export type UploadDetail = { upload: Upload; documents: DocumentResult[]; pages: PageResult[] };
 type FirebaseConfig = { apiKey: string; emulator: boolean; emulatorPort: string };
 type Identity = { email: string; idToken: string; refreshToken: string; expiresIn: string };
 type Refresh = { id_token: string; refresh_token: string; expires_in: string };
@@ -90,6 +92,9 @@ export async function authenticate(mode: AuthMode, email: string, password: stri
     },
     image: async (uploadId: number, imageId: number, signal: AbortSignal) =>
       (await checked(await request(`/uploads/${uploadId}/images/${imageId}`, { signal }))).blob(),
+    source: async (uploadId: number, signal: AbortSignal) =>
+      (await checked(await request(`/uploads/${uploadId}/source`, { signal }))).blob(),
+    analyze: async (uploadId: number) => json<{ id: number }>(await request(`/uploads/${uploadId}/analyze`, { method: 'POST' })),
   };
 }
 

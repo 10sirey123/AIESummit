@@ -1,5 +1,7 @@
 # Execution telemetry and upload correlation
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
 Read this guide when investigating OCR or splitting runs, changing execution correlation, or extending operational diagnostics. Start with [UploadExecutionContext.cs](UploadExecutionContext.cs), [compose.yaml](../compose.yaml), and the shared Admin execution endpoints. Business state, retained execution history, and worker liveness answer different questions.

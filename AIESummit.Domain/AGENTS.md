@@ -1,5 +1,7 @@
 # AIESummit.Domain entity guide
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
 This project owns the persistent upload model shared by the API, worker and central BlueShift Admin. Read this guide before adding an entity or changing a property, relationship, index or base class. Preserve stored property names and relationship identities unless the task includes a deliberate database transition.

@@ -1,5 +1,7 @@
 # Shared BlueShift Admin deployment
 
+Page-section analysis and the page reader are implemented. See [the current page-analysis guide](../docs/page-analysis.md) for the `OcrPage` LLM subject, Gemini APIInfo, additive schema upgrade, queues, evidence validation and Admin checks; the detailed split/OCR guidance below remains applicable to that original workflow.
+
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
 AIESummit uses the shared BlueShift Admin API and SPA from the pinned binary bundle. It does not have a private `AIESummit.Admin` host or a second implementation of catalog CRUD. The venture supplies domain and agent packs, database configuration, navigation and entity restrictions.
