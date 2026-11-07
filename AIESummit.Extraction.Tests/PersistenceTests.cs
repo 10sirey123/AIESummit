@@ -40,6 +40,9 @@ public sealed class PersistenceTests
         using var migration = typeof(PersistenceTests).Assembly.GetManifestResourceStream("AIESummit.Extraction.Tests.Upgrade.sql")!;
         using var reader = new StreamReader(migration); var sql = await reader.ReadToEndAsync();
         await db.Database.ExecuteSqlRawAsync(sql); await db.Database.ExecuteSqlRawAsync(sql);
+        using var evidenceUpgrade = typeof(PersistenceTests).Assembly.GetManifestResourceStream("AIESummit.Extraction.Tests.EvidenceUpgrade.sql")!;
+        using var evidenceReader = new StreamReader(evidenceUpgrade); var evidenceSql = await evidenceReader.ReadToEndAsync();
+        await db.Database.ExecuteSqlRawAsync(evidenceSql); await db.Database.ExecuteSqlRawAsync(evidenceSql);
         Assert.Equal(new byte[] { 1, 2, 3 }, (await db.Uploads.AsNoTracking().SingleAsync()).Source);
         var model = new LLMModel { Tag = "synthetic-extraction", Name = "synthetic", Provider = LLMAPIProvider.OpenAI };
         db.LLMModels.Add(model); await ExtractionSeeds.EnsureAsync(db, model); await db.SaveChangesAsync();
@@ -53,10 +56,14 @@ public sealed class PersistenceTests
         Assert.Equal("Operator instructions", type.Instructions); Assert.False(step.Enabled); Assert.Equal("Operator template", step.Template);
 
         var analysis = AnalysisFactory.Create(document, [page], [type]); db.DocumentAnalyses.Add(analysis); await db.SaveChangesAsync();
+        await using var racingContext = Open();
+        var staleAnalysis = await racingContext.DocumentAnalyses.SingleAsync();
         var result = analysis.Targets.Single(); result.Outcome = "detected";
         result.Extractions.Add(new Domain.Extraction { Title = "Expiration", Summary = "Explicit date", ValuesJson = "{\"date\":\"2027-12-31\"}",
             Evidence = [new ExtractionEvidence { PageTextRevisionId = analysis.Pages.Single().ID, Quote = "2027-12-31", StartOffset = 21, EndOffset = 31, SupportedFieldsJson = "[\"date\"]" }] });
         analysis.CompletedAt = DateTime.UtcNow; await db.SaveChangesAsync();
+        staleAnalysis.CompletedAt = DateTime.UtcNow;
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => racingContext.SaveChangesAsync());
         db.ChangeTracker.Clear();
         var evidence = await db.ExtractionEvidence.Include(e => e.PageTextRevision).SingleAsync();
         Assert.Equal(evidence.Quote, evidence.PageTextRevision.Markdown[evidence.StartOffset..evidence.EndOffset]);

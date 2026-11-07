@@ -1,5 +1,7 @@
 # AIESummit.Agents
 
+`EvidenceMatcher` now accepts a 50% word-Dice fallback when exact matching fails. See [matching policy](../docs/evidence-matching.md); preserve page scope, exact source offsets, match metadata and all other extraction validation.
+
 The single `extract-contract-targets` step analyzes all ten seeded CUAD types in each `DocumentAnalysis` using the native worker. See [contract extraction](../docs/contract-extraction.md) for hydration, exact evidence validation, atomic failure semantics, recovery and target snapshots. Applying a split supersedes existing document rows instead of deleting referenced history.
 
 The single `extract-contract-targets` step now analyzes all ten seeded CUAD types in each `DocumentAnalysis` using the native worker. See [contract extraction](../docs/contract-extraction.md) for hydration, exact evidence validation, atomic failure semantics, recovery queues and target snapshots. Split application supersedes existing document rows rather than deleting referenced history.

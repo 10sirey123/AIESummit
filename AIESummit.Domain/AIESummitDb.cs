@@ -35,6 +35,7 @@ public sealed class AIESummitDb(DbContextOptions options) : EFBaseDbContext(opti
         modelBuilder.Entity<DocumentAnalysis>().HasMany(a => a.LLMPrompts).WithOne()
             .HasForeignKey("DocumentAnalysis_ID").OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<DocumentAnalysis>().HasOne(a => a.Document).WithMany().OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DocumentAnalysis>().Property(a => a.CompletedAt).IsConcurrencyToken();
         modelBuilder.Entity<PageTextRevision>().HasOne(p => p.OcrPage).WithMany().OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<AnalysisTargetResult>().HasOne(r => r.ExtractionType).WithMany().OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<ExtractionEvidence>().HasOne(e => e.PageTextRevision).WithMany().OnDelete(DeleteBehavior.Restrict);

@@ -2,30 +2,7 @@
   "ExtractionTypeList": {
     "type": "array",
     "items": {
-      "type": "object",
-      "properties": {
-        "tag": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "benchmarkCategory": {
-          "type": "string"
-        },
-        "instructions": {
-          "type": "string"
-        },
-        "parametersJson": {
-          "type": "string"
-        },
-        "definitionVersion": {
-          "type": "integer"
-        },
-        "enabled": {
-          "type": "boolean"
-        }
-      }
+      "$ref": "#/components/schemas/ExtractionTypeDefinition"
     }
   },
   "ExtractionAccepted": {
@@ -77,6 +54,20 @@
         "items": {
           "type": "string"
         }
+      },
+      "modelQuote": {
+        "type": "string",
+        "description": "Original model quote, which may differ from the source quote for approximate matches; empty for legacy evidence."
+      },
+      "matchMethod": {
+        "type": "string",
+        "description": "exact or word-dice-50-v1"
+      },
+      "matchScore": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Multiset word Dice overlap; threshold 0.5 inclusive. Exact matches score 1."
       }
     },
     "required": [
@@ -111,7 +102,39 @@
       "values": {
         "type": "object",
         "additionalProperties": true,
-        "description": "Versioned allowed fields are specified by the extraction target; ISO dates, decimal amounts/durations and explicit currency/unit."
+        "description": "Versioned allowed fields are specified by the extraction target; ISO dates, decimal amounts/durations and explicit currency/unit.",
+        "x-target-value-schemas": {
+          "agreement-effective-date": {
+            "1": "#/components/schemas/EffectiveDateValuesV1"
+          },
+          "agreement-expiration": {
+            "1": "#/components/schemas/ExpirationValuesV1"
+          },
+          "renewal-term": {
+            "1": "#/components/schemas/RenewalValuesV1"
+          },
+          "non-renewal-notice": {
+            "1": "#/components/schemas/NonRenewalNoticeValuesV1"
+          },
+          "non-compete": {
+            "1": "#/components/schemas/NonCompeteValuesV1"
+          },
+          "termination-convenience": {
+            "1": "#/components/schemas/ConvenienceTerminationValuesV1"
+          },
+          "liability-cap": {
+            "1": "#/components/schemas/LiabilityCapValuesV1"
+          },
+          "uncapped-liability": {
+            "1": "#/components/schemas/UncappedLiabilityValuesV1"
+          },
+          "audit-rights": {
+            "1": "#/components/schemas/AuditRightsValuesV1"
+          },
+          "insurance-obligations": {
+            "1": "#/components/schemas/InsuranceObligationsValuesV1"
+          }
+        }
       },
       "evidence": {
         "type": "array",
@@ -262,6 +285,931 @@
       },
       "note": {
         "type": "string"
+      }
+    }
+  },
+  "ExtractionTypeDefinition": {
+    "type": "object",
+    "properties": {
+      "tag": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "benchmarkCategory": {
+        "type": "string"
+      },
+      "instructions": {
+        "type": "string"
+      },
+      "parametersJson": {
+        "type": "string"
+      },
+      "definitionVersion": {
+        "type": "integer"
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "parameters": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExtractionParameter"
+        }
+      },
+      "schemaSupported": {
+        "type": "boolean"
+      },
+      "valueSchemaDialect": {
+        "type": "string",
+        "enum": [
+          "openapi-3.0"
+        ]
+      },
+      "valueSchema": {
+        "type": "object",
+        "nullable": true,
+        "additionalProperties": true,
+        "description": "OpenAPI 3.0 Schema Object for this definition version; null when unsupported."
+      }
+    },
+    "required": [
+      "tag",
+      "name",
+      "benchmarkCategory",
+      "instructions",
+      "parametersJson",
+      "definitionVersion",
+      "enabled",
+      "parameters",
+      "schemaSupported",
+      "valueSchemaDialect",
+      "valueSchema"
+    ]
+  },
+  "ExtractionParameter": {
+    "type": "object",
+    "required": [
+      "name",
+      "type",
+      "description",
+      "format",
+      "allowedValues",
+      "minimum",
+      "exclusiveMinimum",
+      "maxLength"
+    ],
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "string",
+          "number",
+          "unknown"
+        ]
+      },
+      "description": {
+        "type": "string"
+      },
+      "format": {
+        "type": "string",
+        "nullable": true
+      },
+      "allowedValues": {
+        "type": "array",
+        "nullable": true,
+        "items": {
+          "type": "string"
+        }
+      },
+      "minimum": {
+        "type": "number",
+        "nullable": true
+      },
+      "exclusiveMinimum": {
+        "type": "boolean"
+      },
+      "maxLength": {
+        "type": "integer",
+        "nullable": true
+      }
+    }
+  },
+  "EffectiveDateValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "date": {
+        "type": "string",
+        "format": "date",
+        "minLength": 1,
+        "maxLength": 10
+      },
+      "dateExpression": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for agreement-effective-date, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence."
+  },
+  "ExpirationValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "date": {
+        "type": "string",
+        "format": "date",
+        "minLength": 1,
+        "maxLength": 10
+      },
+      "dateExpression": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for agreement-expiration, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "RenewalValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "mechanism": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for renewal-term, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "NonRenewalNoticeValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for non-renewal-notice, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "NonCompeteValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "activity": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "geography": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for non-compete, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "ConvenienceTerminationValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "mechanism": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for termination-convenience, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "LiabilityCapValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "amount": {
+        "type": "number",
+        "minimum": 0
+      },
+      "currency": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "minLength": 1,
+        "maxLength": 3
+      },
+      "formula": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for liability-cap, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "UncappedLiabilityValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "activity": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "exclusions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for uncapped-liability, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence."
+  },
+  "AuditRightsValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "activity": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "mechanism": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for audit-rights, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "InsuranceObligationsValuesV1": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "activity": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "amount": {
+        "type": "number",
+        "minimum": 0
+      },
+      "currency": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "minLength": 1,
+        "maxLength": 3
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "calendar_days",
+          "business_days",
+          "days",
+          "months",
+          "years"
+        ],
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "party": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "conditions": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "description": "Optional explicit values for insurance-obligations, schemaVersion 1. Missing values mean unknown. Each populated value requires evidence.",
+    "oneOf": [
+      {
+        "required": [
+          "duration",
+          "unit"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "unit"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "DocumentAnalysisSelection": {
+    "type": "object",
+    "required": [
+      "documentId",
+      "latestAnalysisId",
+      "lastSuccessfulAnalysisId",
+      "status",
+      "reason",
+      "canPoll"
+    ],
+    "properties": {
+      "documentId": {
+        "type": "integer"
+      },
+      "latestAnalysisId": {
+        "type": "integer",
+        "nullable": true
+      },
+      "lastSuccessfulAnalysisId": {
+        "type": "integer",
+        "nullable": true
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "ready",
+          "failed",
+          "analyzing",
+          "not_started",
+          "blocked"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "nullable": true
+      },
+      "canPoll": {
+        "type": "boolean"
+      }
+    }
+  },
+  "UploadAnalysisSummary": {
+    "type": "object",
+    "required": [
+      "uploadId",
+      "availability",
+      "ocrStatus",
+      "splitStatus",
+      "pageSections",
+      "extraction",
+      "documents"
+    ],
+    "properties": {
+      "uploadId": {
+        "type": "integer"
+      },
+      "availability": {
+        "type": "object",
+        "required": [
+          "stepEnabled",
+          "enabledTargetCount",
+          "available",
+          "note"
+        ],
+        "properties": {
+          "stepEnabled": {
+            "type": "boolean"
+          },
+          "enabledTargetCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "ocrStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "processing",
+          "ready",
+          "failed"
+        ]
+      },
+      "splitStatus": {
+        "type": "string",
+        "enum": [
+          "failed",
+          "ready",
+          "analyzing",
+          "waiting_for_ocr"
+        ]
+      },
+      "pageSections": {
+        "type": "object",
+        "required": [
+          "total",
+          "ready",
+          "failed",
+          "pending",
+          "notStarted",
+          "status"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ready": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notStarted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "analyzing",
+              "partial_failure",
+              "failed",
+              "ready",
+              "not_requested",
+              "not_started"
+            ]
+          }
+        }
+      },
+      "extraction": {
+        "type": "object",
+        "required": [
+          "status",
+          "canPoll",
+          "totalDocuments",
+          "readyDocuments",
+          "failedDocuments",
+          "pendingDocuments",
+          "reason"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting_for_documents",
+              "not_started",
+              "analyzing",
+              "ready",
+              "partial_failure",
+              "failed",
+              "blocked",
+              "incomplete"
+            ]
+          },
+          "canPoll": {
+            "type": "boolean"
+          },
+          "totalDocuments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "readyDocuments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failedDocuments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingDocuments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "documents": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "title",
+            "firstPage",
+            "lastPage",
+            "analysis"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "title": {
+              "type": "string"
+            },
+            "firstPage": {
+              "type": "integer"
+            },
+            "lastPage": {
+              "type": "integer"
+            },
+            "analysis": {
+              "$ref": "#/components/schemas/DocumentAnalysisSelection"
+            }
+          }
+        }
       }
     }
   }

@@ -4,7 +4,7 @@ Read this guide before changing response components or adding DTO fields to the 
 
 ## Files and build ownership
 
-The Components directory currently contains one JSON source file, `uploads.json`. Its top-level keys define five schemas. A filename is a grouping choice, not a schema name. Keep closely related schemas together unless a concrete expansion warrants another immediate child JSON file.
+The Components directory includes `uploads.json` and `extractions.json`. The latter defines extraction results, parameter descriptors, processing summaries and named v1 value schemas for the ten target types. See [the client contract](../../../docs/client-analysis-api.md) for the tag/version mapping and compatibility rules. A filename is a grouping choice, not a schema name.
 
 [build.mjs](../build.mjs) reads immediate `.json` files in Components and Paths, sorted by filename. It does not recurse into subdirectories. It merges each file's top-level entries and rejects duplicate keys within each collected group. A new schema placed in a nested folder will not be included by the current builder.
 

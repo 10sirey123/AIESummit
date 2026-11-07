@@ -48,7 +48,7 @@ public sealed class MongoInstrumentation
             if (env.GetValueOrDefault("MONGODB_TLS12") == "true")
                 settings.SslSettings = new SslSettings { EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 };
             settings.ServerSelectionTimeout = TimeSpan.FromSeconds(20); settings.ConnectTimeout = TimeSpan.FromSeconds(15);
-            settings.ApplicationName = "AIESummit.Evaluation";
+            settings.ApplicationName ??= "AIESummit.Evaluation";
             settings.ClusterConfigurator = cluster => cluster.Subscribe<MongoDB.Driver.Core.Events.ServerHeartbeatFailedEvent>(e => {
                 var errors = new List<string>();
                 for (Exception? x = e.Exception; x != null; x = x.InnerException) errors.Add(x.GetType().Name +
@@ -58,9 +58,9 @@ public sealed class MongoInstrumentation
                 foreach (var hint in new[] { "alert internal error", "certificate", "Authentication failed", "actively refused", "No such host", "unexpected or badly formatted" })
                     if (message.Contains(hint, StringComparison.OrdinalIgnoreCase)) heartbeat += " [" + hint + "]";
             });
-            var client = new MongoClient(settings);
-            var database = offline ? null : client.GetDatabase(env.GetValueOrDefault("MONGODB_DATABASE", url.DatabaseName ?? "aiesummit_evaluation"));
-            if (database != null) await client.GetDatabase("admin").RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1), ReadPreference.Primary);
+            var client = offline ? null : new MongoClient(settings);
+            var database = client?.GetDatabase(env.GetValueOrDefault("MONGODB_DATABASE", url.DatabaseName ?? "aiesummit_evaluation"));
+            if (database != null) await client!.GetDatabase("admin").RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1), ReadPreference.Primary);
             var workflow = new {
                 name = "ocr-split-page-sections-contract-extraction", version = 1,
                 nodes = new[] {
@@ -153,7 +153,7 @@ public sealed class MongoInstrumentation
         }
     }
 
-    public async Task<string> BeginDocumentAsync(string sampleId, string sourcePath, string sourceHash, string resultFile)
+    public async Task<string> BeginDocumentAsync(string sampleId, string sourcePath, string? sourceHash, string resultFile)
     {
         var id = Guid.NewGuid().ToString("N");
         await Upsert("evaluation_documents", id, new { documentRunId = id, runId = RunId, workflowId = WorkflowId,
@@ -161,6 +161,10 @@ public sealed class MongoInstrumentation
             resultPath = Path.GetFullPath(resultFile), status = "running", startedAt = DateTime.UtcNow });
         await CheckpointAsync(id, "intake", "started", new { }); return id;
     }
+
+    public async Task SourceReadAsync(string documentRunId, string sha256, long sizeBytes)
+        => await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
+            { "sourceSha256", sha256 }, { "sourceSizeBytes", sizeBytes } });
 
     public async Task CheckpointAsync(string documentRunId, string nodeKey, string state, object details)
         => await Upsert("evaluation_events", Guid.NewGuid().ToString("N"), new { runId = RunId, documentRunId,
@@ -173,7 +177,7 @@ public sealed class MongoInstrumentation
         var telemetry = ToBson(payload); telemetry.Remove("prediction");
         await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
             { "status", payload.GetProperty("status").GetString() }, { "completedAt", DateTime.UtcNow }, { "result", telemetry } });
-        if (metrics is { } m && m.TryGetProperty("prompts", out var prompts))
+        if (metrics is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("prompts", out var prompts))
         {
             var edges = new List<object>();
             var splitNodes = prompts.EnumerateArray().Where(p => p.GetProperty("step").GetString() == "split-upload")

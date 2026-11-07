@@ -7,6 +7,15 @@ namespace AIESummit.Domain;
 [DisplayMetadata("lucide:ScanText", MenuName = "Extraction evidence")]
 public sealed class ExtractionEvidence : BasePersistenceObject
 {
+    [Display(Name = "Model quote", Description = "Original model-supplied evidence before source anchoring.")]
+    [DisplayMetadata("", IsEditable = false)]
+    public string ModelQuote { get; set; } = "";
+    [Display(Name = "Match method", Description = "Exact match or versioned word-overlap matching rule.")]
+    [DisplayMetadata("", IsEditable = false)]
+    public string MatchMethod { get; set; } = "exact";
+    [Display(Name = "Match score", Description = "Word Dice overlap from zero to one; exact matches score one.")]
+    [DisplayMetadata("", IsEditable = false)]
+    public double MatchScore { get; set; } = 1;
     [Display(Name = "Extraction Id", Description = "Finding supported by this segment.")]
     [DisplayMetadata("", IsEditable = false)]
     public int ExtractionId { get; set; }

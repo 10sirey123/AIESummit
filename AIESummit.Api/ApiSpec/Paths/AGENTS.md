@@ -1,6 +1,6 @@
 # OpenAPI path definitions
 
-This directory describes the client API's operations. [uploads.json](uploads.json) currently contains all three path keys and four operations. Runtime behavior is handwritten in [UploadEndpoints.cs](../../UploadEndpoints.cs). Editing a path fragment does not create or change a C# endpoint.
+This directory describes the client API's operations. [uploads.json](uploads.json) covers intake/OCR routes; [extractions.json](extractions.json) covers target definitions, extraction results, immutable snapshots, metrics and the client processing summary. Runtime behavior is handwritten in the endpoint classes. See [the client contract](../../../docs/client-analysis-api.md). Editing a path fragment does not create or change a C# endpoint.
 
 Read the [parent guide](../AGENTS.md) for composition and [Components guide](../Components/AGENTS.md) for response schemas. Review the [endpoint behavior guide](../../UploadEndpoints.AGENTS.md) when changing status codes, parameters, authentication or file handling.
 

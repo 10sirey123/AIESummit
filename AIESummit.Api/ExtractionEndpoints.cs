@@ -12,15 +12,25 @@ internal static class ExtractionEndpoints
     public static void MapExtractionEndpoints(this WebApplication app)
     {
         var api = app.MapGroup("/api/v1").RequireAuthorization();
-        api.MapGet("/extraction-types", async (AIESummitDb db) => Results.Ok(await db.ExtractionTypes.OrderBy(t => t.Tag)
-            .Select(t => new { t.Tag, t.Name, t.BenchmarkCategory, t.Instructions, t.ParametersJson, t.DefinitionVersion, t.Enabled }).ToListAsync()));
+        api.MapGet("/extraction-types", ExtractionReadEndpoints.Catalog);
+        api.MapGet("/uploads/{id:int}/analysis-summary", ExtractionReadEndpoints.Summary);
         api.MapPost("/uploads/{id:int}/extractions", Start);
         api.MapGet("/uploads/{id:int}/extractions", Get);
         api.MapGet("/uploads/{id:int}/metrics", Metrics);
+        api.MapGet("/uploads/{id:int}/analysis-pages/{revisionId:int}", Snapshot);
     }
 
     private static async Task<bool> Owns(int id, ClaimsPrincipal user, AIESummitDb db, CancellationToken ct)
         => await db.Uploads.AnyAsync(u => u.ID == id && u.OwnerId == user.FindFirstValue("sub"), ct);
+
+    private static async Task<IResult> Snapshot(int id, int revisionId, ClaimsPrincipal user, AIESummitDb db, CancellationToken ct)
+    {
+        var owner = user.FindFirstValue("sub");
+        var page = await db.PageTextRevisions.AsNoTracking().Where(p => p.ID == revisionId
+            && p.Analysis.Document.UploadId == id && p.Analysis.Document.Upload.OwnerId == owner)
+            .Select(p => new { id = p.ID, p.AnalysisId, p.Number, p.ContentHash, p.Markdown }).SingleOrDefaultAsync(ct);
+        return page is null ? Results.NotFound() : Results.Ok(page);
+    }
 
     private static async Task<IResult> Start(int id, ClaimsPrincipal user, AIESummitDb db, CancellationToken ct, string requestKey = "initial")
     {
@@ -61,7 +71,7 @@ internal static class ExtractionEndpoints
                     evidence = e.Evidence.Select(v => new {
                         page = a.Pages.Single(p => p.ID == v.PageTextRevisionId).Number, v.PageTextRevisionId,
                         contentHash = a.Pages.Single(p => p.ID == v.PageTextRevisionId).ContentHash,
-                        v.StartOffset, v.EndOffset, v.Quote, v.Role,
+                        v.StartOffset, v.EndOffset, v.Quote, v.Role, v.ModelQuote, v.MatchMethod, v.MatchScore,
                         supportedFields = JsonSerializer.Deserialize<string[]>(v.SupportedFieldsJson)
                     })
                 })

@@ -47,7 +47,7 @@ The converter populates the constructed object's fields. It does not authorize r
 4. For each returned range, reject a null element, a first page unequal to the next expected page, a last page below that first page, a last page beyond the persisted page count, a whitespace-only title or a title longer than 250 characters.
 5. Advance the expected page to one beyond the accepted last page.
 6. Reject an empty result or a final expected page that does not equal the page count plus one.
-7. Only after every range passes, remove existing documents for that upload and stage the replacements.
+7. Only after every range passes, mark previous current documents as superseded and stage replacements. Retain old rows and their analysis/evidence references; see [contract extraction](../docs/contract-extraction.md).
 8. Clear the upload's error and return true.
 
 This enforces ordered complete coverage with neither gaps nor overlaps. It also excludes zero and negative starting pages. There is no sorting or silent repair of model output. Out-of-order valid-looking ranges remain invalid so a malformed response does not unexpectedly change meaning.

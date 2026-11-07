@@ -137,9 +137,9 @@ try
         string? documentRunId = null;
         try
         {
+            if (mongo != null) documentRunId = await mongo.BeginDocumentAsync(sample.Id, sample.Pdf, sample.Hash, resultFile);
             var bytes = await File.ReadAllBytesAsync(sample.Pdf);
-            if (mongo != null) documentRunId = await mongo.BeginDocumentAsync(sample.Id, sample.Pdf,
-                Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), resultFile);
+            if (mongo != null) await mongo.SourceReadAsync(documentRunId!, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), bytes.LongLength);
             if (sample.Hash != null && !Convert.ToHexString(SHA256.HashData(bytes)).Equals(sample.Hash, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("PDF checksum differs from frozen selection.");
             if (!bytes.AsSpan().StartsWith("%PDF-"u8)) throw new InvalidDataException("Input must be a PDF.");

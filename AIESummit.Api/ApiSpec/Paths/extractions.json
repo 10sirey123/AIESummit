@@ -2,7 +2,7 @@
   "/api/v1/extraction-types": {
     "get": {
       "operationId": "listExtractionTypes",
-      "summary": "List configured extraction targets",
+      "summary": "List target definitions with structured parameter descriptors and versioned OpenAPI value schemas",
       "tags": [
         "Extractions"
       ],
@@ -137,6 +137,108 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExtractionMetrics"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "404": {
+          "description": "Upload not found for this owner"
+        }
+      }
+    }
+  },
+  "/api/v1/uploads/{id}/analysis-pages/{revisionId}": {
+    "get": {
+      "operationId": "getAnalysisPageSnapshot",
+      "summary": "Get owner-scoped immutable page text for historical evidence highlighting",
+      "tags": [
+        "Extractions"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        {
+          "name": "revisionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Immutable page source and hash",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "analysisId": {
+                    "type": "integer"
+                  },
+                  "number": {
+                    "type": "integer"
+                  },
+                  "contentHash": {
+                    "type": "string"
+                  },
+                  "markdown": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "404": {
+          "description": "Snapshot not found for this upload and owner"
+        }
+      }
+    }
+  },
+  "/api/v1/uploads/{id}/analysis-summary": {
+    "get": {
+      "operationId": "getUploadAnalysisSummary",
+      "summary": "Get owner-scoped branch progress and latest/last-successful analysis selections without findings or prompts",
+      "tags": [
+        "Extractions"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Current-document processing summary; canPoll explicitly identifies continuing extraction work.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadAnalysisSummary"
               }
             }
           }

@@ -1,5 +1,7 @@
 # AIESummit.Domain entity guide
 
+`ExtractionEvidence` also retains `ModelQuote`, `MatchMethod` and `MatchScore`; additive upgrade 004 preserves legacy exact evidence. See [matching policy](../docs/evidence-matching.md).
+
 The extraction model is implemented: `ExtractionType`, `DocumentAnalysis : ILlmCapable`, `AnalysisTargetResult`, `Extraction`, `ExtractionEvidence` and `PageTextRevision`. See [contract extraction](../docs/contract-extraction.md). Keep analysis prompts separately mapped, snapshot text immutable, values validated and owner access rooted through the upload. `Document.IsCurrent` retains superseded split versions. Upgrade 003 preserves data; extraction seeds are missing-only.
 
 The extraction model is implemented: `ExtractionType`, `DocumentAnalysis : ILlmCapable`, `AnalysisTargetResult`, `Extraction`, `ExtractionEvidence` and `PageTextRevision`. See [contract extraction](../docs/contract-extraction.md). Register all in `AIESummitDb`; keep the analysis prompt FK separate, snapshot text immutable, values validated and owner access rooted through the document upload. `Document.IsCurrent` retains superseded split versions. Upgrade 003 preserves existing data; startup seeds are missing-only.

@@ -29,6 +29,10 @@ internal static class Bootstrap
             ?? throw new InvalidOperationException("OCR cache upgrade is missing."))
         using (var reader = new StreamReader(migration))
             await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
+        await using (var migration = typeof(Bootstrap).Assembly.GetManifestResourceStream("AIESummit.Api.Migrations.004-evidence-word-overlap.sql")
+            ?? throw new InvalidOperationException("Evidence matching upgrade is missing."))
+        using (var reader = new StreamReader(migration))
+            await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
         await AddCredential("mistral-ocr", config["OCR_ENDPOINT"] ?? endpoint + "/providers/mistral/azure/ocr",
             config["OCR_MODEL"] ?? "mistral-ocr-4-0");
         await AddCredential("openai", config["LLM_ENDPOINT"] ?? endpoint, null);

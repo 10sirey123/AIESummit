@@ -1,5 +1,7 @@
 # AIESummit.Api
 
+The additive client read contract is documented in [client-analysis-api.md](../docs/client-analysis-api.md). `ExtractionReadEndpoints` adds an owner-scoped `/uploads/{id}/analysis-summary` and structured metadata on `/extraction-types`; `ExtractionReadModel` defines status/selection and value-schema semantics. Legacy result routes remain compatible. Keep the frontend unchanged when refining this API contract.
+
 `ExtractionEndpoints.cs` implements owner-scoped analysis requests, results and sanitized metrics, plus authenticated catalog reads. See [contract extraction](../docs/contract-extraction.md) and the matching ApiSpec fragments. Bootstrap applies additive upgrade 003 and missing-only seeds. Diagnostic model-reported outcomes are explicitly unvalidated; never present them as accepted findings.
 
 `ExtractionEndpoints.cs` implements owner-scoped analysis requests, results and sanitized metrics, plus authenticated target catalog reads. See [contract extraction](../docs/contract-extraction.md) and the matching `ApiSpec` extraction fragments. Bootstrap applies additive upgrade 003 and missing-only extraction seeds. Model-reported diagnostic outcomes are explicitly unvalidated; never present them as accepted findings.
@@ -38,6 +40,11 @@ Read the [Domain guide](../AIESummit.Domain/AGENTS.md) for schema changes, the [
 | `GET /api/v1/uploads` | Firebase bearer token | Returns up to 50 owned uploads before an ID cursor |
 | `GET /api/v1/uploads/{id}` | Firebase bearer token | Returns an owned upload summary, documents and image references |
 | `GET /api/v1/uploads/{id}/images/{imageId}` | Firebase bearer token | Returns owned embedded image bytes |
+| `GET /api/v1/extraction-types` | Firebase bearer token | Target catalog with structured parameter descriptors, version support and value schemas |
+| `GET /api/v1/uploads/{id}/analysis-summary` | Firebase bearer token | Lightweight branch progress and latest/last-successful analysis selection for current documents |
+| `GET /api/v1/uploads/{id}/extractions` | Firebase bearer token | Owned analysis history, validated findings, structured values, evidence and labeled diagnostics |
+| `POST /api/v1/uploads/{id}/extractions` | Firebase bearer token | Idempotent request by document/request key; preserves previous attempts |
+| `GET /api/v1/uploads/{id}/analysis-pages/{revisionId}` | Firebase bearer token | Owned immutable page text/hash for historical evidence |
 
 The `/api/v1` group requires authorization. Health, browser configuration and static files intentionally remain public. Do not place private documents or credentials under `wwwroot`. The current health response does not verify database connectivity, queues, provider credentials or completed processing.
 

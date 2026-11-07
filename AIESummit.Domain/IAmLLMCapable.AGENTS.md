@@ -124,7 +124,7 @@ The framework resolves the registered metadata type, deserializes with `BaseMeta
 
 `SplitResult.ConnectTo` checks the actual persisted page set. It requires a nonempty set of ranges beginning at page 1, no gap or overlap, increasing inclusive endpoints, endpoints within the page count, and nonblank titles no longer than 250 characters. The next expected page after the last range must equal the number of pages plus one.
 
-Only after validating every range does it remove existing `Document` rows and add replacements for the target upload. Each replacement joins the selected ordered Markdown pages using `<!-- page break -->`. It trims the title and clears `UploadedFile.Error`. The method stages changes through repositories rather than saving each individual document. Preserve that validate-before-mutate boundary and the outer save behavior.
+Only after validating every range does it supersede existing current `Document` rows and add replacements for the target upload. Historical documents remain for analysis/evidence references. Each replacement joins the selected ordered Markdown pages using `<!-- page break -->`. It trims the title and clears `UploadedFile.Error`, then creates native document analyses when targets are enabled. The method stages changes through repositories rather than saving each individual document. Preserve that validate-before-mutate boundary and the outer save behavior.
 
 The unique database index on `UploadId, FirstPage` prevents duplicate starts. It cannot prove complete coverage or prevent all overlaps. Keep application validation even if provider output is schema-constrained.
 

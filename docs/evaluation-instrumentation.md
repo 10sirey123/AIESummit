@@ -92,6 +92,8 @@ Measurements in a successful result include `intakeSeconds` (upload through OCR/
 | `<documentRunId>/ocr` | OCR family instance; token usage unavailable. |
 | `<documentRunId>/prompt/<promptId>` | A retained native BlueShift prompt instance. |
 
+LLM nodes optionally include `state` (`succeeded`, `failed`, `queued`, `unknown`) and `observedLifecycleSeconds` derived from persistence timestamps. These are lifecycle observations, not provider latency. Earlier retained v1 records can omit these optional fields.
+
 LLM nodes contain `runId`, `documentRunId`, `workflowId`, `kind`, `stepTag`, `parentNodeIds`, `model`, nullable `modelVersion`, `modelVersionStatus`, `timingBasis`, and the sanitized `prompt` metrics object. Extraction nodes additionally retain the pinned `targetDefinitions` from their matching analysis when available.
 
 The `prompt` object carries:
@@ -99,6 +101,7 @@ The `prompt` object carries:
 - `id`, `documentType`, `documentID`, `step`, `stepId`: application identities and dispatch context.
 - `model`, `modelTag`, `provider`, nullable `modelVersion`: configured model identity actually associated with the prompt. The framework does not expose an immutable provider revision; a deployment name is not falsely labeled as one.
 - `systemPromptHash`, `inputPromptHash`, `outputSchemaHash`: SHA-256 fingerprints, never the underlying prompt text.
+- `generationParameters`: temperature and reasoning effort, when exposed by the captured metrics version.
 - `inputTokens`, `outputTokens`, `tokens`, `accumulatedTokens`: native counters. Input/output breakdown can be unavailable even when total tokens are populated.
 - `apiAttemps`: native framework spelling, representing its API-attempt count. Retain this spelling for v1 consumers. A cache hit can reuse response counters with no new provider attempt.
 - `processingStatus`: native numeric enum; completed is 200 and permanent failure is 500 in the current pin. Preserve the native value and consult the bundled contract when extending status interpretation.

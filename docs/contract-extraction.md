@@ -60,11 +60,11 @@ Strings are bounded to 4,000 characters during validation. The fixed C# `Extract
 
 - Page numbers are inclusive one-based positions in the original upload.
 - Offsets are zero-based UTF-16 code-unit indexes into **the exact snapshot Markdown**. `StartOffset` is inclusive and `EndOffset` exclusive. C# slicing and JavaScript `slice(start, end)` agree. These are not CUAD Unicode-code-point offsets, PDF byte offsets, screen coordinates, or rendered-text offsets.
-- The model supplies a page, exact quote and occurrence (`-1` for a unique match; otherwise a zero-based occurrence index). The server resolves offsets by ordinal substring matching. Repeated or absent quotes without a valid occurrence are rejected. Surrogate pairs must not be split.
+- The model supplies a page, exact quote and occurrence (`-1` for a unique match; otherwise a zero-based occurrence index). The server prefers ordinal substring matching, then accepts a best page-local source window with at least 50% multiset word Dice overlap. See [the matching rule and saved-response recheck](evidence-matching.md). Distinct equally good locations require a valid occurrence. Surrogate pairs must not be split.
 - Evidence roles are `primary`, `qualification` and `definition`. `fields` lists supported parameter names. A cross-page clause needs separate evidence segments on each page.
 - The server validates every requested tag exactly once, outcome consistency, bounded titles/summaries, target-specific parameter types/values and all evidence before publishing any result for that analysis.
 - A detected target requires findings and evidence. Other outcomes (`not_found_in_reviewed_text`, `uncertain`, `not_applicable`) must not contain findings. Pending results use `not_analyzed`.
-- Validation failure rejects the entire logical-document analysis and leaves its targets unpublished. Other logical documents or earlier analyses remain intact. The failed prompt and error are retained; there is no silent retry/reset or acceptance of approximate quotes.
+- Validation failure rejects the entire logical-document analysis and leaves its targets unpublished. Other logical documents or earlier analyses remain intact. The failed prompt and error are retained; there is no silent retry/reset. Approximate evidence is accepted only through the documented 50% matching rule, retaining exact source offsets and match metadata.
 - Field/evidence links prove source anchoring and declared support, not semantic correctness. An anchored quote can still be misinterpreted; the model and human review remain responsible for the meaning.
 
 Exact-source evidence enables Markdown highlighting and original-page navigation. PDF-coordinate highlighting is not implemented. The `ReviewState` initially is `unreviewed`; no human-review editing workflow is introduced here.
@@ -95,6 +95,7 @@ All routes require Firebase authentication. Upload-derived reads and writes chec
 | `GET /api/v1/extraction-types` | Catalog definitions and allowed parameter JSON. |
 | `POST /api/v1/uploads/{id}/extractions?requestKey=initial` | Idempotently creates missing analyses for current logical documents. Returns 202; 409 if prerequisites/step are unavailable. |
 | `GET /api/v1/uploads/{id}/extractions` | Analysis history, pinned definitions, per-target outcomes, findings, typed values and evidence. Also exposes explicitly **unvalidated** `modelReportedOutcomes` for diagnostic classification comparison; these are never accepted findings. |
+| `GET /api/v1/uploads/{id}/analysis-pages/{revisionId}` | Owner-scoped immutable page text/hash for highlighting historical evidence. |
 | `GET /api/v1/uploads/{id}/metrics` | Prompt IDs and subjects, step/model/provider identifiers, definition/input/schema hashes, token counters, attempts and persistence timestamps. No prompt or response text. |
 | `POST /api/v1/uploads?pageSections=false` | Normal multipart upload with independent page summaries skipped; OCR/splitting/extraction still run. |
 

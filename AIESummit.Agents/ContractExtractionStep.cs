@@ -87,9 +87,10 @@ public sealed class ContractExtractionResult(IMetadataExecutionContext context) 
                     if (evidence.Role is not ("primary" or "qualification" or "definition") || evidence.Fields is null
                         || evidence.Fields.Any(f => !fields.Contains(f) || values[f] is null))
                         throw new InvalidDataException("Invalid evidence role or supported field.");
-                    var start = ResolveQuote(page.Markdown, evidence.Quote, evidence.Occurrence);
+                    var match = EvidenceMatcher.Match(page.Markdown, evidence.Quote, evidence.Occurrence);
                     extraction.Evidence.Add(new ExtractionEvidence { PageTextRevisionId = page.ID,
-                        StartOffset = start, EndOffset = start + evidence.Quote.Length, Quote = evidence.Quote,
+                        StartOffset = match.Start, EndOffset = match.End, Quote = match.SourceQuote,
+                        ModelQuote = evidence.Quote, MatchMethod = match.Method, MatchScore = match.Score,
                         Role = evidence.Role, SupportedFieldsJson = JsonConvert.SerializeObject(evidence.Fields) });
                     supported.UnionWith(evidence.Fields);
                 }
@@ -103,22 +104,7 @@ public sealed class ContractExtractionResult(IMetadataExecutionContext context) 
     }
 
     public static int ResolveQuote(string text, string quote, int occurrence = -1)
-    {
-        if (string.IsNullOrWhiteSpace(quote) || quote.Length > 8000) throw new InvalidDataException("Empty or oversized evidence.");
-        var positions = new List<int>();
-        for (var next = 0; next <= text.Length - quote.Length;)
-        {
-            var at = text.IndexOf(quote, next, StringComparison.Ordinal);
-            if (at < 0) break;
-            positions.Add(at); next = at + 1;
-        }
-        var index = occurrence == -1 && positions.Count == 1 ? 0 : occurrence;
-        if (index < 0 || index >= positions.Count) throw new InvalidDataException("Evidence missing or ambiguous.");
-        var start = positions[index]; var end = start + quote.Length;
-        if ((start > 0 && char.IsLowSurrogate(text[start])) || (end < text.Length && char.IsLowSurrogate(text[end])))
-            throw new InvalidDataException("Evidence splits a Unicode surrogate pair.");
-        return start;
-    }
+        => EvidenceMatcher.Match(text, quote, occurrence).Start;
 
     private static void ValidateValues(JObject values, HashSet<string> fields)
     {
