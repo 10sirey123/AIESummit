@@ -63,6 +63,22 @@ public sealed class MongoHistory(IMongoDatabase database)
                 stages.Add(new("$match", new BsonDocument("_visibleRuns.0", new BsonDocument("$exists", true))));
                 stages.Add(new("$unset", "_visibleRuns"));
             }
+            if (kind == "steps")
+            {
+                // Earlier exact-graph runs can retain inferred baseline nodes. Do not delete history; select
+                // authoritative membership from the associated document before counting or returning nodes.
+                stages.Add(new("$lookup", new BsonDocument {
+                    { "from", "evaluation_documents" }, { "localField", "documentRunId" }, { "foreignField", "_id" },
+                    { "pipeline", new BsonArray {
+                        new BsonDocument("$match", new BsonDocument("graph.exact", true)),
+                        new BsonDocument("$project", new BsonDocument("graph.nodeIds", 1)) } }, { "as", "_exactDocuments" } }));
+                stages.Add(new("$match", new BsonDocument("$or", new BsonArray {
+                    new BsonDocument("_exactDocuments", new BsonDocument("$size", 0)),
+                    new BsonDocument("$expr", new BsonDocument("$in", new BsonArray {
+                        "$_id", new BsonDocument("$ifNull", new BsonArray {
+                            new BsonDocument("$arrayElemAt", new BsonArray { "$_exactDocuments.graph.nodeIds", 0 }), new BsonArray() }) })) })));
+                stages.Add(new("$unset", "_exactDocuments"));
+            }
             stages.Add(new("$sort", new BsonDocument { { "startedAt", -1 }, { "completedAt", -1 }, { "_id", -1 } }));
             stages.Add(new("$limit", Math.Clamp(limit, 1, 200)));
             var rows = await database.GetCollection<BsonDocument>(collection).Aggregate<BsonDocument>(stages, new AggregateOptions { MaxTime = TimeSpan.FromSeconds(10) }).ToListAsync();

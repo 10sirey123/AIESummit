@@ -198,6 +198,8 @@ Failure state is derived from the analyses responsible for each target, rather t
 
 `RegisterExpectedAsync` runs before inference/finalization so a failed document still retains its expectations. A run cannot mix development and confirmation partitions. Read-only history excludes confirmation labels, observations, and run summaries. The actual instantiated workflow can be supplied to `OpenAsync(..., workflowDefinition: graph)`; `RecordGraphAsync` records the exact node membership and checks every edge endpoint. Consumers should prefer `graph.nodeIds` for exact graphs rather than assuming every retained stage-family node belongs to that graph.
 
+When a result supplies explicit `graph.nodes` and `graph.edges`, document finalization does not infer additional prompt, intake, or OCR nodes; the runner records the exact graph with `RecordGraphAsync`. Some earlier retained exact-graph runs contain both inferred baseline-family nodes and exact native nodes. They are preserved for audit, but **only IDs in `evaluation_documents.graph.nodeIds` belong to an `exact: true` execution graph**. The read-only `steps` view applies this membership filter before limiting rows, so its token totals do not double count retained inferred prompts. Direct MongoDB consumers must perform the same document-membership join; grouping every row with a matching `runId` can double count tokens or falsely imply that fixture OCR/intake ran again. Legacy document graphs without `exact: true` retain their original stage-family nodes.
+
 Codex and the web UI use `MongoHistory`, a bounded reader with no mutation, arbitrary command, or arbitrary pipeline surface. The CLI exposes the same views:
 
 ```powershell

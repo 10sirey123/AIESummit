@@ -70,6 +70,8 @@ app.MapGet("/api/dashboard", async (AttemptStore store) =>
         var displayedRuns = JsonNode.Parse(runs.GetRawText())!.AsArray();
         var baselinePath = Path.Combine(options.State, "baseline.json");
         var baselineRunId = File.Exists(baselinePath) ? JsonNode.Parse(await File.ReadAllTextAsync(baselinePath))?["runId"]?.GetValue<string>() : null;
+        var chartBaselinePath = Path.Combine(options.State, "chart-baseline.json");
+        var chartBaselineRunId = File.Exists(chartBaselinePath) ? JsonNode.Parse(await File.ReadAllTextAsync(chartBaselinePath))?["runId"]?.GetValue<string>() : baselineRunId;
         foreach (var run in displayedRuns)
         {
             if (run?["runId"]?.GetValue<string>() == baselineRunId && baselineRunId != null) run!["isBaseline"] = true;
@@ -92,7 +94,7 @@ app.MapGet("/api/dashboard", async (AttemptStore store) =>
                 return new { id = g.Key, sourceSha256 = g.Key, sampleId = d.GetProperty("sampleId").GetString(),
                     filename = d.TryGetProperty("filename", out var name) ? name.GetString() : d.GetProperty("sampleId").GetString() + ".pdf" };
             }).OrderBy(d => d.sampleId).ToArray();
-        return Results.Ok(new { runs = displayedRuns, attempts, documents, graph, status = new { mongoConnected = true, model = "muse-wonder-1.0", error = (string?)null } });
+        return Results.Ok(new { runs = displayedRuns, attempts, documents, graph, chartBaselineRunId, status = new { mongoConnected = true, model = "muse-wonder-1.0", error = (string?)null } });
     }
     catch
     {
@@ -143,6 +145,7 @@ app.MapGet("/api/attempts/{id}", async (string id, AttemptStore store) =>
 app.MapPost("/api/attempts", async (CreateAttempt request, ImprovementService service) => Results.Ok(await service.Create(request)));
 app.MapPost("/api/attempts/{id}/approve", async (string id, ApproveAttempt request, ImprovementService service) => Results.Ok(await service.Approve(id, request.ProposalHash)));
 app.MapPost("/api/attempts/{id}/reject", async (string id, ImprovementService service) => Results.Ok(await service.Reject(id)));
+app.MapPost("/api/attempts/{id}/retry", async (string id, ImprovementService service) => Results.Ok(await service.RetryApprovedImplementation(id)));
 app.MapPost("/api/attempts/{id}/promote", async (string id, ImprovementService service) => Results.Ok(await service.Promote(id)));
 app.Run();
 

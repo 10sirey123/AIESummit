@@ -1,3 +1,5 @@
+import { renderProgression } from './progression.js';
+
 const $ = id => document.getElementById(id);
 const state = { dashboard: null, selected: 'baseline', attempt: null, matrix: null, document: '', composing: false, busy: false, refreshing: false, selectedRun: null };
 const format = new Intl.NumberFormat('en-US');
@@ -166,7 +168,7 @@ async function refresh() {
     $('connection').className = `connection ${connected ? 'connected' : 'disconnected'}`;
     $('connection').innerHTML = `<span class="signal"></span>${escape(connected ? 'MongoDB history connected' : status.error || 'History unavailable')}`;
     if (state.selected !== 'baseline' && !state.composing) state.attempt = await request(`/api/attempts/${encodeURIComponent(state.selected)}`);
-    renderTabs(); renderMain(); renderHistory(); renderDocuments(); await loadMatrix();
+    renderTabs(); renderMain(); renderHistory(); renderDocuments(); renderProgression(state.dashboard); await loadMatrix();
   } catch (error) {
     $('connection').className = 'connection disconnected'; $('connection').innerHTML = '<span class="signal"></span>Connection unavailable'; showError(error);
   } finally { state.refreshing = false; }
@@ -215,6 +217,16 @@ $('history').addEventListener('click', async event => {
         summary: run.summary?.validatedFindings ? run.summary : existing.summary || run.summary,
         workflow: detail.workflow || run.workflow || existing.workflow };
     }
+    renderTabs(); renderMain(); $('attempt-heading').scrollIntoView({ behavior: 'auto', block: 'start' });
+  } catch (error) { showError(error); }
+});
+$('progression').addEventListener('click', async event => {
+  const link = event.target.closest('[data-progression-attempt]');
+  if (!link) return;
+  event.preventDefault();
+  state.composing = false; state.selectedRun = null; state.selected = link.dataset.progressionAttempt; state.attempt = null; clearError();
+  try {
+    if (state.selected !== 'baseline') state.attempt = await request(`/api/attempts/${encodeURIComponent(state.selected)}`);
     renderTabs(); renderMain(); $('attempt-heading').scrollIntoView({ behavior: 'auto', block: 'start' });
   } catch (error) { showError(error); }
 });

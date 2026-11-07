@@ -57,6 +57,24 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
         finally { transitions.Release(); }
     }
 
+    public async Task<Attempt> RetryApprovedImplementation(string id)
+    {
+        await initialized.Task; await transitions.WaitAsync();
+        try
+        {
+            var item = await store.Get(id);
+            if (item.Status is not ("failed" or "interrupted") || item.ApprovedProposalHash == null
+                || item.ApprovedProposalHash != item.CalculateApprovalHash() || item.CandidateCommit != null || item.RunId != null)
+                throw new InvalidDataException("Only an already approved implementation that stopped before a candidate commit can be resumed.");
+            var priorLog = Path.Combine(options.AttemptFolder(id), "implement.log");
+            if (File.Exists(priorLog)) File.Copy(priorLog, Path.Combine(options.AttemptFolder(id), "implement-stopped-" + DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff") + ".log"));
+            item.Error = null; item.Status = "approved";
+            await Log(item, "Retrying the same approved proposal after an environment fix. No benchmark responses were cleared or retried.");
+            jobs.Writer.TryWrite((id, "implement")); return item;
+        }
+        finally { transitions.Release(); }
+    }
+
     public async Task<Attempt> Promote(string id)
     {
         await initialized.Task;
@@ -76,6 +94,9 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
             ValidateEvaluatedGraph(item, candidateGraph);
             await File.WriteAllTextAsync(options.Workflow + ".new", candidateGraph);
             File.Move(options.Workflow + ".new", options.Workflow, true);
+            var baselinePath = Path.Combine(options.State, "baseline.json");
+            var chartBaselinePath = Path.Combine(options.State, "chart-baseline.json");
+            if (!File.Exists(chartBaselinePath) && File.Exists(baselinePath)) File.Copy(baselinePath, chartBaselinePath);
             await File.WriteAllTextAsync(Path.Combine(options.State, "baseline.json"), JsonSerializer.Serialize(new {
                 runId = item.RunId, workflowHash = item.Results?["workflowHash"], summary = item.Results }, ImprovementJson.Options));
             item.Status = "promoted"; await Log(item, "Promoted the candidate graph to the working baseline. Application step configuration and database history were preserved.");
@@ -207,7 +228,18 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
         item.Status = "implementing";
         item.Worktree = Path.Combine(options.State, "worktrees", item.Id);
         Directory.CreateDirectory(Path.GetDirectoryName(item.Worktree)!);
-        await Git(options.Root, ["worktree", "add", "-b", "codex/improvement/" + item.Id[..12], item.Worktree, item.BaseCommit]);
+        if (!Directory.Exists(item.Worktree))
+            await Git(options.Root, ["worktree", "add", "-b", "codex/improvement/" + item.Id[..12], item.Worktree, item.BaseCommit]);
+        else
+        {
+            if ((await Git(item.Worktree, ["rev-parse", "HEAD"])).Output.Trim() != item.BaseCommit)
+                throw new InvalidDataException("The retained worktree no longer matches the approved baseline commit.");
+            var retainedChanges = await Git(item.Worktree, ["diff", "--name-only", item.BaseCommit]);
+            var retainedFiles = await Git(item.Worktree, ["ls-files", "--others", "--exclude-standard"]);
+            ValidateScope((retainedChanges.Output + "\n" + retainedFiles.Output).Split('\n', StringSplitOptions.RemoveEmptyEntries));
+            var retainedGraph = Path.Combine(item.Worktree, AllowedFile);
+            if (File.Exists(retainedGraph)) File.Copy(retainedGraph, Path.Combine(options.AttemptFolder(item.Id), "workflow-before-resume.json"), true);
+        }
         // Explicit parent graph lets independent tabs start from a retained evaluated attempt.
         var graphPath = Path.Combine(item.Worktree, AllowedFile);
         Directory.CreateDirectory(Path.GetDirectoryName(graphPath)!);
@@ -286,7 +318,7 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
         var useWsl = OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("AIESUMMIT_CODEX_HOST") != "windows";
         string RuntimePath(string path) => useWsl ? ToWslPath(path) : path;
         // One inline TOML value preserves quoted filesystem keys; dotted CLI overrides split path keys.
-        var workspacePermissions = readOnly ? "{\".\"=\"read\"}" : "{\".\"=\"read\",\"improvement/workflow.json\"=\"write\"}";
+        var workspacePermissions = readOnly ? "{\".\"=\"read\"}" : "{\".\"=\"read\",\"improvement\"=\"write\"}";
         var permissions = "permissions={improvement={extends=\":read-only\",filesystem={\":root\"=\"deny\",\":minimal\"=\"read\",\":workspace_roots\"=" + workspacePermissions + "},network={enabled=true,domains={\"127.0.0.2\"=\"allow\"}}}}";
         var args = new List<string> { script, "exec", "--json", "--ignore-user-config", "--disable", "apps", "--disable", "plugins", "--disable", "multi_agent", "-m", item.Model, "-C", RuntimePath(cwd),
             "-c", "approval_policy=\"never\"", "-c", "web_search=\"disabled\"",

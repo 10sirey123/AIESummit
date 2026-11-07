@@ -194,7 +194,12 @@ public sealed class MongoInstrumentation
         await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
             { "status", payload.GetProperty("status").GetString() }, { "completedAt", DateTime.UtcNow }, { "result", telemetry } });
         await RecordObservationsAsync(documentRunId, resultFile, payload);
-        if (metrics is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("prompts", out var prompts))
+        // The workflow runner records exact native node identities separately. Inferring baseline families here
+        // would duplicate those calls and incorrectly imply intake/OCR execution for reused fixtures.
+        var hasExplicitGraph = payload.TryGetProperty("graph", out var explicitGraph) && explicitGraph.ValueKind == JsonValueKind.Object
+            && explicitGraph.TryGetProperty("nodes", out var explicitNodes) && explicitNodes.ValueKind == JsonValueKind.Array
+            && explicitGraph.TryGetProperty("edges", out var explicitEdges) && explicitEdges.ValueKind == JsonValueKind.Array;
+        if (!hasExplicitGraph && metrics is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("prompts", out var prompts))
         {
             var edges = new List<object>();
             var splitNodes = prompts.EnumerateArray().Where(p => p.GetProperty("step").GetString() == "split-upload")

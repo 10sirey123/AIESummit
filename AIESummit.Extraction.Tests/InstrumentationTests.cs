@@ -12,6 +12,24 @@ public sealed class MongoDatabaseFact : FactAttribute
 }
 public sealed class InstrumentationTests
 {
+    [Fact] public async Task ExplicitExecutionGraphDoesNotInferDuplicatePromptsOrFixtureIntakeStages()
+    {
+        var root = Path.Combine(Path.GetFullPath("artifacts"), "explicit-graph-test-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var store = await MongoInstrumentation.OpenAsync(Path.Combine(root, "missing.env"), root, new { synthetic = true }, true);
+        var resultFile = Path.Combine(root, "result.json");
+        var id = await store.BeginDocumentAsync("synthetic", Path.Combine(root, "synthetic.pdf"), "hash", resultFile);
+        var nodes = new[] { new { id = id + "/exact", kind = "llm", prompt = new { tokens = 12 } } };
+        var result = new { status = "ready", graph = new { nodes, edges = Array.Empty<object>() } };
+        await File.WriteAllTextAsync(resultFile, JsonSerializer.Serialize(result));
+        await store.FinishDocumentAsync(id, resultFile, result, Metrics());
+        var outbox = Path.Combine(root, "telemetry-outbox.ndjson");
+        Assert.DoesNotContain(File.ReadLines(outbox).Select(BsonDocument.Parse), row => row["collection"].AsString == "evaluation_steps");
+        await store.RecordGraphAsync(id, nodes, Array.Empty<object>());
+        var recorded = File.ReadLines(outbox).Select(BsonDocument.Parse).Where(row => row["collection"].AsString == "evaluation_steps").ToArray();
+        Assert.Single(recorded); Assert.Equal(id + "/exact", recorded[0]["id"].AsString);
+        Assert.DoesNotContain(recorded, row => row["id"].AsString.EndsWith("/ocr") || row["id"].AsString.EndsWith("/intake"));
+    }
+
     [Fact] public async Task OfflineModeRetainsReplayableGraphAndDoesNotIncludePredictionContent()
     {
         var root = Path.Combine(Path.GetFullPath("artifacts"), "instrumentation-test-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

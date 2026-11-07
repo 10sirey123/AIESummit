@@ -8,6 +8,33 @@ namespace AIESummit.Extraction.Tests;
 public sealed class MongoHistoryTests
 {
     [MongoDatabaseFact]
+    public async Task StepViewSelectsAuthoritativeExactMembershipAndPreservesLegacyGraphs()
+    {
+        var db = new MongoClient(Environment.GetEnvironmentVariable("AIESUMMIT_MONGO_TEST_URI")!)
+            .GetDatabase("aiesummit_history_graph_" + Guid.NewGuid().ToString("N"));
+        await db.GetCollection<BsonDocument>("evaluation_runs").InsertOneAsync(new() { { "_id", "run" }, { "runId", "run" }, { "partition", "development" } });
+        await db.GetCollection<BsonDocument>("evaluation_documents").InsertManyAsync([
+            new() { { "_id", "exact-document" }, { "runId", "run" }, { "graph", new BsonDocument { { "exact", true }, { "nodeIds", new BsonArray { "exact-node" } } } } },
+            new() { { "_id", "legacy-document" }, { "runId", "run" }, { "graph", new BsonDocument("edges", new BsonArray()) } }
+        ]);
+        await db.GetCollection<BsonDocument>("evaluation_steps").InsertManyAsync([
+            Step("exact-node", "exact-document", 10), Step("orphan-inferred-prompt", "exact-document", 1000),
+            Step("orphan-inferred-ocr", "exact-document", 0), Step("legacy-prompt", "legacy-document", 20)
+        ]);
+        var selected = await new MongoHistory(db).QueryAsync("steps", runId: "run");
+        var rows = selected.EnumerateArray().ToArray();
+        Assert.Equal(2, rows.Length);
+        Assert.Contains(rows, row => row.GetProperty("_id").GetString() == "exact-node");
+        Assert.Contains(rows, row => row.GetProperty("_id").GetString() == "legacy-prompt");
+        Assert.DoesNotContain("orphan-inferred", selected.GetRawText());
+        Assert.Equal(30, rows.Sum(row => row.GetProperty("prompt").GetProperty("tokens").GetInt32()));
+    }
+
+    private static BsonDocument Step(string id, string document, int tokens) => new() {
+        { "_id", id }, { "runId", "run" }, { "documentRunId", document }, { "kind", "llm" }, { "prompt", new BsonDocument("tokens", tokens) }
+    };
+
+    [MongoDatabaseFact]
     public async Task RunSelectionResolvesSnapshotsAndWorkflowsThroughUsageWithoutExposingConfirmation()
     {
         var db = new MongoClient(Environment.GetEnvironmentVariable("AIESUMMIT_MONGO_TEST_URI")!)
