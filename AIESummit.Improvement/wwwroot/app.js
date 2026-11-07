@@ -1,4 +1,5 @@
 import { renderProgression } from './progression.js';
+import { workflowEdges } from './workflow-view.js';
 
 const $ = id => document.getElementById(id);
 const state = { dashboard: null, selected: 'baseline', attempt: null, matrix: null, document: '', composing: false, busy: false, refreshing: false, selectedRun: null };
@@ -62,8 +63,13 @@ function renderGraph(graph, container = $('graph')) {
     container.innerHTML = '<p class="muted">The versioned graph will appear here when its snapshot is available.</p>';
     return;
   }
-  const edges = graph.edges || nodes.flatMap(n => asArray(n.dependsOn).map(from => ({ from, to: n.key || n.id })));
-  container.innerHTML = nodes.map(n => `<div class="graph-node"><strong>${escape(n.name || n.label || n.key || n.id || n.tag)}</strong><small>${escape(n.stepTag || n.tag || n.kind || n.model || '')}</small>${n.targets ? `<small>${escape(asArray(n.targets).length)} targets</small>` : ''}</div>`).join('') + (edges.length ? `<div class="graph-dependencies">${edges.map(e => `${escape(e.from)} → ${escape(e.to)}`).join(' · ')}</div>` : nodes.length > 1 ? '<div class="graph-dependencies">Independent branches · each receives the frozen document input</div>' : '');
+  const edges = workflowEdges(graph, nodes);
+  container.innerHTML = nodes.map(n => {
+    const kind = n.kind === 'detect-pages' ? 'Page detector' : !n.kind || n.kind === 'extract' ? 'Extractor' : n.kind;
+    const scope = n.selectedPagesFrom ? 'Selected pages' : n.kind === 'detect-pages' ? 'All pages' : n.scope || 'Whole document';
+    const targets = asArray(n.targets);
+    return `<div class="graph-node"><strong>${escape(n.name || n.label || n.key || n.id || n.tag)}</strong><small>${escape(n.model || n.stepTag || n.tag || '')}</small><div class="graph-badges"><span>${escape(kind)}</span><span>${escape(scope.replaceAll('-', ' '))}</span>${targets.length ? `<span title="${escape(targets.join(', '))}">${targets.length} ${targets.length === 1 ? 'target' : 'targets'}</span>` : ''}</div>${n.selectedPagesFrom ? `<small>Pages selected by ${escape(n.selectedPagesFrom)}</small>` : ''}</div>`;
+  }).join('') + (edges.length ? `<div class="graph-dependencies">${edges.map(e => `${escape(e.from)} → ${escape(e.to)}${e.pageSelection ? ' (page selection)' : ''}`).join(' · ')}</div>` : nodes.length > 1 ? '<div class="graph-dependencies">Independent branches · each receives the frozen document input</div>' : '');
 }
 function block(title, content) {
   if (!content || !asArray(content).length) return '';

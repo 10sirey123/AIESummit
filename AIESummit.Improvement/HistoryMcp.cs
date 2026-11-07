@@ -67,7 +67,8 @@ public static class HistoryMcp
                                         if (!Kinds.Contains(kind, StringComparer.Ordinal)) throw new InvalidDataException("Unsupported history view.");
                                         var history = await MongoHistory.OpenAsync(options.EnvFile);
                                         output = await history.QueryAsync(kind, String(arguments, "runId"), String(arguments, "sampleId"),
-                                            String(arguments, "sourceSha256"), Integer(arguments, "limit", 50));
+                                            String(arguments, "sourceSha256"), Integer(arguments, "limit", 50), String(arguments, "stepTag"),
+                                            arguments.TryGetProperty("pageNumber", out var page) && page.ValueKind != JsonValueKind.Null ? Integer(arguments, "pageNumber", 1) : null);
                                         break;
                                     case "document_matrix":
                                         var source = String(arguments, "sourceSha256");
@@ -107,8 +108,10 @@ public static class HistoryMcp
                     runId = new { type = new[] { "string", "null" }, description = "Evaluation run ID, or null for all development runs." },
                     sampleId = new { type = new[] { "string", "null" }, description = "Benchmark sample ID, for example 0201, or null for all samples." },
                     sourceSha256 = new { type = new[] { "string", "null" }, description = "Exact PDF SHA-256 checksum, or null for all development documents." },
+                    stepTag = new { type = new[] { "string", "null" }, description = "Exact step tag for the steps view, or null." },
+                    pageNumber = new { type = new[] { "integer", "null" }, minimum = 1, description = "Original one-based page in the steps view, or null." },
                     limit = new { type = new[] { "integer", "null" }, minimum = 1, maximum = 200, description = "Maximum records, or null for default 50." }
-                }, required = new[] { "kind", "runId", "sampleId", "sourceSha256", "limit" }, additionalProperties = false
+                }, required = new[] { "kind", "runId", "sampleId", "sourceSha256", "stepTag", "pageNumber", "limit" }, additionalProperties = false
             }
         },
         new {

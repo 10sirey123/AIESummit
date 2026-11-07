@@ -22,6 +22,14 @@ try {
     $identity = Get-Content -LiteralPath (Join-Path $outputRoot 'run-identity.json') -Raw | ConvertFrom-Json
     $summary = Get-Content -LiteralPath (Join-Path $outputRoot 'summary.json') -Raw | ConvertFrom-Json
     if ($summary.documentsAttempted -ne 20) { throw 'A complete baseline must include all 20 frozen benchmark documents.' }
+    if ($CacheOnly) {
+        $cacheMisses = 0
+        foreach ($resultFile in Get-ChildItem -LiteralPath $outputRoot -Filter '*.json') {
+            $result = Get-Content -LiteralPath $resultFile.FullName -Raw | ConvertFrom-Json
+            if ($result.graph.nodes) { $cacheMisses += @($result.graph.nodes | Where-Object state -eq 'cache_miss').Count }
+        }
+        if ($cacheMisses) { throw 'Cache verification found missing node results. The existing baseline was preserved; inspect the retained report.' }
+    }
     @{runId=$identity.runId;workflowHash=$identity.workflowHash;summary=$summary} | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath artifacts/improvement/baseline.json
     Write-Host "Baseline retained at $outputRoot. Refresh the improvement workbench to compare it."
 } finally { Pop-Location }

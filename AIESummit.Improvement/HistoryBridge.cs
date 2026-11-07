@@ -22,10 +22,10 @@ public static class HistoryBridge
             catch { await Results.Problem("Read-only history query failed. Check the requested view and local connection.").ExecuteAsync(context); }
         });
         app.MapGet("/health", () => new { status = "ok", instance, processId = Environment.ProcessId });
-        app.MapGet("/history", async (string? kind, string? runId, string? sampleId, string? sourceSha256, int? limit) =>
+        app.MapGet("/history", async (string? kind, string? runId, string? sampleId, string? sourceSha256, int? limit, string? stepTag, int? pageNumber) =>
         {
             var reader = await MongoHistory.OpenAsync(options.EnvFile);
-            return Results.Ok(await reader.QueryAsync(kind ?? "runs", runId, sampleId, sourceSha256, limit ?? 50));
+            return Results.Ok(await reader.QueryAsync(kind ?? "runs", runId, sampleId, sourceSha256, limit ?? 50, stepTag, pageNumber));
         });
         app.MapGet("/matrix/{sha}", async (string sha) =>
         {

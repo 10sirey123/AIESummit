@@ -26,7 +26,8 @@ try
         var kind = Option("--kind", "runs");
         var data = kind == "matrix"
             ? await history.MatrixAsync(Option("--source", ""), Option("--expectation", ""))
-            : await history.QueryAsync(kind, Option("--run", ""), Option("--sample", ""), Option("--source", ""), int.Parse(Option("--limit", "50")));
+            : await history.QueryAsync(kind, Option("--run", ""), Option("--sample", ""), Option("--source", ""), int.Parse(Option("--limit", "50")),
+                Option("--step-tag", ""), Option("--page-number", "") is { Length: > 0 } pageNumber ? int.Parse(pageNumber) : null);
         Console.WriteLine(JsonSerializer.Serialize(data, json)); return 0;
     }
     if (args.Length > 0 && args[0] is "mongo-check" or "replay")

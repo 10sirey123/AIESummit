@@ -8,6 +8,45 @@ namespace AIESummit.Extraction.Tests;
 public sealed class MongoHistoryTests
 {
     [MongoDatabaseFact]
+    public async Task NativeStepAndEventQueriesResolveDocumentIdentityAndPageSelectorsPrecisely()
+    {
+        var db = new MongoClient(Environment.GetEnvironmentVariable("AIESUMMIT_MONGO_TEST_URI")!)
+            .GetDatabase("aiesummit_history_page_" + Guid.NewGuid().ToString("N"));
+        await db.GetCollection<BsonDocument>("evaluation_runs").InsertManyAsync([
+            new() { { "_id", "run" }, { "runId", "run" }, { "partition", "development" } },
+            new() { { "_id", "secret-run" }, { "runId", "secret-run" }, { "configuration", new BsonDocument("partition", "confirmation") } }
+        ]);
+        await db.GetCollection<BsonDocument>("evaluation_documents").InsertManyAsync([
+            new() { { "_id", "document-a" }, { "runId", "run" }, { "sampleId", "0201" }, { "sourceSha256", "abc" },
+                { "graph", new BsonDocument { { "exact", true }, { "nodeIds", new BsonArray { "page-one", "page-two", "other-type" } } } } },
+            new() { { "_id", "document-b" }, { "runId", "run" }, { "sampleId", "0202" }, { "sourceSha256", "def" } },
+            new() { { "_id", "secret-document" }, { "runId", "secret-run" }, { "sampleId", "0201" }, { "sourceSha256", "abc" } }
+        ]);
+        var pageOne = Step("page-one", "document-a", 10); pageOne["pageNumber"] = 1; pageOne["stepTag"] = "detect-liability";
+        var pageTwo = Step("page-two", "document-a", 10); pageTwo["pageNumber"] = 2; pageTwo["stepTag"] = "detect-liability";
+        var otherType = Step("other-type", "document-a", 10); otherType["pageNumber"] = 2; otherType["stepTag"] = "detect-renewal";
+        var stray = Step("orphan-page-two", "document-a", 10); stray["pageNumber"] = 2; stray["stepTag"] = "detect-liability";
+        var otherDocument = Step("other-document", "document-b", 10); otherDocument["pageNumber"] = 2; otherDocument["stepTag"] = "detect-liability";
+        var hidden = Step("secret-node", "secret-document", 10); hidden["runId"] = "secret-run"; hidden["pageNumber"] = 2; hidden["stepTag"] = "detect-liability";
+        await db.GetCollection<BsonDocument>("evaluation_steps").InsertManyAsync([pageOne, pageTwo, otherType, stray, otherDocument, hidden]);
+        await db.GetCollection<BsonDocument>("evaluation_events").InsertManyAsync([
+            new() { { "_id", "event-a" }, { "runId", "run" }, { "documentRunId", "document-a" } },
+            new() { { "_id", "event-b" }, { "runId", "run" }, { "documentRunId", "document-b" } },
+            new() { { "_id", "secret-event" }, { "runId", "secret-run" }, { "documentRunId", "secret-document" } }
+        ]);
+        var history = new MongoHistory(db);
+        var selected = await history.QueryAsync("steps", sampleId: "0201", sourceSha256: "ABC", stepTag: "detect-liability", pageNumber: 2);
+        Assert.Equal("page-two", Assert.Single(selected.EnumerateArray()).GetProperty("_id").GetString());
+        Assert.Equal(3, (await history.QueryAsync("steps", sampleId: "0201")).GetArrayLength());
+        var events = await history.QueryAsync("events", sampleId: "0201", sourceSha256: "ABC");
+        Assert.Equal("event-a", Assert.Single(events.EnumerateArray()).GetProperty("_id").GetString());
+        Assert.Empty((await history.QueryAsync("steps", sampleId: "0201", sourceSha256: "def")).EnumerateArray());
+        Assert.Empty((await history.QueryAsync("events", sampleId: "0201", sourceSha256: "def")).EnumerateArray());
+        await Assert.ThrowsAsync<InvalidDataException>(() => history.QueryAsync("steps", pageNumber: 0));
+        await Assert.ThrowsAsync<InvalidDataException>(() => history.QueryAsync("events", pageNumber: 1));
+    }
+
+    [MongoDatabaseFact]
     public async Task StepViewSelectsAuthoritativeExactMembershipAndPreservesLegacyGraphs()
     {
         var db = new MongoClient(Environment.GetEnvironmentVariable("AIESUMMIT_MONGO_TEST_URI")!)

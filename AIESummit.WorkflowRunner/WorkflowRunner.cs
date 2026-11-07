@@ -67,10 +67,7 @@ public static class WorkflowRunner
                 new { command = "workflow-run", workflowHash = workflow.Hash, fixtureRoot = fixtures,
                     manifestHash = WorkflowDefinition.HashText(await File.ReadAllTextAsync(manifestPath)),
                     attemptId = Option("--attempt-id", "manual"), partition = "development" },
-                args.Contains("--mongo-offline"), new { name = workflow.Name, version = workflow.Version, workflowHash = workflow.Hash,
-                    nodes = nodes.Select(n => new { key = n.Key, kind = "llm", scope = "logical-document", stepTag = StepTag(n),
-                        definitionHash = n.DefinitionHash, n.Targets, n.Model, n.Temperature, n.ReasoningEffort }),
-                    edges = nodes.SelectMany(n => n.DependsOn.Select(p => new { from = p, to = n.Key, relation = "depends_on" })) });
+                args.Contains("--mongo-offline"), DescribeWorkflow(workflow, nodes));
             await Write(Path.Combine(output, "run-identity.json"), new { mongo.RunId, mongo.WorkflowId, workflowHash = workflow.Hash });
             // One runner owns experiment writes. This lock does not pause or mutate ordinary application work.
             await db.Database.OpenConnectionAsync();
@@ -166,7 +163,20 @@ public static class WorkflowRunner
         }
     }
 
-    private static string StepTag(WorkflowNode node) => "improvement-" + node.DefinitionHash;
+    internal static string StepTag(WorkflowNode node) => "improvement-" + node.DefinitionHash;
+    internal static object DescribeWorkflow(WorkflowDefinition workflow, WorkflowNode[] nodes)
+    {
+        if (nodes.All(n => n.Kind == null && n.SelectedPagesFrom == null))
+            return new { name = workflow.Name, version = workflow.Version, workflowHash = workflow.Hash,
+                nodes = nodes.Select(n => new { key = n.Key, kind = "llm", scope = "logical-document", stepTag = StepTag(n),
+                    definitionHash = n.DefinitionHash, n.Targets, n.Model, n.Temperature, n.ReasoningEffort }),
+                edges = nodes.SelectMany(n => n.DependsOn.Select(p => new { from = p, to = n.Key, relation = "depends_on" })) };
+        return new { name = workflow.Name, version = workflow.Version, workflowHash = workflow.Hash,
+            nodes = nodes.Select(n => new { key = n.Key, kind = "llm", nodeKind = n.NodeKind,
+                scope = n.NodeKind == "detect-pages" || n.SelectedPagesFrom != null ? "page" : "logical-document", stepTag = StepTag(n),
+                definitionHash = n.DefinitionHash, n.Targets, n.Model, n.Temperature, n.ReasoningEffort, n.SelectedPagesFrom }),
+            edges = nodes.SelectMany(n => n.EffectiveDependencies.Select(p => new { from = p, to = n.Key, relation = "depends_on" })) };
+    }
     private static Task Write(string path, object value)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -211,6 +221,9 @@ public static class WorkflowRunner
         progress.Mark("fixture_split", "fixture_split_unavailable");
         var documents = await db.Documents.Where(d => fixtureDocumentIds.Contains(d.ID) && d.UploadId == uploadId).OrderBy(d => d.FirstPage).ToArrayAsync();
         if (documents.Length != fixtureDocumentIds.Length || documents.Length == 0) throw new InvalidDataException("Frozen split documents are unavailable.");
+        if (nodes.Any(n => n.NodeKind == "detect-pages" || n.SelectedPagesFrom != null))
+            return await PageWorkflowRunner.Evaluate(db, services, nodes, workflow, documentRunId, uploadId, documents,
+                fixture.RootElement, cacheOnly, progress, sw);
         var analyses = new List<object>(); var execution = new List<object>(); var prompts = new List<object>();
         var logicalInput = 0; var logicalOutput = 0; var logicalTotal = 0; var newInput = 0; var newOutput = 0; var newTotal = 0;
         var breakdown = true; var newBreakdown = true; var totalAvailable = true; var newTotalAvailable = true;
@@ -230,6 +243,8 @@ public static class WorkflowRunner
             {
                 var nodeId = $"{documentRunId}/{document.ID}/{node.Key}";
                 progress.NodeId = nodeId; progress.NodeKey = node.Key;
+                progress.NodeKind = "extract"; progress.Scope = "logical-document";
+                progress.TargetTags = node.Targets.ToArray(); progress.StepTag = StepTag(node); progress.PageNumber = null;
                 progress.ParentNodeIds = node.DependsOn.Select(p => $"{documentRunId}/{document.ID}/{p}").ToArray();
                 progress.Mark("node_input");
                 if (node.DependsOn.Any(p => !results[p].Succeeded))
@@ -409,6 +424,9 @@ public static class WorkflowRunner
         {
             graphNodes.Add(JsonSerializer.SerializeToElement(new { id = progress.NodeId, key = progress.NodeKey,
                 kind = "llm", state = "runner_failed", parentNodeIds = progress.ParentNodeIds,
+                nodeKind = progress.NodeKind, scope = progress.Scope, stepTag = progress.StepTag,
+                pageNumber = progress.PageNumber, sourcePage = progress.PageNumber,
+                targetRouting = new { targets = progress.TargetTags },
                 errorCode = progress.ErrorCode, errorStage = progress.Stage }));
             foreach (var parent in progress.ParentNodeIds.Where(p => graphNodes.Any(n => n.GetProperty("id").GetString() == p)))
                 graphEdges.Add(JsonSerializer.SerializeToElement(new { from = parent, to = progress.NodeId, relation = "depends_on" }));
@@ -427,18 +445,23 @@ public static class WorkflowRunner
         public string ErrorCode { get; private set; } = "fixture_read_failed";
         public string? NodeId { get; set; }
         public string? NodeKey { get; set; }
+        public string? NodeKind { get; set; }
+        public string? Scope { get; set; }
+        public string? StepTag { get; set; }
+        public int? PageNumber { get; set; }
+        public string[] TargetTags { get; set; } = [];
         public string[] ParentNodeIds { get; set; } = [];
         public bool ProviderStarted { get; set; }
         public JsonElement? LastResult { get; set; }
         public void Mark(string stage, string? code = null) { Stage = stage; ErrorCode = code ?? stage + "_failed"; }
     }
 
-    private static IQueryable<DocumentAnalysis> LoadAnalysis(AIESummitDb db) => db.DocumentAnalyses.Include(a => a.Document)
+    internal static IQueryable<DocumentAnalysis> LoadAnalysis(AIESummitDb db) => db.DocumentAnalyses.Include(a => a.Document)
         .Include(a => a.Pages).Include(a => a.LLMPrompts).ThenInclude(p => p.UsedModel)
         .Include(a => a.Targets).ThenInclude(t => t.ExtractionType)
         .Include(a => a.Targets).ThenInclude(t => t.Extractions).ThenInclude(e => e.Evidence).AsSplitQuery();
 
-    private static object ProjectAnalysis(DocumentAnalysis a)
+    internal static object ProjectAnalysis(DocumentAnalysis a)
     {
         object[] reported;
         try

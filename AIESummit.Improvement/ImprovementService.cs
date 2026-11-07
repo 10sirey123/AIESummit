@@ -83,8 +83,8 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
         {
             var item = await store.Get(id);
             if (item.Status != "evaluated" || item.Worktree == null) throw new InvalidDataException("Evaluate this attempt before using it as the baseline.");
-            if (ImprovementJson.Hash(await File.ReadAllTextAsync(options.Workflow)) != item.ParentGraphHash)
-                throw new InvalidDataException("The baseline workflow changed. Compare this attempt against the new baseline before promotion.");
+            ValidatePromotionBaseline(item, JsonNode.Parse(await File.ReadAllTextAsync(options.Workflow)),
+                (await store.All()).ToDictionary(a => a.Id, StringComparer.Ordinal));
             var head = (await Git(item.Worktree, ["rev-parse", "HEAD"])).Output.Trim();
             if (head != item.CandidateCommit || (await Git(item.Worktree, ["status", "--porcelain"])).Output.Trim().Length != 0)
                 throw new InvalidDataException("The evaluated worktree changed. Promotion requires its unchanged evaluated commit.");
@@ -109,6 +109,21 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
     {
         if (paths.Any(p => p.Trim().Replace('\\', '/') != AllowedFile))
             throw new InvalidDataException("Candidate changed files outside improvement/workflow.json. The evaluation was blocked.");
+    }
+
+    public static void ValidatePromotionBaseline(Attempt item, JsonNode? baseline, IReadOnlyDictionary<string, Attempt> history)
+    {
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var current = item;
+        while (visited.Add(current.Id))
+        {
+            if (current.ParentGraph != null && JsonNode.DeepEquals(baseline, current.ParentGraph)) return;
+            if (current.ParentAttemptId == null || !history.TryGetValue(current.ParentAttemptId, out var parent)
+                || current.BaseCommit != parent.CandidateCommit || parent.Graph == null
+                || !JsonNode.DeepEquals(current.ParentGraph, parent.Graph)) break;
+            current = parent;
+        }
+        throw new InvalidDataException("The baseline is outside this attempt's verified ancestry. Compare against the current baseline before promotion.");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -201,13 +216,18 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
             {missing}
             Query the isolated read-only MongoDB reader with curl at
             http://127.0.0.2:18112/history?kind=missing (also runs, documents, steps, workflows,
-            expectations, observations; optional runId, sampleId, sourceSha256, limit up to 200).
+            expectations, observations; optional runId, sampleId, sourceSha256, limit up to 200;
+            steps additionally support stepTag and original one-based pageNumber).
             /matrix/SOURCE_SHA256 returns a document comparison; /attempts returns past proposals/results.
             These endpoints have no mutation or approval operations. Do not read credentials, .env or private configuration.
             Only improvement/workflow.json may change in an experiment. Existing extraction target
             definitions, native validators, scorer, OCR, gold labels and model provider integration are fixed.
             Never embed benchmark sample IDs, filenames, expected labels or gold answers in prompts.
-            Graphs must be acyclic and partition the ten existing target tags exactly once. Nodes may use
+            Graphs must be acyclic. Final extraction nodes partition the ten existing target tags exactly once;
+            page detectors are routing stages and may inspect the same target tags without publishing findings.
+            The runner supports kind=detect-pages followed by a singleton extractor selectedPagesFrom that detector.
+            Detectors inspect each frozen OCR page, and the extractor receives only selected page OCR.
+            Nodes may use
             Muse models only. Prefer one small testable change; quantify expected quality/token tradeoffs.
             A found extraction means accepted evidence, not just a raw model prediction. Preserve unknowns.
             Return a concrete proposal in the required JSON schema. Do not execute inference or implement.
@@ -251,7 +271,8 @@ public sealed class ImprovementService(WorkbenchOptions options, AttemptStore st
             Change ONLY improvement/workflow.json. Do not modify any other file, commit, install dependencies,
             contact models, run provider evaluation, alter databases, validators, scorer or gold labels.
             Read AIESummit.WorkflowRunner source for the graph contract. All model names must be Muse.
-            Preserve the ten-target coverage partition and DAG. Keep unchanged nodes byte-semantically identical
+            Preserve final extraction coverage of all ten targets and the DAG; detector targets may overlap.
+            Keep unchanged nodes byte-semantically identical
             for cache reuse. User instruction: {item.Instructions}
             Do not hardcode benchmark cases, filenames, expected labels or gold answers into the workflow.
             Use curl with the isolated read-only MongoDB reader at

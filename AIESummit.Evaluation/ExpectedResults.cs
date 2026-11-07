@@ -42,6 +42,7 @@ public static class ExpectedResults
             && prediction.TryGetProperty("analyses", out var a) && a.ValueKind == JsonValueKind.Array
             ? a.EnumerateArray().Where(x => !x.TryGetProperty("isCurrent", out var current) || current.ValueKind == JsonValueKind.True).ToArray() : [];
         var failed = result.TryGetProperty("status", out var status) && status.GetString() == "failed";
+        var graphNodes = result.TryGetProperty("graph", out var graph) && graph.ValueKind == JsonValueKind.Object ? Rows(graph, "nodes") : [];
         return expected.Targets.Select(target => {
             bool HasTag(JsonElement row) => row.TryGetProperty("tag", out var t) && t.GetString() == target.Tag;
             bool AnalysisFailed(JsonElement analysis) => analysis.TryGetProperty("status", out var state) && state.ValueKind == JsonValueKind.String
@@ -49,7 +50,18 @@ public static class ExpectedResults
             var relevant = analyses.Where(x => Rows(x, "targets").Any(HasTag) || Rows(x, "definitions").Any(HasTag)
                 || Rows(x, "modelReportedOutcomes").Any(HasTag)).ToArray();
             var matches = relevant.SelectMany(x => Rows(x, "targets")).Where(HasTag).ToArray();
-            var targetFailed = relevant.Length == 0 ? failed : relevant.Any(AnalysisFailed);
+            bool RoutesTarget(JsonElement node)
+            {
+                if (Rows(node, "targetDefinitions").Any(HasTag)) return true;
+                if (!node.TryGetProperty("targetRouting", out var routing) || routing.ValueKind != JsonValueKind.Object) return false;
+                return routing.TryGetProperty("targetTag", out var tag) && tag.ValueKind == JsonValueKind.String && tag.GetString() == target.Tag
+                    || Rows(routing, "targets").Any(t => t.ValueKind == JsonValueKind.String && t.GetString() == target.Tag);
+            }
+            var incompleteRouting = graphNodes.Any(node => RoutesTarget(node) && node.TryGetProperty("state", out var state)
+                && state.ValueKind == JsonValueKind.String && state.GetString() is "failed" or "cache_miss" or "blocked_detection_failed" or "runner_failed" or "skipped");
+            // A ready negative on one page cannot establish absence when another page's detector/extractor
+            // failed before producing a final analysis. Validated positive findings still take precedence below.
+            var targetFailed = incompleteRouting || (relevant.Length == 0 ? failed : relevant.Any(AnalysisFailed));
             var raw = relevant.Where(AnalysisFailed).SelectMany(x => Rows(x, "modelReportedOutcomes")).Any(x => HasTag(x) && Outcome(x) == "detected");
             var found = matches.Any(x => Outcome(x) == "detected");
             var extractions = matches.Where(x => Outcome(x) == "detected").SelectMany(x => Rows(x, "extractions")).Select(e => (object)new {

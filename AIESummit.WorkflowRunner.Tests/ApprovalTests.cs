@@ -33,6 +33,18 @@ public sealed class ApprovalTests
         ImprovementService.ValidateEvaluatedGraph(attempt, "{\"nodes\":[{\"key\":\"tested\"}]}");
         Assert.Throws<InvalidDataException>(() => ImprovementService.ValidateEvaluatedGraph(attempt, "{\"nodes\":[{\"key\":\"edited\"}]}"));
     }
+    [Fact] public void PromotionCanSkipAnUnpromotedIntermediateWithoutAcceptingUnrelatedBaselines()
+    {
+        var original = JsonNode.Parse("{\"generation\":0}");
+        var parent = new Attempt { Id = "parent", ParentGraph = original, Graph = JsonNode.Parse("{\"generation\":1}"), CandidateCommit = "parent-commit" };
+        var child = new Attempt { Id = "child", ParentAttemptId = parent.Id, ParentGraph = parent.Graph!.DeepClone(), BaseCommit = parent.CandidateCommit! };
+        var history = new Dictionary<string, Attempt> { [parent.Id] = parent };
+        ImprovementService.ValidatePromotionBaseline(child, original, history);
+        ImprovementService.ValidatePromotionBaseline(child, parent.Graph, history);
+        Assert.Throws<InvalidDataException>(() => ImprovementService.ValidatePromotionBaseline(child, JsonNode.Parse("{\"generation\":9}"), history));
+        child.BaseCommit = "unverified-commit";
+        Assert.Throws<InvalidDataException>(() => ImprovementService.ValidatePromotionBaseline(child, original, history));
+    }
     [Fact] public async Task ApprovalVerifiesGoldAndFixtureBytes()
     {
         var folder = Path.Combine(Path.GetFullPath("artifacts"), "approval-" + Guid.NewGuid().ToString("N"));

@@ -84,6 +84,38 @@ public sealed class ExpectedResultsTests
     }
 
     [Fact]
+    public void FailedPageRoutingPreventsClaimedAbsenceButKeepsValidatedPositiveFindings()
+    {
+        var snapshot = ExpectedResults.Create(Labels(), "abc");
+        using var result = JsonDocument.Parse("""
+            {"status":"failed","prediction":{"analyses":[
+              {"isCurrent":true,"status":"ready","targets":[
+                {"tag":"agreement-effective-date","outcome":"detected","extractions":[{"id":1,"title":"Date","values":{},"evidence":[]}]},
+                {"tag":"non-compete","outcome":"not_found_in_reviewed_text","extractions":[]}]}]},
+             "graph":{"nodes":[
+               {"state":"failed","nodeKind":"detect-pages","pageNumber":2,"targetDefinitions":[{"tag":"agreement-effective-date"},{"tag":"non-compete"}]},
+               {"state":"blocked_detection_failed","nodeKind":"extract","pageNumber":2,"targetRouting":{"targets":["non-compete"]}}],"edges":[]}}
+            """);
+        var rows = ExpectedResults.Observe(snapshot, result.RootElement);
+        Assert.Equal("found", rows.Single(t => t.Tag == "agreement-effective-date").State);
+        Assert.Equal("failed", rows.Single(t => t.Tag == "non-compete").State);
+        Assert.Equal("not_found_in_reviewed_text", rows.Single(t => t.Tag == "non-compete").Outcome);
+    }
+
+    [Theory]
+    [InlineData("cache_miss")]
+    [InlineData("runner_failed")]
+    [InlineData("skipped")]
+    public void IncompleteTargetGraphCannotPublishACompleteNegative(string state)
+    {
+        var snapshot = ExpectedResults.Create(Labels(), "abc");
+        var result = JsonSerializer.SerializeToElement(new { status = "failed", prediction = new { analyses = new[] {
+            new { isCurrent = true, status = "ready", targets = new[] { new { tag = "non-compete", outcome = "not_found_in_reviewed_text", extractions = Array.Empty<object>() } } }
+        } }, graph = new { nodes = new[] { new { state, targetRouting = new { targets = new[] { "non-compete" } } } } } });
+        Assert.Equal("failed", ExpectedResults.Observe(snapshot, result).Single(t => t.Tag == "non-compete").State);
+    }
+
+    [Fact]
     public async Task OfflineInstrumentationRetainsExpectedAndObservedRecordsForReplay()
     {
         var root = Path.Combine(Path.GetFullPath("artifacts"), "expected-test-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

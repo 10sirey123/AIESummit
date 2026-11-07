@@ -142,3 +142,7 @@ The bundled Blueshift CLI supports reviewed, transactional code-to-database conf
 For a prompt change, edit `SplitStep.Definition()` or `PageSectionsStep.Definition()`, then follow the guide's build/export/validate/plan/apply sequence. Changing C# alone does not update an existing database row. Changing a metadata class or its `ConnectTo` logic also requires deploying the application/worker code; seeding only updates configuration. `export -IncludeBindings` deliberately includes model/enabled settings and can replace an existing model selection.
 
 MongoDB primary connectivity and tester writes are now verified, and the saved 20-document baseline is persisted in Atlas. See [connectivity diagnostics](docs/evaluation-instrumentation.md#connectivity-checks-and-the-resolved-tls-failure) for the read-only mongosh probe and the resolved multi-egress-IP access-list issue.
+
+## Extraction Observatory
+
+A separate read-only graph and benchmark dashboard lives in `AIESummit.Observatory/`. Start it with `./scripts/start-observatory.ps1`, then open http://127.0.0.1:18115. It uses local MongoDB settings and does not invoke models. See [the improvement guide](docs/self-improvement.md#extraction-observatory) for metric and graph boundaries.

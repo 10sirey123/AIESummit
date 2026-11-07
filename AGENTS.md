@@ -9,6 +9,8 @@ The bundle `10.0.0-aiesummit.cc69aa4.subq1` adds SubQ (provider enum 6) using be
 
 `AIESummit.Improvement` is the local approval-driven operator UI on `http://127.0.0.1:18110`; start with `./scripts/start-improvement.ps1`. Read [the improvement guide](docs/self-improvement.md), [workbench guide](AIESummit.Improvement/AGENTS.md), and [native workflow runner guide](AIESummit.WorkflowRunner/AGENTS.md). Candidates change only `improvement/workflow.json` in approved worktrees. Native experiment analyses use reserved `improvement/` request keys, remain excluded from ordinary reader results, and reuse terminal node results without deleting PostgreSQL data. MongoDB retains full benchmark expectations, per-attempt observations and exact graphs; bounded read-only history supports Codex learning. Logical and newly consumed token metrics are separate. Historical unreported directional usage remains unknown.
 
+The experimental graph supports page-first target detection (`kind: detect-pages`) followed by singleton target extraction (`selectedPagesFrom`). Detectors classify each frozen OCR page as present, absent or uncertain; only present/uncertain pages receive specialized extraction, with that page's OCR and target definition alone. Detector decisions are routing signals, never scored findings. Every final extraction target is assigned exactly once, while detectors may combine/overlap targets. Unchanged page extraction inputs reuse their native results even when detectors change. Exact graphs and token totals include detector calls, selected extraction calls and explicit skipped/derived states. Only all-successful absent decisions can derive a no-finding result; failed routing and frozen split failures remain visible. Read the runner guide before changing this infrastructure; normal candidates edit only the graph.
+
 ## Purpose and scope
 
 AIESummit turns a user's PDF or image into ordered Markdown documents. Firebase identifies the user. PostgreSQL retains uploads, OCR pages, extracted images, prompts and document results. BlueShift agents call the configured OCR and language-model deployments. A separate BlueShift Admin service exposes configuration and operational telemetry to operators.
@@ -287,3 +289,7 @@ Contract evidence uses exact-first anchoring with an inclusive 50% page-local mu
 ## MongoDB tester connectivity
 
 The tester now has verified Atlas primary reads/writes, and the saved 20-file baseline has been replayed into the configured database. Read [MongoDB diagnostics](docs/evaluation-instrumentation.md#connectivity-checks-and-the-resolved-tls-failure) before investigating connection failures: this network can use different outbound IPs for different destinations. `scripts/mongodb-probe.js` is the read-only mongosh entrypoint; it never prints the URI or changes access settings.
+
+## Read-only benchmark dashboard
+
+`AIESummit.Observatory/` is a separate .NET 10 / React dashboard for MongoDB evaluation history. Start with `./scripts/start-observatory.ps1` (UI 18115, read-only API 18114). Read its `AGENTS.md` and `docs/self-improvement.md` before changes. Compare scored workflow runs within a manifest hash; show exact document graph membership and keep unknown usage unknown. This dashboard cannot approve attempts or invoke providers.

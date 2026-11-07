@@ -102,10 +102,10 @@ app.MapGet("/api/dashboard", async (AttemptStore store) =>
             status = new { mongoConnected = false, model = "muse-wonder-1.0", error = "MongoDB is unavailable. Attempts remain saved locally; check the configured connection." } });
     }
 });
-app.MapGet("/api/history", async (string? kind, string? runId, string? sampleId, string? sourceSha256, int? limit) =>
+app.MapGet("/api/history", async (string? kind, string? runId, string? sampleId, string? sourceSha256, int? limit, string? stepTag, int? pageNumber) =>
 {
     var history = await MongoHistory.OpenAsync(options.EnvFile);
-    return Results.Ok(await history.QueryAsync(kind ?? "runs", runId, sampleId, sourceSha256, limit ?? 50));
+    return Results.Ok(await history.QueryAsync(kind ?? "runs", runId, sampleId, sourceSha256, limit ?? 50, stepTag, pageNumber));
 });
 app.MapGet("/api/documents/{id}/matrix", async (string id) =>
 {
@@ -136,6 +136,10 @@ app.MapGet("/api/attempts/{id}", async (string id, AttemptStore store) =>
                 var message = JsonNode.Parse(line);
                 var text = message?["item"]?["text"]?.GetValue<string>();
                 if (message?["sampleId"] != null) text = $"Document {message["sampleId"]}: {message["status"]} · {message["completed"]} completed";
+                if (message?["event"]?.GetValue<string>() == "workflow_node")
+                    text = $"{message["nodeKey"]} · document {message["documentId"]}" +
+                        (message["pageNumber"] == null ? "" : $" · page {message["pageNumber"]}") +
+                        $": {message["state"]}" + (message["cacheHit"]?.GetValue<bool>() == true ? " · cached" : "");
                 if (text != null) item.Logs.Add(text.Length > 3000 ? text[..3000] + "…" : text);
             }
             catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException) { }

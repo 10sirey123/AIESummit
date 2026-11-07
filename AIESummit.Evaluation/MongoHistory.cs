@@ -24,7 +24,8 @@ public sealed class MongoHistory(IMongoDatabase database)
         catch { throw new InvalidOperationException("MongoDB history configuration is unavailable; credentials are omitted."); }
     }
 
-    public async Task<JsonElement> QueryAsync(string kind = "runs", string? runId = null, string? sampleId = null, string? sourceSha256 = null, int limit = 50)
+    public async Task<JsonElement> QueryAsync(string kind = "runs", string? runId = null, string? sampleId = null, string? sourceSha256 = null, int limit = 50,
+        string? stepTag = null, int? pageNumber = null)
     {
         var collection = kind switch {
             "runs" => "evaluation_runs", "documents" => "evaluation_documents", "steps" => "evaluation_steps",
@@ -35,9 +36,14 @@ public sealed class MongoHistory(IMongoDatabase database)
         if (kind is "expectations" or "observations" or "missing") filter &= Builders<BsonDocument>.Filter.Eq("partition", "development");
         if (kind == "workflows" && (!string.IsNullOrWhiteSpace(sampleId) || !string.IsNullOrWhiteSpace(sourceSha256)))
             throw new InvalidDataException("Workflow queries support runId selection. Use documents to resolve a sample or source to its run first.");
+        if ((!string.IsNullOrWhiteSpace(stepTag) || pageNumber.HasValue) && kind != "steps")
+            throw new InvalidDataException("stepTag and pageNumber selectors are supported by the steps view.");
+        if (pageNumber is < 1) throw new InvalidDataException("pageNumber must be a positive one-based source page number.");
         if (!string.IsNullOrWhiteSpace(runId) && kind is not ("expectations" or "workflows")) filter &= Builders<BsonDocument>.Filter.Eq("runId", runId);
-        if (!string.IsNullOrWhiteSpace(sampleId)) filter &= Builders<BsonDocument>.Filter.Eq("sampleId", sampleId);
-        if (!string.IsNullOrWhiteSpace(sourceSha256)) filter &= Builders<BsonDocument>.Filter.Eq("sourceSha256", sourceSha256.ToLowerInvariant());
+        if (!string.IsNullOrWhiteSpace(sampleId) && kind is not ("steps" or "events")) filter &= Builders<BsonDocument>.Filter.Eq("sampleId", sampleId);
+        if (!string.IsNullOrWhiteSpace(sourceSha256) && kind is not ("steps" or "events")) filter &= Builders<BsonDocument>.Filter.Eq("sourceSha256", sourceSha256.ToLowerInvariant());
+        if (!string.IsNullOrWhiteSpace(stepTag)) filter &= Builders<BsonDocument>.Filter.Eq("stepTag", stepTag);
+        if (pageNumber.HasValue) filter &= Builders<BsonDocument>.Filter.Eq("pageNumber", pageNumber.Value);
         if (kind == "missing") filter &= Builders<BsonDocument>.Filter.ElemMatch<BsonDocument>("targets", new BsonDocument {
             { "expected", true }, { "found", false } });
         try
@@ -62,6 +68,21 @@ public sealed class MongoHistory(IMongoDatabase database)
                 stages.Add(kind == "workflows" ? VisibleRunLookup("_id", "workflowId", runId) : VisibleRunLookup("runId", "_id"));
                 stages.Add(new("$match", new BsonDocument("_visibleRuns.0", new BsonDocument("$exists", true))));
                 stages.Add(new("$unset", "_visibleRuns"));
+            }
+            if (kind is "steps" or "events" && (!string.IsNullOrWhiteSpace(sampleId) || !string.IsNullOrWhiteSpace(sourceSha256)))
+            {
+                // Native nodes/events carry documentRunId, not duplicated benchmark sample identities.
+                var documentFilter = new BsonDocument("partition", new BsonDocument("$ne", "confirmation"));
+                if (!string.IsNullOrWhiteSpace(sampleId)) documentFilter["sampleId"] = sampleId;
+                if (!string.IsNullOrWhiteSpace(sourceSha256)) documentFilter["sourceSha256"] = sourceSha256.ToLowerInvariant();
+                stages.Add(new("$lookup", new BsonDocument {
+                    { "from", "evaluation_documents" }, { "localField", "documentRunId" }, { "foreignField", "_id" },
+                    { "pipeline", new BsonArray {
+                        new BsonDocument("$match", documentFilter), VisibleRunLookup("runId", "_id"),
+                        new BsonDocument("$match", new BsonDocument("_visibleRuns.0", new BsonDocument("$exists", true))),
+                        new BsonDocument("$project", new BsonDocument("_id", 1)) } }, { "as", "_selectedDocuments" } }));
+                stages.Add(new("$match", new BsonDocument("_selectedDocuments.0", new BsonDocument("$exists", true))));
+                stages.Add(new("$unset", "_selectedDocuments"));
             }
             if (kind == "steps")
             {

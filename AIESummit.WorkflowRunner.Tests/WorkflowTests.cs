@@ -104,6 +104,8 @@ public sealed class WorkflowTests
     [Fact] public void InterruptedLaterNodePreservesCompletedFindingsAndKnownSubtotals()
     {
         var progress = new Runner.SampleProgress { UploadId = 17, ProviderStarted = true,
+            NodeId = "run/17/detector/page/2", NodeKey = "detector", NodeKind = "detect-pages", Scope = "page",
+            PageNumber = 2, TargetTags = ["liability-cap"],
             LastResult = JsonSerializer.SerializeToElement(new {
                 prediction = new { analyses = new[] { new { id = 123, status = "ready" } } },
                 metrics = new { prompts = Array.Empty<object>(), knownInputTokensSubtotal = 12, knownOutputTokensSubtotal = 5, unknownUsagePromptCount = 0 },
@@ -116,5 +118,7 @@ public sealed class WorkflowTests
         Assert.Equal(JsonValueKind.Null, result.GetProperty("metrics").GetProperty("newlyConsumedInputTokens").ValueKind);
         Assert.Equal(1, result.GetProperty("metrics").GetProperty("unknownUsagePromptCount").GetInt32());
         Assert.Equal("native_execution_failed", result.GetProperty("errorCode").GetString());
+        Assert.Equal(2, result.GetProperty("graph").GetProperty("nodes")[0].GetProperty("pageNumber").GetInt32());
+        Assert.Equal("liability-cap", result.GetProperty("graph").GetProperty("nodes")[0].GetProperty("targetRouting").GetProperty("targets")[0].GetString());
     }
 }
