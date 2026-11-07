@@ -6,10 +6,10 @@ namespace AIESummit.Domain;
 
 [DisplayMetadata("lucide:FileText", MenuName = "Documents",
     MenuDescription = "Logical documents identified within uploads, with inclusive page ranges and extracted text.")]
-[Microsoft.EntityFrameworkCore.Index(nameof(UploadId), nameof(FirstPage), IsUnique = true)]
 /// <summary>A logical document produced by applying the source upload's split result.</summary>
 public sealed class Document : BasePersistenceObject
 {
+    public bool IsCurrent { get; set; } = true;
     [Display(Name = "Upload identifier", Description = "Stored foreign key to the source upload.")]
     [DisplayMetadata("lucide:FileInput", IsHidden = true, IsEditable = false)]
     public int UploadId { get; set; }

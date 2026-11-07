@@ -22,9 +22,26 @@ public sealed class AIESummitDb(DbContextOptions options) : EFBaseDbContext(opti
     public DbSet<BackendActivity> BackendActivities => Set<BackendActivity>();
     public DbSet<LogLineStore> LogLineStores => Set<LogLineStore>();
     public DbSet<SeedIdentity> SeedIdentities => Set<SeedIdentity>();
+    public DbSet<ExtractionType> ExtractionTypes => Set<ExtractionType>();
+    public DbSet<DocumentAnalysis> DocumentAnalyses => Set<DocumentAnalysis>();
+    public DbSet<PageTextRevision> PageTextRevisions => Set<PageTextRevision>();
+    public DbSet<AnalysisTargetResult> AnalysisTargetResults => Set<AnalysisTargetResult>();
+    public DbSet<Extraction> Extractions => Set<Extraction>();
+    public DbSet<ExtractionEvidence> ExtractionEvidence => Set<ExtractionEvidence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Document>().HasIndex(d => new { d.UploadId, d.FirstPage }).IsUnique().HasFilter("\"IsCurrent\" = TRUE");
+        modelBuilder.Entity<DocumentAnalysis>().HasMany(a => a.LLMPrompts).WithOne()
+            .HasForeignKey("DocumentAnalysis_ID").OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<DocumentAnalysis>().HasOne(a => a.Document).WithMany().OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PageTextRevision>().HasOne(p => p.OcrPage).WithMany().OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<AnalysisTargetResult>().HasOne(r => r.ExtractionType).WithMany().OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ExtractionEvidence>().HasOne(e => e.PageTextRevision).WithMany().OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Extraction>().Property(e => e.ValuesJson).HasColumnType("jsonb");
+        modelBuilder.Entity<ExtractionType>().Property(e => e.ParametersJson).HasColumnType("jsonb");
+        modelBuilder.Entity<DocumentAnalysis>().Property(e => e.TargetsJson).HasColumnType("jsonb");
+        modelBuilder.Entity<ExtractionEvidence>().Property(e => e.SupportedFieldsJson).HasColumnType("jsonb");
         modelBuilder.Entity<UploadedFile>().HasMany(file => file.LLMPrompts).WithOne()
             .HasForeignKey("UploadedFile_ID").OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<OcrPage>().HasMany(page => page.LLMPrompts).WithOne()
@@ -36,8 +53,21 @@ public sealed class AIESummitDb(DbContextOptions options) : EFBaseDbContext(opti
         base.OnModelCreating(modelBuilder);
     }
 
+    private void ValidateSnapshots()
+    {
+        if (ChangeTracker.Entries<PageTextRevision>().Any(e => e.State == EntityState.Modified))
+            throw new InvalidOperationException("Analysis text snapshots are immutable; create a new analysis.");
+    }
+
+    public override int SaveChanges()
+    {
+        ValidateSnapshots();
+        return base.SaveChanges();
+    }
+
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        ValidateSnapshots();
         // SeedImporter constructs detached records; initialize legacy nonnullable diagnostics
         // without managing or overwriting existing operator values.
         foreach (var entry in ChangeTracker.Entries<LLMStep>().Where(e => e.State == EntityState.Added))

@@ -50,7 +50,7 @@ public sealed class OcrAgent(ILogger logger, IBroadcaster broadcaster, IQueueMan
                 foreach (var source in cachedPageRepo.Objects.Where(page => page.UploadId == cached.ID).OrderBy(page => page.Number).ToArray())
                 {
                     var page = new OcrPage { UploadId = file.ID, Number = source.Number, Markdown = source.Markdown,
-                        LLMStepStatus = StepProcessingStatus.CheckForPrompts };
+                        LLMStepStatus = file.AnalyzePageSections ? StepProcessingStatus.CheckForPrompts : StepProcessingStatus.Processed };
                     cachedPageRepo.Add(page);
                     foreach (var link in cachedImageRepo.Objects.Include(link => link.Image).Where(link => link.PageId == source.ID).ToArray())
                         cachedImageRepo.Add(new PageImage { Page = page, Reference = link.Reference,
@@ -74,7 +74,7 @@ public sealed class OcrAgent(ILogger logger, IBroadcaster broadcaster, IQueueMan
             foreach (var source in pages)
             {
                 var page = new OcrPage { UploadId = file.ID, Number = source.Index + 1, Markdown = source.Markdown,
-                    LLMStepStatus = StepProcessingStatus.CheckForPrompts };
+                    LLMStepStatus = file.AnalyzePageSections ? StepProcessingStatus.CheckForPrompts : StepProcessingStatus.Processed };
                 pageRows.Add(page);
                 foreach (var image in source.Images ?? [])
                 {

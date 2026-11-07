@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AIESummit.Agents;
+using AIESummit.Domain;
 using Blueshift.Domain.Entities;
 using Blueshift.Domain.Seeding;
 
@@ -18,8 +19,13 @@ public static class WorkflowSeeds
             Api("geminiapi", "https://generativelanguage.googleapis.com/v1beta/models/"),
             Api("meta", "https://api.meta.ai/v1"),
             Step(SplitStep.Definition(), SplitSamples.ModelTag, includeBindings),
-            Step(PageSectionsStep.Definition(), PageSectionsStep.ModelTag, includeBindings)
+            Step(PageSectionsStep.Definition(), PageSectionsStep.ModelTag, includeBindings),
+            Step(ContractExtractionStep.Definition(), SplitSamples.ModelTag, includeBindings)
         };
+        records.AddRange(ExtractionCatalog.Defaults().Select(t => new SeedRecord {
+            Entity = nameof(ExtractionType), Tag = t.Tag, Policy = SeedPolicy.Keep,
+            Match = Fields(new { t.Tag }), Values = Fields(new { t.Name, t.BenchmarkCategory, t.Instructions,
+                t.DefinitionVersion, t.ParametersJson, t.Enabled }) }));
         var manifest = new SeedManifest { Venture = "aiesummit", Set = "workflow", Records = records };
         manifest.Validate();
         return manifest;

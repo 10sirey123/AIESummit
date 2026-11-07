@@ -69,5 +69,6 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/firebase-config", () => new { projectId, apiKey = firebaseKey, emulator, emulatorPort = config["Firebase:EmulatorPort"] ?? "19099" });
 app.MapUploadEndpoints();
+app.MapExtractionEndpoints();
 await app.RunAsync();
 

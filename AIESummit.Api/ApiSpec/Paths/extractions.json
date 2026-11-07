@@ -1,0 +1,153 @@
+{
+  "/api/v1/extraction-types": {
+    "get": {
+      "operationId": "listExtractionTypes",
+      "summary": "List configured extraction targets",
+      "tags": [
+        "Extractions"
+      ],
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "List configured extraction targets",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractionTypeList"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        }
+      }
+    }
+  },
+  "/api/v1/uploads/{id}/extractions": {
+    "get": {
+      "operationId": "getExtractions",
+      "summary": "Get owner-scoped analyses, validated findings and explicitly unvalidated model presence outcomes",
+      "tags": [
+        "Extractions"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Get owner-scoped analyses, validated findings and explicitly unvalidated model presence outcomes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractionResults"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "404": {
+          "description": "Upload not found for this owner"
+        }
+      }
+    },
+    "post": {
+      "operationId": "startExtractions",
+      "summary": "Idempotently request extraction for current logical documents",
+      "tags": [
+        "Extractions"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        {
+          "name": "requestKey",
+          "in": "query",
+          "description": "Same document/key reuses an existing analysis; use a new key for a deliberate reanalysis.",
+          "schema": {
+            "type": "string",
+            "default": "initial",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      ],
+      "responses": {
+        "202": {
+          "description": "Idempotently request extraction for current logical documents",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractionAccepted"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "404": {
+          "description": "Upload not found for this owner"
+        },
+        "409": {
+          "description": "Processing prerequisites are not ready"
+        }
+      }
+    }
+  },
+  "/api/v1/uploads/{id}/metrics": {
+    "get": {
+      "operationId": "getUploadMetrics",
+      "summary": "Get owner-scoped prompt token counters, model identifiers and definition hashes; no prompt text",
+      "tags": [
+        "Extractions"
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Get owner-scoped prompt token counters, model identifiers and definition hashes; no prompt text",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractionMetrics"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "404": {
+          "description": "Upload not found for this owner"
+        }
+      }
+    }
+  }
+}

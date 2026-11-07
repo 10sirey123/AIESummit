@@ -3,5 +3,7 @@
   <Project Path="AIESummit.Configuration/AIESummit.Configuration.csproj" />
   <Project Path="AIESummit.Api/AIESummit.Api.csproj" />
   <Project Path="AIESummit.Domain/AIESummit.Domain.csproj" />
+  <Project Path="AIESummit.Evaluation/AIESummit.Evaluation.csproj" />
+  <Project Path="AIESummit.Extraction.Tests/AIESummit.Extraction.Tests.csproj" />
   <Project Path="AIESummit.Tests/AIESummit.Tests.csproj" />
 </Solution>

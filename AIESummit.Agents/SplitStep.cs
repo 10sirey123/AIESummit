@@ -54,14 +54,19 @@ public sealed class SplitResult(IMetadataExecutionContext context) : BaseMetadat
         if (next != pages.Length + 1 || Documents.Count == 0) return false;
 
         var repo = context.GetRepository<Document>();
-        foreach (var existing in repo.Objects.Where(d => d.UploadId == file.ID).ToArray()) repo.Remove(existing);
+        foreach (var existing in repo.Objects.Where(d => d.UploadId == file.ID && d.IsCurrent).ToArray()) existing.IsCurrent = false;
         foreach (var range in Documents)
-            repo.Add(new Document
+        {
+            var document = new Document
             {
                 UploadId = file.ID, Title = range.Title.Trim(), FirstPage = range.FirstPage, LastPage = range.LastPage,
                 Markdown = string.Join("\n\n<!-- page break -->\n\n",
                     pages[(range.FirstPage - 1)..range.LastPage].Select(page => page.Markdown))
-            });
+            };
+            repo.Add(document);
+            var types = context.GetRepository<ExtractionType>().Objects.Where(t => t.Enabled).ToArray();
+            if (types.Length > 0) context.GetRepository<DocumentAnalysis>().Add(AnalysisFactory.Create(document, pages, types));
+        }
         file.Error = null;
         return true;
     }
@@ -74,7 +79,7 @@ public sealed class PageRange
     [JsonProperty("title", Required = Required.Always)] public string Title { get; set; } = "";
 }
 
-public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmStepSubjectPolicy<OcrPage>, ILlmPromptPolicy
+public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmStepSubjectPolicy<OcrPage>, ILlmStepSubjectPolicy<DocumentAnalysis>, ILlmPromptPolicy
 {
     public UploadedFile Hydrate(UploadedFile subject, IBasePersistenceRepository<UploadedFile> repository)
     {
@@ -90,10 +95,30 @@ public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmStepS
         => type == typeof(UploadedFile)
             ? repository.GetRepository<UploadedFile>().Objects.Single(file => file.ID == id)
             : type == typeof(OcrPage) ? repository.GetRepository<OcrPage>().Objects.Single(page => page.ID == id)
+            : type == typeof(DocumentAnalysis) ? LoadAnalysis(repository.GetRepository<DocumentAnalysis>().Objects, id)
             : throw new InvalidOperationException("Unsupported prompt subject.");
 
     public OcrPage Hydrate(OcrPage subject, IBasePersistenceRepository<OcrPage> repository)
         => repository.Objects.Include(page => page.LLMPrompts).Single(page => page.ID == subject.ID);
+
+    private static DocumentAnalysis LoadAnalysis(IQueryable<DocumentAnalysis> query, int id)
+        => query.Include(a => a.LLMPrompts).Include(a => a.Pages).Include(a => a.Targets).ThenInclude(t => t.ExtractionType)
+            .Include(a => a.Document).Single(a => a.ID == id);
+    public DocumentAnalysis Hydrate(DocumentAnalysis subject, IBasePersistenceRepository<DocumentAnalysis> repository)
+    {
+        var analysis = LoadAnalysis(repository.Objects, subject.ID);
+        analysis.AnalysisInput = System.Text.Json.JsonSerializer.Serialize(new {
+            targets = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(analysis.TargetsJson),
+            pages = analysis.Pages.OrderBy(p => p.Number).Select(p => new { page = p.Number, markdown = p.Markdown })
+        }).Replace("@", "\\u0040", StringComparison.Ordinal);
+        return analysis;
+    }
+    public void OnTerminalTransition(DocumentAnalysis subject, StepProcessingStatus status)
+    {
+        if (status == StepProcessingStatus.PermanentError) subject.Error ??= "Extraction failed. Inspect its prompts in Admin.";
+    }
+    public void OnPromptsCleared(DocumentAnalysis subject, IBasePersistenceRepository<DocumentAnalysis> repository)
+        => throw new InvalidOperationException("Analysis history is immutable. Create a new analysis instead.");
 
     public void OnTerminalTransition(OcrPage subject, StepProcessingStatus status)
     {
@@ -117,9 +142,11 @@ public sealed class SplitPolicy : ILlmStepSubjectPolicy<UploadedFile>, ILlmStepS
     public object BeforeConnect(ILlmCapable subject, LLMPrompt prompt, BaseMetadata metadata, IMetadataExecutionContext context) => metadata;
     public void AfterConnect(ILlmCapable subject, LLMPrompt prompt, BaseMetadata metadata, IMetadataExecutionContext context, object token) { }
     public string GetConnectionError(ILlmCapable subject, LLMPrompt prompt, BaseMetadata metadata, Exception exception)
-        => "Document ranges could not be applied.";
+        => subject is DocumentAnalysis ? "Contract evidence or structured values could not be applied." : "Document ranges could not be applied.";
     public void OnFinished(LLMPrompt prompt, LlmPromptTrace trace, IBasePersistenceRepository<LLMPrompt> repository)
     {
+        if (prompt.ProcessingStatus == PromptProcessingStatus.PermanentError && prompt.DocumentType == nameof(DocumentAnalysis))
+            repository.GetRepository<DocumentAnalysis>().Objects.Single(a => a.ID == prompt.DocumentID).Error ??= "Extraction failed. Inspect its prompts in Admin.";
         if (prompt.ProcessingStatus == PromptProcessingStatus.PermanentError && prompt.DocumentType == nameof(UploadedFile))
             repository.GetRepository<UploadedFile>().Objects.Single(file => file.ID == prompt.DocumentID).Error =
                 "Document splitting failed. See the agent logs.";
@@ -133,20 +160,22 @@ public sealed class AgentPack : IAgentPackStartup
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        var types = new LlmTypeRegistry([typeof(UploadedFile), typeof(OcrPage)], [typeof(SplitResult), typeof(PageSectionsResult)]);
+        var types = new LlmTypeRegistry([typeof(UploadedFile), typeof(OcrPage), typeof(DocumentAnalysis)], [typeof(SplitResult), typeof(PageSectionsResult), typeof(ContractExtractionResult)]);
         var lambdas = new LambdaManipulation();
-        var codeSteps = new LlmCodeStepRegistry(types, [SplitStep.Definition(), PageSectionsStep.Definition()]);
+        var codeSteps = new LlmCodeStepRegistry(types, [SplitStep.Definition(), PageSectionsStep.Definition(), ContractExtractionStep.Definition()]);
         var templates = new TemplateManipulation(types, assemblyReferenceTypes: [typeof(UploadedFile)],
             namespaceImports: ["AIESummit.Domain"]);
         var policy = new SplitPolicy();
         services.AddSingleton<ILlmStepSubjectPolicy<UploadedFile>>(policy);
         services.AddSingleton<ILlmStepSubjectPolicy<OcrPage>>(policy);
+        services.AddSingleton<ILlmStepSubjectPolicy<DocumentAnalysis>>(policy);
         services.AddSingleton<ILlmPromptPolicy>(policy);
         services.AddSingleton(types);
         services.AddSingleton(lambdas);
         services.AddSingleton(codeSteps);
         services.AddSingleton(new LLMPromptFactory(types, lambdas, templates, codeSteps, () => 0,
             (step, subject) => step.Template + "\n" + (subject is UploadedFile file ? file.SplitInput
+                : subject is DocumentAnalysis analysis ? analysis.AnalysisInput
                 : System.Text.Json.JsonSerializer.Serialize(new { page = ((OcrPage)subject).Number, markdown = ((OcrPage)subject).Markdown }).Replace("@", "\\u0040", StringComparison.Ordinal))));
         services.AddSingleton<IExecutionContextResolver, UploadExecutionContext>();
         services.AddSingleton<LlmPromptWorker>();

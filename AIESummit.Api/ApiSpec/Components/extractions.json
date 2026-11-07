@@ -1,0 +1,268 @@
+{
+  "ExtractionTypeList": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "benchmarkCategory": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "parametersJson": {
+          "type": "string"
+        },
+        "definitionVersion": {
+          "type": "integer"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "ExtractionAccepted": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "requestKey": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "requestKey"
+    ]
+  },
+  "ExtractionEvidence": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "type": "integer"
+      },
+      "pageTextRevisionId": {
+        "type": "integer"
+      },
+      "contentHash": {
+        "type": "string"
+      },
+      "startOffset": {
+        "type": "integer"
+      },
+      "endOffset": {
+        "type": "integer"
+      },
+      "quote": {
+        "type": "string"
+      },
+      "role": {
+        "type": "string",
+        "enum": [
+          "primary",
+          "qualification",
+          "definition"
+        ]
+      },
+      "supportedFields": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "page",
+      "pageTextRevisionId",
+      "contentHash",
+      "startOffset",
+      "endOffset",
+      "quote",
+      "role",
+      "supportedFields"
+    ]
+  },
+  "ExtractionFinding": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "title": {
+        "type": "string"
+      },
+      "summary": {
+        "type": "string"
+      },
+      "schemaVersion": {
+        "type": "integer"
+      },
+      "reviewState": {
+        "type": "string"
+      },
+      "values": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Versioned allowed fields are specified by the extraction target; ISO dates, decimal amounts/durations and explicit currency/unit."
+      },
+      "evidence": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExtractionEvidence"
+        }
+      }
+    }
+  },
+  "ExtractionTargetResult": {
+    "type": "object",
+    "properties": {
+      "tag": {
+        "type": "string"
+      },
+      "outcome": {
+        "type": "string",
+        "enum": [
+          "not_analyzed",
+          "detected",
+          "not_found_in_reviewed_text",
+          "uncertain",
+          "not_applicable"
+        ]
+      },
+      "explanation": {
+        "type": "string"
+      },
+      "extractions": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExtractionFinding"
+        }
+      }
+    }
+  },
+  "ExtractionResults": {
+    "type": "object",
+    "properties": {
+      "analyses": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "documentId": {
+              "type": "integer"
+            },
+            "isCurrent": {
+              "type": "boolean"
+            },
+            "requestKey": {
+              "type": "string"
+            },
+            "inputHash": {
+              "type": "string"
+            },
+            "completedAt": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "error": {
+              "type": "string",
+              "nullable": true
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "ready",
+                "analyzing",
+                "failed"
+              ]
+            },
+            "definitions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ExtractionTargetResult"
+              }
+            },
+            "modelReportedOutcomes": {
+              "type": "array",
+              "description": "Diagnostic model classifications, including rejected outputs; never validated findings.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "type": "string"
+                  },
+                  "evidenceValidated": {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "required": [
+      "analyses"
+    ]
+  },
+  "ExtractionMetrics": {
+    "type": "object",
+    "properties": {
+      "prompts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Prompt ID/subject, step/model/provider identifiers, nullable provider revision, prompt/schema hashes, input/output/total/accumulated token counters, API attempts, processing status and persistence timestamps."
+        }
+      },
+      "reportedInputTokens": {
+        "type": "integer"
+      },
+      "reportedOutputTokens": {
+        "type": "integer"
+      },
+      "reportedTotalTokens": {
+        "type": "integer"
+      },
+      "accumulatedTokens": {
+        "type": "integer"
+      },
+      "ocrTokens": {
+        "type": "integer",
+        "nullable": true
+      },
+      "inputOutputBreakdownAvailable": {
+        "type": "boolean"
+      },
+      "note": {
+        "type": "string"
+      }
+    }
+  }
+}

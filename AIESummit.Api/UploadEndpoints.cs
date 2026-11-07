@@ -24,7 +24,7 @@ internal static class UploadEndpoints
 
     private static string Owner(ClaimsPrincipal user) => user.FindFirstValue("sub")!;
 
-    private static async Task<IResult> Upload(IFormFile file, ClaimsPrincipal user, AIESummitDb db, CancellationToken token)
+    private static async Task<IResult> Upload(IFormFile file, ClaimsPrincipal user, AIESummitDb db, CancellationToken token, bool pageSections = true)
     {
         if (file.Length is <= 0 or > MaxBytes) return Results.Problem("Upload a file up to 20 MiB.", statusCode: 400);
         await using var source = file.OpenReadStream();
@@ -35,7 +35,7 @@ internal static class UploadEndpoints
         if (mime is null) return Results.Problem("Upload a PDF, PNG or JPEG.", statusCode: 415);
         var filename = Path.GetFileName(file.FileName.Replace('\\', '/'));
         var upload = new UploadedFile { OwnerId = Owner(user), FileName = filename[..Math.Min(filename.Length, 255)],
-            ContentType = mime, Source = bytes, OcrCacheKey = Convert.ToHexString(SHA256.HashData(bytes)) };
+            ContentType = mime, Source = bytes, OcrCacheKey = Convert.ToHexString(SHA256.HashData(bytes)), AnalyzePageSections = pageSections };
         db.Uploads.Add(upload);
         await db.SaveChangesAsync(token);
         return Results.Accepted($"/api/v1/uploads/{upload.ID}", new { id = upload.ID });
@@ -66,7 +66,7 @@ internal static class UploadEndpoints
         if (upload is null) return Results.NotFound();
         var images = await db.PageImages.Where(i => i.Page.UploadId == id)
             .Select(i => new ImageReference(i.ImageId, i.Page.Number, i.Reference)).ToListAsync(token);
-        var documents = await db.Documents.Where(d => d.UploadId == id).OrderBy(d => d.FirstPage)
+        var documents = await db.Documents.Where(d => d.UploadId == id && d.IsCurrent).OrderBy(d => d.FirstPage)
             .Select(d => new { id = d.ID, d.Title, d.FirstPage, d.LastPage, d.Markdown }).ToListAsync(token);
         var pages = await db.Pages.Where(p => p.UploadId == id).OrderBy(p => p.Number)
             .Select(p => new { id = p.ID, p.Number, p.Markdown, p.SectionsJson, p.AnalysisError, p.LLMStepStatus }).ToListAsync(token);

@@ -11,6 +11,12 @@ public sealed class UploadExecutionContext : IExecutionContextResolver
     public ExecutionSubjectContext Resolve(Type subjectType, int subjectId, IServiceProvider services)
     {
         if (subjectType == typeof(UploadedFile)) return new(nameof(UploadedFile), subjectId);
+        if (subjectType == typeof(DocumentAnalysis))
+        {
+            var uploadId = services.GetRequiredService<IBasePersistenceRepository<DocumentAnalysis>>().Objects
+                .Where(a => a.ID == subjectId).Select(a => a.Document.UploadId).SingleOrDefault();
+            return new(nameof(UploadedFile), uploadId, ContractExtractionStep.Tag);
+        }
         if (subjectType == typeof(OcrPage))
         {
             var uploadId = services.GetRequiredService<IBasePersistenceRepository<OcrPage>>().Objects
@@ -21,6 +27,12 @@ public sealed class UploadExecutionContext : IExecutionContextResolver
         var prompt = services.GetRequiredService<IBasePersistenceRepository<LLMPrompt>>().Objects
             .Where(p => p.ID == subjectId)
             .Select(p => new { p.DocumentID, p.DocumentType, p.LLMStep.Tag }).SingleOrDefault();
+        if (prompt?.DocumentType == nameof(DocumentAnalysis))
+        {
+            var uploadId = services.GetRequiredService<IBasePersistenceRepository<DocumentAnalysis>>().Objects
+                .Where(a => a.ID == prompt.DocumentID).Select(a => a.Document.UploadId).SingleOrDefault();
+            return new(nameof(UploadedFile), uploadId, prompt.Tag);
+        }
         if (prompt?.DocumentType == nameof(OcrPage))
         {
             var uploadId = services.GetRequiredService<IBasePersistenceRepository<OcrPage>>().Objects

@@ -17,7 +17,7 @@ public sealed class UploadQueueRecovery(IQueueManager queues, ILogger<UploadQueu
         {
             foreach (var agent in RootBaseAgent.AgentInfos)
             {
-                if (agent.Instance is not (OcrAgent or LLMStepAgent<UploadedFile> or LLMStepAgent<OcrPage> or LlmPromptAgent) || !agent.Enabled)
+                if (agent.Instance is not (OcrAgent or LLMStepAgent<UploadedFile> or LLMStepAgent<OcrPage> or LLMStepAgent<DocumentAnalysis> or LlmPromptAgent) || !agent.Enabled)
                     continue;
                 try
                 {

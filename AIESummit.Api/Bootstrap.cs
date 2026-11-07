@@ -21,6 +21,10 @@ internal static class Bootstrap
             ?? throw new InvalidOperationException("Page sections upgrade is missing."))
         using (var reader = new StreamReader(migration))
             await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
+        await using (var migration = typeof(Bootstrap).Assembly.GetManifestResourceStream("AIESummit.Api.Migrations.003-contract-extractions.sql")
+            ?? throw new InvalidOperationException("Extraction upgrade is missing."))
+        using (var reader = new StreamReader(migration))
+            await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
         await using (var migration = typeof(Bootstrap).Assembly.GetManifestResourceStream("AIESummit.Api.Migrations.002-ocr-cache.sql")
             ?? throw new InvalidOperationException("OCR cache upgrade is missing."))
         using (var reader = new StreamReader(migration))
@@ -69,6 +73,7 @@ internal static class Bootstrap
             db.LLMSteps.Add(step);
         }
         await SeedAgent<OcrAgentConfig>("Mistral OCR", nameof(OcrAgent));
+        await ExtractionSeeds.EnsureAsync(db, model);
         await SeedAgent<LLMStepAgentConfig>("Plan document split", "LLMStepAgent");
         await SeedPromptAgent();
         await db.SaveChangesAsync();

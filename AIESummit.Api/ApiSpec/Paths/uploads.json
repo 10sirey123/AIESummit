@@ -96,7 +96,18 @@
           "description": "Unsupported file type"
         }
       },
-      "description": "Accepts one multipart file and starts background OCR and document splitting."
+      "description": "Accepts one multipart file and starts background OCR and document splitting.",
+      "parameters": [
+        {
+          "name": "pageSections",
+          "in": "query",
+          "description": "Run the independent per-page section summaries. Defaults to true; the extraction evaluator sets false. OCR, splitting and contract extraction still run.",
+          "schema": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      ]
     }
   },
   "/api/v1/uploads/{id}": {

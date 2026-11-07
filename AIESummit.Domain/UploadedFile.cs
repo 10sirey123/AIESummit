@@ -37,6 +37,7 @@ public sealed class UploadedFile : BasePersistenceObject, ILlmCapable
     [Display(Name = "OCR source fingerprint")]
     [DisplayMetadata("lucide:Fingerprint", IsHidden = true, IsEditable = false)]
     public string OcrCacheKey { get; set; } = "";
+    public bool AnalyzePageSections { get; set; } = true;
     [Display(Name = "OCR status", Description = "Progress of extracting text and images from the original file. Managed by the OCR agent.")]
     [DisplayMetadata("lucide:ScanText", ShowInSnippet = true, IsEditable = false, Order = 20)]
     public ProcessedStatus OcrStatus { get; set; }

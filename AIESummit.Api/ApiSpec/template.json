@@ -11,6 +11,10 @@
   "tags": [
     {
       "name": "Uploads"
+    },
+    {
+      "name": "Extractions",
+      "description": "Owner-scoped contract findings, evidence and evaluation metrics"
     }
   ],
   "security": [
