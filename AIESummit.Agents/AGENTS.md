@@ -22,7 +22,7 @@ Read this guide before changing background processing. The application sources a
 
 | File | Responsibility |
 | --- | --- |
-| `OcrAgent.cs` | `OcrAgent`, `MistralOcrBrowser` and OCR response records |
+| `OcrAgent.cs` | `OcrAgent`, `GeminiOcrBrowser` and OCR/Gemini response records |
 | `SplitStep.cs` | `SplitStep`, `SplitResult`, `PageRange`, `SplitPolicy` and `AgentPack` |
 | `UploadQueueRecovery.cs` | Optional periodic re-enqueue of eligible upload-processing work |
 | `UploadExecutionContext.cs` | Correlation from uploads and prompts to the originating upload |
@@ -64,9 +64,9 @@ Use the checked-in implementation as the signature reference when introducing an
 
 `OcrAgentConfig` lives in the Domain project and derives from `BaseAgentConfig`. Bootstrap initially seeds its `AgentClassName` as `OcrAgent`. Framework LLM configuration rows use class names `LLMStepAgent` and `LlmPromptAgent`. Keep these names aligned with the activated implementations.
 
-`GetApiBrowser<MistralOcrBrowser>()` resolves browser configuration using `APIIdentifier = "mistral-ocr"`. `MistralOcrBrowser` uses `APIInfo`-supplied base URI, app key and app secret. The current app secret holds the OCR model/deployment value. Provider calls belong behind this configuration boundary, with no embedded credentials.
+`GetApiBrowser<GeminiOcrBrowser>()` resolves browser configuration using `APIIdentifier = "gemini-ocr"`. `GeminiOcrBrowser` uses `APIInfo`-supplied base URI, app key and app secret. The current app secret holds the Gemini OCR model name. Provider calls belong behind this configuration boundary, with no embedded credentials.
 
-The browser sends a data URL using `document_url` for PDFs and `image_url` for images, requests embedded image base64 and uses the `api-key` header. It uses a shared `HttpClient`. Its token-repair methods return false and there is no custom OCR retry loop. Do not promise automatic recovery for authentication or provider failures based on unrelated Horus integrations.
+The browser sends the source as Gemini `inline_data` to `{base}/models/{model}:generateContent` with the `x-goog-api-key` header, low thinking and a strict JSON schema of `{pages:[{index, markdown}]}`. Gemini returns no image crops, so no `PageImage` rows come from OCR. It uses a shared `HttpClient` with a 5-minute timeout. Its token-repair methods return false and there is no custom OCR retry loop. Do not promise automatic recovery for authentication or provider failures based on unrelated Horus integrations.
 
 ## OCR validation and persistence
 

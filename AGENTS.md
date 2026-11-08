@@ -81,7 +81,7 @@ Uploads accept PDF, PNG and JPEG signatures and a maximum of 20 MiB. The server 
 
 The API serves the original static browser client. The separate AIESummit React workspace in `web/` uses the same API and Firebase configuration. Keep authentication state in memory and preserve refresh coordination and stale-request protection when editing session behavior. Render uploaded names, model titles and Markdown as text. Introducing HTML or Markdown rendering requires deliberate handling of untrusted content. Revoke object URLs when images are cleared.
 
-`/health`, `/firebase-config` and the static assets are publicly readable by design. Firebase web configuration is client configuration. Foundry credentials and the Admin bearer token are not client configuration and must never be returned there.
+`/health`, `/firebase-config` and the static assets are publicly readable by design. Firebase web configuration is client configuration. Gemini API keys and the Admin bearer token are not client configuration and must never be returned there.
 
 The contract source is `AIESummit.Api/ApiSpec/template.json` plus JSON fragments under `Paths` and `Components`. `build.mjs` merges them in stable filename order and rejects duplicate entries. It produces `wwwroot/openapi.json`. It does not generate endpoint implementations or C# DTO classes. Update contract fragments and actual endpoint behavior together.
 
@@ -91,7 +91,7 @@ For a machine with only Docker Desktop installed, follow [install.md](install.md
 
 Use PowerShell 7 and Docker for the local stack. Host-side build checks additionally need the .NET 10 SDK. Contract generation and JavaScript syntax checks need Node.js. Blueshift binaries are bundled in `dependencies/blueshift`; private framework access is not required.
 
-Create `.env` locally from `.env.example` and provide the Foundry endpoint and key. Do not copy credential values into documentation or tool output. Then run from the repository root.
+Create `.env` locally from `.env.example` and provide a Google AI Studio `GEMINI_API_KEY`. Do not copy credential values into documentation or tool output. Then run from the repository root.
 
 ```powershell
 ./start.ps1

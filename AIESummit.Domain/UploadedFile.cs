@@ -40,7 +40,7 @@ public sealed class UploadedFile : BasePersistenceObject, ILlmCapable
     [Display(Name = "Document splitting status", Description = "Progress of identifying logical documents from the OCR pages. Managed by the LLM step and prompt agents.")]
     [DisplayMetadata("lucide:Scissors", ShowInSnippet = true, IsEditable = false, Order = 30)]
     public StepProcessingStatus LLMStepStatus { get; set; }
-    [Display(Name = "Page count", Description = "Number of accepted OCR pages. Zero until OCR completes; successful extraction contains 1 to 30 pages.")]
+    [Display(Name = "Page count", Description = "Number of accepted OCR pages. Zero until OCR completes; successful extraction contains 1 to 100 pages.")]
     [DisplayMetadata("lucide:Files", ShowInSnippet = true, IsEditable = false, Order = 40)]
     public int PageCount { get; set; }
     [Display(Name = "Processing error", Description = "User-facing failure summary. Inspect Agent Operations for execution details before attempting recovery.")]

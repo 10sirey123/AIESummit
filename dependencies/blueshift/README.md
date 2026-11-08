@@ -18,7 +18,7 @@ The .NET libraries target `net10.0` and support host builds on Windows. The publ
 
 Run `./scripts/verify-dependencies.ps1` from the repository root to check every artifact's size and SHA-256 against the manifest. Startup runs that check before generating credentials or building containers. A checksum detects changes relative to this manifest; it is not an independent publisher signature.
 
-Validated November 7, 2026: restore/build from an exported Git checkout without framework source and with an empty NuGet cache; bundle checksums after checkout; rejection of a deliberately modified disposable artifact; Docker builds/startup for all services; and the complete provider-backed smoke test (synthetic upload 2). One existing nullable warning remains in `AIESummit.Agents/SplitStep.cs`. Browser interaction/layout were not rechecked during this dependency change.
+Validated November 7, 2026: restore/build from an exported Git checkout without framework source and with an empty NuGet cache; bundle checksums after checkout; rejection of a deliberately modified disposable artifact; Docker builds/startup for all services; and the complete provider-backed smoke test (synthetic upload 2, using the earlier Azure Foundry/Mistral provider setup; the Gemini path passed the smoke test later the same day). One existing nullable warning remains in `AIESummit.Agents/SplitStep.cs`. Browser interaction/layout were not rechecked during this dependency change.
 
 ## Refreshing the bundle (maintainers only)
 

@@ -9,7 +9,7 @@ public sealed class SplitSamples : IUniqueTagSampleProvider
 
     public IEnumerable<IHaveUniqueTag> ProvideSamples()
     {
-        yield return new LLMModel { Tag = ModelTag, Name = "gpt-4.1-mini", Provider = LLMAPIProvider.OpenAI };
+        yield return new LLMModel { Tag = ModelTag, Name = "gemini-3.8-flash", Provider = LLMAPIProvider.OpenAI };
 
         var step = SplitStep.Definition();
         step.Model = TaggedReference.To<LLMModel>(ModelTag);

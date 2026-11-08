@@ -89,7 +89,7 @@ try {
     } while ([DateTime]::UtcNow -lt $deadline)
     if (!$ocr -or !$step -or !$prompt) { throw "Admin did not report successful agent runs for upload $id." }
 
-    Write-Host "Verified Firebase sign-up and sign-in, upload $id, user isolation, Mistral OCR, document ranges 1–2 and 3, and Admin telemetry."
+    Write-Host "Verified Firebase sign-up and sign-in, upload $id, user isolation, Gemini OCR, document ranges 1–2 and 3, and Admin telemetry."
 } finally {
     if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture }
 }

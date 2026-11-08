@@ -56,7 +56,7 @@ Static files, `/health` and `/firebase-config` are public. Static middleware run
 
 `/firebase-config` returns only `projectId`, `apiKey`, the effective `emulator` flag and `emulatorPort`, defaulting to `19099`. A Firebase web API key is browser configuration and appears in the Firebase REST URL by design. It is not the application's authorization check.
 
-Never extend this response with Foundry keys, provider `APIInfo` secrets, database credentials, Admin signing material or the local Admin bearer token. Do not return the entire configuration tree. The public health endpoint proves only that the API is serving, not that Firebase login or provider processing succeeds.
+Never extend this response with Gemini keys, provider `APIInfo` secrets, database credentials, Admin signing material or the local Admin bearer token. Do not return the entire configuration tree. The public health endpoint proves only that the API is serving, not that Firebase login or provider processing succeeds.
 
 The upload POST disables antiforgery handling and relies on an explicit bearer header rather than an application authentication cookie. If introducing cookies later, reassess CSRF and browser request protections instead of carrying that setting forward without analysis.
 

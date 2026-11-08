@@ -12,13 +12,13 @@ internal static class Bootstrap
     public static async Task InitializeAsync(AIESummitDb db, IConfiguration config)
     {
         await db.Database.EnsureCreatedAsync();
-        var endpoint = config["AZURE_FOUNDRY_ENDPOINT"]?.TrimEnd('/') ?? throw new InvalidOperationException("Foundry endpoint is required.");
-        var key = config["AZURE_FOUNDRY_KEY"] ?? throw new InvalidOperationException("Foundry key is required.");
+        var key = config["GEMINI_API_KEY"] ?? throw new InvalidOperationException("GEMINI_API_KEY is required.");
         await using var transaction = await db.Database.BeginTransactionAsync();
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(825833001)");
-        await AddCredential("mistral-ocr", config["OCR_ENDPOINT"] ?? endpoint + "/providers/mistral/azure/ocr",
-            config["OCR_MODEL"] ?? "mistral-ocr-4-0");
-        await AddCredential("openai", config["LLM_ENDPOINT"] ?? endpoint, null);
+        await AddCredential("gemini-ocr", config["GEMINI_ENDPOINT"] ?? "https://generativelanguage.googleapis.com/v1beta",
+            config["OCR_MODEL"] ?? "gemini-3.8-flash");
+        // BlueShift's LLM steps speak the Azure Responses API; the gemini-gateway service translates it to Gemini.
+        await AddCredential("openai", config["LLM_ENDPOINT"] ?? "http://gemini-gateway:8080", null);
         var samples = new TaggedSampleCatalog(new SplitSamples().ProvideSamples());
         var issues = samples.ValidateIntegrity();
         if (issues.Count != 0)
@@ -37,7 +37,7 @@ internal static class Bootstrap
             step.Model = model;
             db.LLMSteps.Add(step);
         }
-        await SeedAgent<OcrAgentConfig>("Mistral OCR", nameof(OcrAgent));
+        await SeedAgent<OcrAgentConfig>("Gemini OCR", nameof(OcrAgent));
         await SeedAgent<LLMStepAgentConfig>("Plan document split", "LLMStepAgent");
         await SeedAgent<LLMPromptAgentConfig>("Run document split", "LlmPromptAgent");
         await db.SaveChangesAsync();

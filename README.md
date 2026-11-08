@@ -6,7 +6,7 @@ AIESummit is the starting point for a contract intake and AI analysis workflow. 
 
 For a fresh Windows machine with Docker Desktop installed, follow [install.md](install.md) to install and verify the remaining dependencies, configure credentials and start the app.
 
-Install Docker and PowerShell 7. Clone this repository; [Blueshift binaries](dependencies/blueshift/README.md) are included, so no private framework access is needed. Create a local `.env` from `.env.example` and enter the Azure Foundry endpoint and key. The defaults use the `mistral-ocr-4-0` and `gpt-4.1-mini` deployments.
+Install Docker and PowerShell 7. Clone this repository; [Blueshift binaries](dependencies/blueshift/README.md) are included, so no private framework access is needed. Create a local `.env` from `.env.example` and enter a Google AI Studio `GEMINI_API_KEY`. OCR and the LLM both default to `gemini-3.8-flash`.
 
 ```powershell
 ./start.ps1
@@ -31,13 +31,13 @@ Create an email/password account in the workspace. The local stack runs Firebase
 
 Read [the AIESummit design brief](docs/ui.md) and [the UI workflow](docs/ui-workflow.md) before changing the React workspace.
 
-Paste the token in `artifacts/admin.token.local.txt` into Admin. Use **Operations → Agent Operations** to inspect runs and queue status. **Configuration** contains the OCR connection, language model, split step, and agent controls. The startup seed initializes credentials and deployment names once so operator edits survive restarts. Update those records in Admin when rotating keys or changing models. The local token is renewed each time `start.ps1` runs.
+Paste the token in `artifacts/admin.token.local.txt` into Admin. Use **Operations → Agent Operations** to inspect runs and queue status. **Configuration** contains the OCR connection, language model, split step, and agent controls. The startup seed initializes credentials and model names once so operator edits survive restarts. Update those records in Admin when rotating keys or changing models. The local token is renewed each time `start.ps1` runs.
 
 ## Processing
 
 1. The API writes the source file and publishes its ID to Service Bus.
-2. The BlueShift OCR agent calls the Mistral deployment through an API browser configured by BlueShift APIInfo. It stores page Markdown in order and retains extracted images as BlueShift Image records.
-3. BlueShift’s LLM step and prompt agents run the code-defined split step. Structured results must cover every page exactly once, in order. Accepted ranges become Document records, with Markdown page breaks and references to the images within each range.
+2. The BlueShift OCR agent sends the file to Gemini through an API browser configured by BlueShift APIInfo. It stores page Markdown in order. Gemini returns no image crops, so images are described inline in the Markdown.
+3. BlueShift’s LLM step and prompt agents run the code-defined split step. The worker sends its Responses API calls to the `gemini-gateway` Compose service, which translates them to Gemini. Structured results must cover every page exactly once, in order. Accepted ranges become Document records, with Markdown page breaks.
 4. The app polls upload status and shows the resulting documents. OpenSearch stores agent run telemetry for BlueShift Admin.
 
 The client contract is maintained in `AIESummit.Api/ApiSpec`, using separate paths and components following Horus's DUTai API conventions. Rebuild it with `node AIESummit.Api/ApiSpec/build.mjs`. The current Cite8 reference is Erick's `codex/certification-tier-checkout` branch at `903626a9bb4ce471bccc28490b857886d6aa5c78`, verified on November 6, 2026. Its shared worker and Admin pack layout informs this application; its product-specific features are separate. See [AGENTS.md](AGENTS.md) for development guidance.
@@ -55,19 +55,21 @@ npm run build
 cd ..
 ```
 
-Compose validation requires Foundry settings in the local environment. After starting the stack, run the provider-backed acceptance check:
+Compose validation requires `GEMINI_API_KEY` in the local environment. After starting the stack, run the provider-backed acceptance check:
 
 ```powershell
 ./scripts/smoke.ps1
 ```
 
-The smoke test creates two local Firebase accounts, uploads a synthetic three-page PDF, checks cross-account isolation, verifies that live OCR and the LLM produce ranges 1–2 and 3, and checks the agent runs in Admin. It uses the configured Azure deployments.
+The smoke test creates two local Firebase accounts, uploads a synthetic three-page PDF, checks cross-account isolation, verifies that live OCR and the LLM produce ranges 1–2 and 3, and checks the agent runs in Admin. It uses the configured Gemini models.
 
 The initial import passed the solution, shared worker and shared Admin API builds, React production build, OpenAPI generation, JavaScript/PowerShell syntax checks and Compose configuration validation. The solution emits existing nullable/obsolete API warnings, and the React build emits Lucide directive warnings.
 
-Local startup and the provider-backed smoke test passed on November 7, 2026 (synthetic upload 1): Firebase sign-up/sign-in, user isolation, Mistral OCR, document ranges 1–2 and 3, preserved Markdown and Admin telemetry. The workspace, proxied Firebase configuration, API health and Admin page returned HTTP 200. An initial Docker DNS failure cleared on retry; an emulator queue-creation conflict cleared after restarting the emulator and worker. Provider settings were reused from the sibling Hackathon project's local configuration into ignored `.env`. Browser interaction and layout remain unverified.
+Local startup and the provider-backed smoke test passed on November 7, 2026 with the earlier Azure Foundry setup, Mistral OCR and `gpt-4.1-mini` (synthetic upload 1): Firebase sign-up/sign-in, user isolation, Mistral OCR, document ranges 1–2 and 3, preserved Markdown and Admin telemetry. The workspace, proxied Firebase configuration, API health and Admin page returned HTTP 200. An initial Docker DNS failure cleared on retry; an emulator queue-creation conflict cleared after restarting the emulator and worker. Provider settings were reused from the sibling Hackathon project's local configuration into ignored `.env`. Browser interaction and layout remain unverified.
 
-The binary dependency transition also passed on November 7, 2026: an exported Git checkout without framework source built successfully with an empty NuGet cache, all Docker targets rebuilt and started from the bundle, and the full provider-backed smoke test passed for synthetic upload 2. Dependency checksums passed after Git checkout, and the verifier rejected a deliberately modified disposable artifact.
+The binary dependency transition also passed on November 7, 2026: an exported Git checkout without framework source built successfully with an empty NuGet cache, all Docker targets rebuilt and started from the bundle, and the full provider-backed smoke test passed for synthetic upload 2, also with the Azure Foundry setup. Dependency checksums passed after Git checkout, and the verifier rejected a deliberately modified disposable artifact.
+
+The model provider moved to Google Gemini on November 7, 2026. The Gemini path passed the full provider-backed smoke test the same day on an Apple Silicon Mac (synthetic upload 1): Gemini OCR (`gemini-3.8-flash`) extracted 3 pages, the split step ran through `gemini-gateway`, and ranges 1–2 and 3, user isolation and Admin telemetry were verified. On Apple Silicon, compose runs the bundled linux-x64 worker and Admin API as `linux/amd64` under emulation.
 
 Stop the stack with `docker compose down`. Named volumes retain PostgreSQL data, Firebase emulator accounts, Admin audit, and OpenSearch telemetry. The database schema is initialized on first start. Plan migrations before evolving a database that contains data you need to keep.
 

@@ -72,10 +72,9 @@ services:
       Firebase__Emulator: ${FIREBASE_EMULATOR:-true}
       Firebase__ProjectId: ${FIREBASE_PROJECT_ID:-demo-aiesummit}
       Firebase__ApiKey: ${FIREBASE_API_KEY:-demo-key}
-      AZURE_FOUNDRY_ENDPOINT: ${AZURE_FOUNDRY_ENDPOINT:?Set AZURE_FOUNDRY_ENDPOINT in .env}
-      AZURE_FOUNDRY_KEY: ${AZURE_FOUNDRY_KEY:?Set AZURE_FOUNDRY_KEY in .env}
-      OCR_MODEL: ${OCR_MODEL:-mistral-ocr-4-0}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4.1-mini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}
+      OCR_MODEL: ${OCR_MODEL:-gemini-3.8-flash}
+      LLM_MODEL: ${LLM_MODEL:-gemini-3.8-flash}
     ports: ["127.0.0.1:18080:8080"]
     depends_on:
       postgres:
@@ -87,17 +86,24 @@ services:
       interval: 4s
       timeout: 3s
       retries: 15
+  gemini-gateway:
+    build:
+      context: deploy/gemini-gateway
   worker:
     build:
       context: .
       dockerfile: deploy/Dockerfile
       target: worker
+    # Bundled Blueshift hosts are published for linux-x64; Apple Silicon runs them under emulation.
+    platform: linux/amd64
     environment:
       <<: *app-environment
       AIESUMMIT_QUEUE_RECOVERY: "true"
     restart: on-failure
     depends_on:
       api:
+        condition: service_healthy
+      gemini-gateway:
         condition: service_healthy
       emulator:
         condition: service_started
@@ -108,6 +114,8 @@ services:
       context: .
       dockerfile: deploy/Dockerfile
       target: admin
+    # Bundled Blueshift hosts are published for linux-x64; Apple Silicon runs them under emulation.
+    platform: linux/amd64
     environment:
       <<: *app-environment
       ASPNETCORE_ENVIRONMENT: Development

@@ -102,7 +102,7 @@ After schema initialization and configuration validation, `Bootstrap.InitializeA
 
 The transaction-scoped advisory lock serializes cooperating bootstrap callers using the same database and key. It does not lock unrelated application code that ignores this convention. It is also not a unique constraint or a substitute for relationship integrity.
 
-Seed identities are `mistral-ocr` and `openai` for API connections, `foundry-split` for the model, and `SplitStep.Tag` for the step. Agent configuration is seeded only when the relevant configuration set has no rows. Do not describe this last check as matching every agent row by name or class.
+Seed identities are `gemini-ocr` and `openai` for API connections, `foundry-split` for the model, and `SplitStep.Tag` for the step. Agent configuration is seeded only when the relevant configuration set has no rows. Do not describe this last check as matching every agent row by name or class.
 
 Existing records are intentionally preserved. A changed environment key, model name or code template does not overwrite existing persisted operator configuration on restart. Rotate or update those records through the intended operator surface. A tag rename can create an additional record rather than updating the original one.
 

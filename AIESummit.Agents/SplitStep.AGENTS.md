@@ -53,8 +53,8 @@ Those checks keep editable configuration within supported code contracts. Editin
 
 [Bootstrap.cs](../AIESummit.Api/Bootstrap.cs) creates missing configuration inside a database transaction with an advisory lock. Its behavior preserves existing rows.
 
-- It inserts credentials with identifiers `mistral-ocr` and `openai` only when those identifiers are absent.
-- It creates the model tagged `foundry-split` only if missing. Its initial provider is OpenAI, and its initial name comes from `LLM_MODEL` or the default `gpt-4.1-mini`.
+- It inserts credentials with identifiers `gemini-ocr` and `openai` only when those identifiers are absent.
+- It creates the model tagged `foundry-split` only if missing. Its initial provider is OpenAI (the Responses wire format served by `gemini-gateway`), and its initial name comes from `LLM_MODEL` or the default `gemini-3.8-flash`. The tag and provider are kept for persisted identity.
 - It inserts `SplitStep.Definition()` only if no step with `SplitStep.Tag` exists, and assigns that newly inserted step's `Model` to the located model.
 - It creates each supported agent configuration only if its corresponding table has no rows.
 

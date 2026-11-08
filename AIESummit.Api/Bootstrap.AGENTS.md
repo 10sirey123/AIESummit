@@ -11,7 +11,7 @@ The current application uses `WebApplication.CreateBuilder` and `IConfiguration`
 Bootstrap executes in this order.
 
 1. Call `db.Database.EnsureCreatedAsync()`.
-2. Read the required Foundry endpoint and key from configuration.
+2. Read the required Gemini API key from configuration.
 3. Begin a database transaction.
 4. Acquire PostgreSQL transaction advisory lock `825833001`.
 5. Check and add missing APIInfo, model, step, and agent-config rows.
@@ -31,18 +31,17 @@ Use [../AIESummit.Domain/Persistence.AGENTS.md](../AIESummit.Domain/Persistence.
 
 | Configuration key | Bootstrap behavior |
 | --- | --- |
-| `AZURE_FOUNDRY_ENDPOINT` | Required non-null value. Trailing `/` characters are removed |
-| `AZURE_FOUNDRY_KEY` | Required non-null value. Used for newly inserted credential rows |
-| `OCR_ENDPOINT` | Optional direct OCR endpoint override |
-| `OCR_MODEL` | Defaults to `mistral-ocr-4-0` when null |
-| `LLM_ENDPOINT` | Optional direct OpenAI-compatible endpoint override |
-| `LLM_MODEL` | Defaults to `gpt-4.1-mini` when null |
+| `GEMINI_API_KEY` | Required non-null value. Google AI Studio key used for newly inserted credential rows |
+| `GEMINI_ENDPOINT` | Optional Gemini API base override; defaults to `https://generativelanguage.googleapis.com/v1beta` |
+| `OCR_MODEL` | Defaults to `gemini-3.8-flash` when null |
+| `LLM_ENDPOINT` | Optional Responses API endpoint override; defaults to the gateway at `http://gemini-gateway:8080` |
+| `LLM_MODEL` | Defaults to `gemini-3.8-flash` when null |
 
-The endpoint and key are read unconditionally, even if all seed rows already exist. Supplying `OCR_ENDPOINT` and `LLM_ENDPOINT` does not remove the Foundry endpoint requirement. Existing database credentials do not remove the Foundry key requirement for API startup.
+The key is read unconditionally, even if all seed rows already exist. Existing database credentials do not remove the `GEMINI_API_KEY` requirement for API startup.
 
-The C# checks use null-coalescing throws, not whitespace validation. An empty string can pass those checks, and an endpoint consisting only of slashes becomes empty after trimming. The optional defaults also apply to null rather than every empty value. A future validation improvement should explicitly test missing, empty, whitespace, and malformed values rather than assuming the current checks already cover them.
+The C# check uses a null-coalescing throw, not whitespace validation. An empty string can pass that check. The optional defaults also apply to null rather than every empty value. A future validation improvement should explicitly test missing, empty, whitespace, and malformed values rather than assuming the current checks already cover them.
 
-Compose adds a separate boundary. Its `${AZURE_FOUNDRY_ENDPOINT:?...}` and `${AZURE_FOUNDRY_KEY:?...}` interpolation requires nonempty values before starting the configured service. That Compose behavior does not change the C# contract for someone running the API directly.
+Compose adds a separate boundary. Its `${GEMINI_API_KEY:?...}` interpolation requires a nonempty value before starting the configured service. That Compose behavior does not change the C# contract for someone running the API directly.
 
 Firebase configuration is checked earlier in `Program.cs`. `Firebase:ProjectId` is required. A Firebase API key is required unless the Development-only emulator condition permits the demo fallback. Diagnose failures by their actual startup stage instead of assuming every missing setting is a bootstrap seed failure.
 
@@ -50,11 +49,11 @@ Firebase configuration is checked earlier in `Program.cs`. `Firebase:ProjectId` 
 
 | Row kind | Existence check | Inserted identity and defaults |
 | --- | --- | --- |
-| OCR `APIInfo` | Any row with `Identifier == "mistral-ocr"` | `Identifier=mistral-ocr`, configured/default OCR endpoint, shared Foundry key, OCR deployment in `AppSecret`, API-key authorization |
-| LLM `APIInfo` | Any row with `Identifier == "openai"` | `Identifier=openai`, configured/default LLM endpoint, shared Foundry key, null `AppSecret`, API-key authorization |
+| OCR `APIInfo` | Any row with `Identifier == "gemini-ocr"` | `Identifier=gemini-ocr`, configured/default Gemini endpoint, shared Gemini key, OCR model in `AppSecret`, API-key authorization |
+| LLM `APIInfo` | Any row with `Identifier == "openai"` | `Identifier=openai`, configured/default gateway endpoint, shared Gemini key, null `AppSecret`, API-key authorization |
 | `LLMModel` | `SingleOrDefault` with `Tag == "foundry-split"` | Tag `foundry-split`, configured/default model name, `LLMAPIProvider.OpenAI` |
 | `LLMStep` | Any row with `Tag == SplitStep.Tag` | `SplitStep.Definition()`, tag `split-upload`, assigned to the located model |
-| `OcrAgentConfig` | Any row in that type's table | Name `Mistral OCR`, class name `OcrAgent`, enabled |
+| `OcrAgentConfig` | Any row in that type's table | Name `Gemini OCR`, class name `OcrAgent`, enabled |
 | `LLMStepAgentConfig` | Any row in that type's table | Name `Plan document split`, class name `LLMStepAgent`, enabled |
 | `LLMPromptAgentConfig` | Any row in that type's table | Name `Run document split`, class name `LlmPromptAgent`, enabled |
 
@@ -64,13 +63,13 @@ The model lookup uses `SingleOrDefaultAsync`. Multiple matching model tags cause
 
 ## Endpoint and credential semantics
 
-For the OCR credential, the default URI is the trimmed Foundry endpoint plus `/providers/mistral/azure/ocr`. `OCR_ENDPOINT` replaces that complete URI when present. For the `openai` credential, the default is the trimmed Foundry endpoint itself, with `LLM_ENDPOINT` as its override.
+For the OCR credential, the default URI is the Gemini API base `https://generativelanguage.googleapis.com/v1beta`, with `GEMINI_ENDPOINT` as its override; the browser appends `/models/{model}:generateContent`. For the `openai` credential, the default is the Compose service `http://gemini-gateway:8080`, with `LLM_ENDPOINT` as its override. The gateway translates the worker's Responses API calls to Gemini; see [../deploy/gemini-gateway/AGENTS.md](../deploy/gemini-gateway/AGENTS.md).
 
-`APIInfo.AppKey` stores the Foundry key for both newly inserted credentials. In this venture's OCR configuration, `AppSecret` stores the OCR deployment/model name. [OcrAgent.cs](../AIESummit.Agents/OcrAgent.cs) obtains it through the API browser's `AppKeySecret` property and places it in the OCR request's `model` field. It is not a second independent OCR authentication secret in this seed convention.
+`APIInfo.AppKey` stores the Gemini key for both newly inserted credentials. In this venture's OCR configuration, `AppSecret` stores the OCR model name. [OcrAgent.cs](../AIESummit.Agents/OcrAgent.cs) obtains it through the API browser's `AppKeySecret` property and places it in the request path. It is not a second independent OCR authentication secret in this seed convention.
 
-Keep that convention explicit when editing the configuration UI or changing the browser. A field named `AppSecret` can have framework-specific usage, and an operator must not replace the OCR deployment name with an unrelated credential expecting the same request behavior.
+Keep that convention explicit when editing the configuration UI or changing the browser. A field named `AppSecret` can have framework-specific usage, and an operator must not replace the OCR model name with an unrelated credential expecting the same request behavior.
 
-For the LLM path, the selected model's `Name` and `Provider` live in `LLMModel`. Bootstrap assigns OpenAI as the provider even when the endpoint is Azure Foundry. That indicates the chosen provider integration, not a promise about another provider's URL or protocol compatibility.
+For the LLM path, the selected model's `Name` and `Provider` live in `LLMModel`. Bootstrap assigns OpenAI as the provider and tags the model `foundry-split`; both are kept for persisted identity. "OpenAI" here means the Responses API wire format the worker speaks to the gateway, not the model vendor.
 
 The newly inserted split step receives `step.Model = model`. An existing step receives no repair or rebinding. If its model link is absent, disabled, or points elsewhere, restarting bootstrap preserves that state. Likewise, an existing `foundry-split` model retains its stored name and provider even when environment defaults change.
 
@@ -94,19 +93,19 @@ The key is a fixed coordination constant, not a generated identity or a credenti
 
 ## Environment forwarding in Compose
 
-[.env.example](../.env.example) documents the expected user-supplied Foundry values, OCR/LLM model defaults, Firebase values, and API environment selection. It contains no actual provider key. Do not read, print, or copy a real `.env` file merely to document or inspect the code's configuration contract.
+[.env.example](../.env.example) documents the expected user-supplied Gemini key, OCR/LLM model defaults, Firebase values, and API environment selection. It contains no actual provider key. Do not read, print, or copy a real `.env` file merely to document or inspect the code's configuration contract.
 
-[compose.yaml](../compose.yaml) explicitly forwards `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_KEY`, `OCR_MODEL`, and `LLM_MODEL` into the API container. It also forwards Firebase and ASP.NET environment values under the appropriate configuration names.
+[compose.yaml](../compose.yaml) explicitly forwards `GEMINI_API_KEY`, `OCR_MODEL`, and `LLM_MODEL` into the API container. It also forwards Firebase and ASP.NET environment values under the appropriate configuration names.
 
-`OCR_ENDPOINT` and `LLM_ENDPOINT` are supported by the C# bootstrap but are not forwarded by the checked-in Compose API environment block. Adding them to a local interpolation file alone does not automatically inject them into the container. A requested override needs an explicit Compose environment mapping or another intentional configuration mechanism.
+`GEMINI_ENDPOINT` and `LLM_ENDPOINT` are supported by the C# bootstrap but are not forwarded by the checked-in Compose API environment block. Adding them to a local interpolation file alone does not automatically inject them into the container. A requested override needs an explicit Compose environment mapping or another intentional configuration mechanism.
 
-Worker and Admin services share database, queue, environment, and telemetry configuration. They do not receive the Foundry bootstrap variables through that shared environment block. Their runtime integration relies on the seeded database configuration and their own host wiring. Do not copy secrets into every container simply because the API uses them during initialization.
+Worker and Admin services share database, queue, environment, and telemetry configuration. They do not receive the Gemini bootstrap variables through that shared environment block. Their runtime integration relies on the seeded database configuration and their own host wiring. Do not copy secrets into every container simply because the API uses them during initialization.
 
 When diagnosing effective configuration, check whether a setting reached the intended process without dumping all environment values. Presence, source, and safe endpoint/model identifiers are normally sufficient. Never echo the provider key or authentication tokens.
 
 ## Rotation and operator changes
 
-Changing the Foundry key in the API's environment and restarting does not rotate existing `APIInfo.AppKey` values. A deliberate rotation must update the persisted credential rows that the workers actually resolve, using an authorized credential-management path.
+Changing the Gemini key in the API's environment and restarting does not rotate existing `APIInfo.AppKey` values. A deliberate rotation must update the persisted credential rows that the workers actually resolve, using an authorized credential-management path.
 
 Identify which credential identifiers need rotation, preserve their endpoint and deployment semantics, apply the replacement securely, and verify a bounded request through each affected integration. Account for already running processes or browser/provider instances that may retain configuration in memory. Inspect the actual caching/reload path before claiming a database edit is immediately active everywhere.
 
@@ -118,12 +117,12 @@ For model or step changes, record the exact intended fields and preserve stable 
 
 1. On an isolated empty development database, verify the expected tables are created and the exact credential identifiers, model tag, step tag/model link, and three configuration types are inserted.
 2. Restart against the same database and verify no duplicate seeds appear. Confirm intentional stored template, provider/model, endpoint, and enabled-state edits remain intact.
-3. Verify missing required endpoint/key behavior even when seed rows already exist. Distinguish direct-process null handling from Compose's nonempty interpolation requirements.
+3. Verify missing required key behavior even when seed rows already exist. Distinguish direct-process null handling from Compose's nonempty interpolation requirements.
 4. Test a populated but incorrectly shaped schema through the normal schema workflow. Do not treat `EnsureCreated` as the repair step.
 5. If changing concurrency behavior, exercise two bootstrappers with the same database and verify the lock-protected seed section. Separately assess first-schema creation, which occurs before the lock.
 6. Verify an existing agent-config row prevents default insertion, including a disabled or differently named row. Confirm the actual activated agent/config identity afterward.
 7. For an endpoint override, confirm it is explicitly forwarded to the API process and affects only newly seeded rows unless an intentional update also occurs.
-8. Verify a newly generated prompt uses the intended persisted step and model, and a controlled OCR request uses the intended OCR deployment. Use synthetic content and bounded processing.
+8. Verify a newly generated prompt uses the intended persisted step and model, and a controlled OCR request uses the intended OCR model. Use synthetic content and bounded processing.
 
 For code changes, build the API and affected agent/domain projects and use targeted tests appropriate to changed behavior. The existing [smoke script](../scripts/smoke.ps1) exercises the running upload pipeline but does not comprehensively test seed preservation, concurrent initialization, rotation, or malformed startup settings. State the checks actually performed.
 

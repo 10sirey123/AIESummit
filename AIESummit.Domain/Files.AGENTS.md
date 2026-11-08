@@ -2,7 +2,7 @@
 
 Framework source links in this guide are optional upstream references at the bundled revision and may require maintainer access. Normal development consumes `dependencies/blueshift`; no framework source checkout is required.
 
-Read this guide when changing upload validation, retained file bytes, OCR image extraction, document page ranges, or image delivery. The current implementation stores source and extracted image bytes in the application database. It sends the source to the configured Mistral OCR API. It does not run the Horus PageImageContainer, render pages through Poppler, or use that container's cache and download endpoints.
+Read this guide when changing upload validation, retained file bytes, OCR image extraction, document page ranges, or image delivery. The current implementation stores source and extracted image bytes in the application database. It sends the source to the configured Gemini API. Gemini returns no extracted image crops, so the current OCR path stores no image bytes; the image tables and routes below remain for providers that return them. It does not run the Horus PageImageContainer, render pages through Poppler, or use that container's cache and download endpoints.
 
 Start with [AGENTS.md](AGENTS.md), [OcrAgent.cs](../AIESummit.Agents/OcrAgent.cs), [SplitStep.cs](../AIESummit.Agents/SplitStep.cs), and [UploadEndpoints.cs](../AIESummit.Api/UploadEndpoints.cs). Those files jointly define the contract. A change to one representation can affect page-range validation, image ownership, and browser display.
 
@@ -44,19 +44,19 @@ The API saves `UploadedFile.Source` and returns HTTP 202 with the upload ID and 
 
 ## OCR request construction
 
-`MistralOcrBrowser` uses API identifier `mistral-ocr`. It base64-encodes the retained source and creates a data URL using `UploadedFile.ContentType`.
+`GeminiOcrBrowser` uses API identifier `gemini-ocr`. It base64-encodes the retained source and sends it as one Gemini `inline_data` part with `UploadedFile.ContentType` as the MIME type, for PDFs and images alike.
 
-For a PDF, the request document has type `document_url`. For supported image uploads, it has type `image_url`. Both carry the source as a data URL. The request uses `ApiBaseUri`, sends the API key in the `api-key` header, takes the model name from the configured `AppKeySecret`, and sets `include_image_base64 = true`.
+The request posts to `{ApiBaseUri}/models/{model}:generateContent`, sends the API key in the `x-goog-api-key` header, takes the model name from the configured `AppKeySecret`, and requests JSON matching a strict `{pages:[{index, markdown}]}` schema. Non-text images are described inline in the Markdown.
 
-The browser requires a successful HTTP response and deserializes its `pages`. A missing response or missing pages yields an empty array, which then fails the agent's page validation. Do not log the data URL, source bytes, key, or complete OCR response merely to diagnose a request failure.
+The browser requires a successful HTTP response and a `STOP` (or absent) finish reason, deserializes the returned `pages` and orders them by index. A missing response or missing pages yields an empty array, which then fails the agent's page validation. Do not log the data URL, source bytes, key, or complete OCR response merely to diagnose a request failure.
 
 No local PDF renderer determines page count before the OCR request. The 30-page constraint is checked on the returned OCR pages. A file within the byte limit may still be rejected after OCR because of its page count or response indexes.
 
 ## Page numbering and validation
 
-The OCR agent accepts from 1 through 30 pages inclusive. It also requires the page indexes in the response's existing order to equal `0, 1, ..., pages.Length - 1` exactly.
+The OCR agent accepts from 1 through 30 pages inclusive. It also requires the page indexes, after the browser's sort, to equal `0, 1, ..., pages.Length - 1` exactly.
 
-The agent does not sort an out-of-order response or fill gaps. A duplicate, missing, negative, one-based, or out-of-order index fails the same validation. The current error message is `OCR page indexes are incomplete.`, including for an invalid page count.
+The browser sorts by index; nothing fills gaps. A duplicate, missing, negative or one-based index fails the same validation. The current error message is `OCR page indexes are incomplete.`, including for an invalid page count.
 
 The conversion to persisted numbering occurs once, when creating `OcrPage`.
 

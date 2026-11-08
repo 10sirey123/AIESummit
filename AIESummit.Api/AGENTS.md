@@ -51,7 +51,7 @@ The host requires `Firebase:ProjectId` and normally `Firebase:ApiKey`. It uses t
 
 Hosted mode configures the issuer as the JWT authority. Emulator mode is selected only when the environment is Development and `Firebase:Emulator` is true. In that mode the signature validator accepts unsigned `alg=none` emulator tokens and rejects signed tokens through that branch. Do not relax production validation to make emulator tests pass.
 
-`/firebase-config` exposes browser configuration, including the Firebase web API key. It must never expose Foundry provider keys, APIInfo secrets, database connection strings or queue credentials. Browser Firebase configuration and server provider credentials serve different purposes.
+`/firebase-config` exposes browser configuration, including the Firebase web API key. It must never expose Gemini provider keys, APIInfo secrets, database connection strings or queue credentials. Browser Firebase configuration and server provider credentials serve different purposes.
 
 The application does not implement Horus's client-credentials `/oauth/token` flow or require its client certificate tooling. Use Firebase ID tokens and the current session guidance when extending clients.
 
@@ -83,11 +83,11 @@ Document detail orders by `FirstPage`. Each document receives image references w
 
 ## Startup configuration and seeding
 
-Before serving requests, the host runs `Bootstrap.InitializeAsync`. Startup calls `EnsureCreatedAsync`, reads Foundry configuration, begins a transaction and acquires PostgreSQL advisory transaction lock `825833001` before seeding missing configuration.
+Before serving requests, the host runs `Bootstrap.InitializeAsync`. Startup calls `EnsureCreatedAsync`, reads the Gemini key, begins a transaction and acquires PostgreSQL advisory transaction lock `825833001` before seeding missing configuration.
 
-It creates missing `APIInfo` rows identified by `mistral-ocr` and `openai`, an `LLMModel` tagged `foundry-split`, a step tagged `split-upload`, and initial OCR/step/prompt agent configuration. Existing rows are preserved. Changing environment variables or code defaults does not overwrite operator-edited stored values.
+It creates missing `APIInfo` rows identified by `gemini-ocr` and `openai`, an `LLMModel` tagged `foundry-split`, a step tagged `split-upload`, and initial OCR/step/prompt agent configuration. Existing rows are preserved. Changing environment variables or code defaults does not overwrite operator-edited stored values.
 
-Foundry endpoint and key are read and required even when configuration rows already exist. Treat a startup failure there as configuration evidence rather than assuming credentials are only needed for first launch. Keep provider secrets in deployment configuration and never commit their values into source or documentation.
+`GEMINI_API_KEY` is read and required even when configuration rows already exist. Treat a startup failure there as configuration evidence rather than assuming credentials are only needed for first launch. Keep provider secrets in deployment configuration and never commit their values into source or documentation.
 
 `EnsureCreatedAsync` is not a migration runner. An existing schema is not upgraded when an entity changes. A retained database needs an explicit schema transition, and startup seeding does not provide that transition. See the persistence and bootstrap guides before modifying storage.
 

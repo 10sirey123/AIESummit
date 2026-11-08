@@ -49,7 +49,7 @@ The Service Bus emulator uses service `sql`, a separate SQL Server instance, for
 
 The queue connection points to Compose service `emulator` with `UseDevelopmentEmulator=true`. The emulator's configured namespace is `sbemulatorns`. That namespace name is different from application venture prefix `aiesummit` and queue environment `dev`. Preserve their separate meanings during troubleshooting.
 
-Current emulator credentials are local development configuration. Do not reuse them as a production credential strategy or print a real queue connection string in diagnostics. Foundry credentials are initially persisted through API bootstrap and read by processing through configured APIInfo records. The worker does not require copying those secret values into its overlay.
+Current emulator credentials are local development configuration. Do not reuse them as a production credential strategy or print a real queue connection string in diagnostics. The Gemini key is initially persisted through API bootstrap and read by processing through configured APIInfo records. LLM calls go to the `gemini-gateway` service, which forwards the caller's key; see [gemini-gateway/AGENTS.md](gemini-gateway/AGENTS.md). The worker does not require copying those secret values into its overlay.
 
 ## Declared queues and eligible states
 

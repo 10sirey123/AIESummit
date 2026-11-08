@@ -1,6 +1,6 @@
 # Local deployment and container topology
 
-Use this guide for the checked-in AIESummit Compose stack, image builds, and bounded diagnostics. Start from the repository root with [start.ps1](../start.ps1). Follow [Admin.AGENTS.md](Admin.AGENTS.md), [Worker.AGENTS.md](Worker.AGENTS.md), and [Firebase.AGENTS.md](Firebase.AGENTS.md) for the individual service contracts.
+Use this guide for the checked-in AIESummit Compose stack, image builds, and bounded diagnostics. Start from the repository root with [start.ps1](../start.ps1). Follow [Admin.AGENTS.md](Admin.AGENTS.md), [Worker.AGENTS.md](Worker.AGENTS.md), [Firebase.AGENTS.md](Firebase.AGENTS.md), and [gemini-gateway/AGENTS.md](gemini-gateway/AGENTS.md) for the individual service contracts.
 
 The Compose project is `aiesummit`, defined in [compose.yaml](../compose.yaml). This is one local development stack. It does not use Cite8's Compose includes, profiles, operator script names, frontend ports, or separate database initialization image.
 
@@ -14,6 +14,7 @@ The Compose project is `aiesummit`, defined in [compose.yaml](../compose.yaml). 
 | `opensearch` | Agent execution logs/history | No published port |
 | `firebase` | Local Firebase authentication emulator | `127.0.0.1:19099` forwards to container 9099 |
 | `api` | Upload API, static application, bootstrap | `127.0.0.1:18080` forwards to container 8080 |
+| `gemini-gateway` | Translates the worker's Responses API LLM calls to Gemini | No published port |
 | `worker` | Shared agent host with AIESummit domain/agent packs | No published port |
 | `blueshift-admin-api` | Shared Admin API with venture packs/configuration | No directly published port |
 | `blueshift-admin` | Admin static frontend and reverse proxy | `127.0.0.1:13088` forwards to container 80 |
@@ -40,7 +41,7 @@ The generated Admin token has the Admin role, subject `aiesummit-operator`, and 
 
 The normal entry point therefore prepares prerequisites that a raw first-time `docker compose up` does not. In particular, the Admin API expects its local settings bind mount to exist. Use the companion Admin guide when authentication setup or expiration is the issue.
 
-The application requires Foundry values supplied through the intended local environment setup. [.env.example](../.env.example) documents variable names and safe defaults. Do not expose a real `.env` file in diagnostic output or put its secret values into this guide.
+The application requires a `GEMINI_API_KEY` supplied through the intended local environment setup. [.env.example](../.env.example) documents variable names and safe defaults. Do not expose a real `.env` file in diagnostic output or put its secret values into this guide.
 
 ## Build stages and packed binaries
 
@@ -65,7 +66,7 @@ The separate Admin frontend image uses the `admin-web` target in `deploy/Dockerf
 
 The committed `dependencies/blueshift/manifest.json` pins the `net10` source revision, package version, build images, artifact sizes and hashes. Normal builds use no framework source or private feed. See [the bundle guide](../dependencies/blueshift/README.md) for the maintainer-only refresh workflow and Linux x64 host limitation. Update and validate all artifacts together when upgrading.
 
-Compose currently names PostgreSQL 16, Service Bus emulator 2.0.1, OpenSearch 2.18.0, and SQL Server 2022's `latest` tag. Firebase uses Node 22 Alpine and Firebase tools 14.12.1. A version tag is not a digest pin. Do not describe every upstream base image as immutable merely because venture binaries are packed into images.
+Compose currently names PostgreSQL 16, Service Bus emulator 2.0.1, OpenSearch 2.18.0, and SQL Server 2022's `latest` tag. Firebase uses Node 22 Alpine and Firebase tools 14.12.1. The Gemini gateway uses `node:24-alpine`. A version tag is not a digest pin. Do not describe every upstream base image as immutable merely because venture binaries are packed into images.
 
 ## Build context hygiene
 
@@ -79,7 +80,7 @@ The .NET publish commands use a BuildKit cache mount for NuGet packages. That ca
 
 The shared environment block supplies application database connectivity, environment `dev`, queue enablement/venture prefix, the local emulator connection, and OpenSearch logging settings. API, worker, and Admin API inherit this block.
 
-The API receives Foundry endpoint/key, OCR/LLM model defaults, Firebase settings, and its ASP.NET environment selection. `OCR_ENDPOINT` and `LLM_ENDPOINT` are supported in application bootstrap code but are not forwarded in this checked-in Compose block. Adding them to a local interpolation file alone does not inject them into the API container.
+The API receives the Gemini key, OCR/LLM model defaults, Firebase settings, and its ASP.NET environment selection. `GEMINI_ENDPOINT` and `LLM_ENDPOINT` are supported in application bootstrap code but are not forwarded in this checked-in Compose block. Adding them to a local interpolation file alone does not inject them into the API container.
 
 The worker enables `AIESUMMIT_QUEUE_RECOVERY=true`. Its entry point loads `/config/worker.overlay.json` and passes `--enqueue-objects false`. The overlay specifies the domain/agent pack paths, `AIESummit.Domain.AIESummitDb`, the `AIESummitDb` connection name, venture prefix `aiesummit`, and the upload/prompt queue selection regex. Use [Worker.AGENTS.md](Worker.AGENTS.md) before changing queue scope or recovery behavior.
 
@@ -91,7 +92,7 @@ Bootstrap inserts missing database configuration and preserves existing credenti
 
 PostgreSQL has a `pg_isready` health check. The API waits for PostgreSQL health and has an HTTP `/health` probe. Its startup performs database/bootstrap work before serving requests.
 
-The worker waits for API health and for the emulator/OpenSearch services to be started. It has `restart: on-failure`. Started is weaker than ready. The emulator depends on SQL Server startup and has its own configured wait interval, but Compose does not establish a SQL health condition here.
+The worker waits for API and `gemini-gateway` health and for the emulator/OpenSearch services to be started. It has `restart: on-failure`. Started is weaker than ready. The emulator depends on SQL Server startup and has its own configured wait interval, but Compose does not establish a SQL health condition here.
 
 The Admin API waits for API health. The frontend waits for the Admin API to start. Firebase has no dependency ordering that proves authentication requests are ready when another service starts. Services without explicit health checks can be merely running when Compose's wait completes.
 

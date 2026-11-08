@@ -59,7 +59,7 @@ The `api` helper supplies the bearer header from `token()`. Its current header o
 
 ## Authentication and asynchronous state
 
-The script chooses hosted Firebase REST endpoints or the local emulator using `/firebase-config`. Credentials and tokens remain in JavaScript memory rather than localStorage or sessionStorage. The browser contains no Admin token, Foundry key or provider configuration.
+The script chooses hosted Firebase REST endpoints or the local emulator using `/firebase-config`. Credentials and tokens remain in JavaScript memory rather than localStorage or sessionStorage. The browser contains no Admin token, Gemini key or provider configuration.
 
 `token()` refreshes 60 seconds before the stored expiry using a shared `refreshInFlight` promise. It checks that the session object has not changed before applying refresh output. There is no automatic retry of every rejected API request, and browser signout does not revoke remote refresh tokens.
 

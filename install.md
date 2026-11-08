@@ -1,6 +1,6 @@
 # Install AIESummit from scratch
 
-This guide sets up the complete local development environment on Windows x64, starting with only Docker Desktop installed and running. Run the commands in order. A web browser, internet access, access to this AIESummit repository, and Azure Foundry credentials with usable OCR and LLM deployments are also needed. Blueshift binaries are included in this repository; no private framework repository or private package-feed access is required. The current app performs document intake, OCR and splitting; contract risk analysis is future work.
+This guide sets up the complete local development environment on Windows x64, starting with only Docker Desktop installed and running. Run the commands in order. A web browser, internet access, access to this AIESummit repository, and a Google Gemini API key from Google AI Studio are also needed. Blueshift binaries are included in this repository; no private framework repository or private package-feed access is required. The current app performs document intake, OCR and splitting; contract risk analysis is future work.
 
 ## 1. Check Docker Desktop
 
@@ -86,12 +86,11 @@ Fill in the following values, save, and close the editor:
 
 | Setting | What to enter |
 | --- | --- |
-| `AZURE_FOUNDRY_ENDPOINT` | The Azure Foundry base endpoint supplied for this app's deployments |
-| `AZURE_FOUNDRY_KEY` | Its API key |
-| `OCR_MODEL` | OCR deployment name; default `mistral-ocr-4-0` |
-| `LLM_MODEL` | LLM deployment name; default `gpt-4.1-mini` |
+| `GEMINI_API_KEY` | A Gemini API key created in Google AI Studio (https://aistudio.google.com/apikey) |
+| `OCR_MODEL` | Gemini model for OCR; default `gemini-3.8-flash` |
+| `LLM_MODEL` | Gemini model for document splitting; default `gemini-3.8-flash`. `gemini-4-argon` is also available |
 
-The configured service must support the application's OCR route, derived as `<base endpoint>/providers/mistral/azure/ocr`, and the framework's LLM provider calls. Ask the project owner for compatible endpoint/deployment values; arbitrary model names do not provision deployments. The repository does not create an Azure account, deployments, access grants or credits. Missing credentials prevent startup; invalid credentials or deployment names prevent processing. Provider calls use external services and may incur charges.
+OCR calls the Gemini API directly. The worker's LLM calls go through the local `gemini-gateway` Compose service, which translates them to Gemini using the same key; see [the gateway guide](deploy/gemini-gateway/AGENTS.md). A Google Cloud service account or Vertex AI setup is not needed. The repository does not create a Google account, API key, quota or billing. Missing credentials prevent startup; an invalid key or model name prevents processing. Provider calls use external services and may incur charges.
 
 Keep these local defaults for the first run:
 
@@ -104,7 +103,7 @@ AIESUMMIT_API_ENVIRONMENT=Development
 
 No real Firebase project is needed for local testing. PostgreSQL, SQL Server, Service Bus, OpenSearch and Firebase tools run in Docker; do not install them separately on Windows. The container builds restore application packages from the bundled Blueshift feed and public NuGet. Worker/Admin hosts and the Admin website are already built and included in `dependencies/blueshift`.
 
-`.env`, generated Admin settings and tokens are ignored by Git. Never paste their contents into logs or commit them. Startup seeds missing provider/model records into PostgreSQL. After the first successful initialization, change persisted provider credentials/deployments through Admin; editing `.env` alone does not overwrite existing configuration. Do not delete data volumes to rotate credentials.
+`.env`, generated Admin settings and tokens are ignored by Git. Never paste their contents into logs or commit them. Startup seeds missing provider/model records into PostgreSQL. After the first successful initialization, change persisted provider credentials/models through Admin; editing `.env` alone does not overwrite existing configuration. Do not delete data volumes to rotate credentials.
 
 ## 5. Build and start the services
 
@@ -155,7 +154,7 @@ For a full acceptance check, run this from another PowerShell 7 terminal at the 
 ./scripts/smoke.ps1
 ```
 
-This calls real OCR/LLM deployments with a synthetic three-page PDF and verifies sign-up/sign-in, upload acceptance, user isolation, two document ranges and Admin telemetry. It creates two emulator accounts and retained upload/log records, and removes only its temporary PDF. Read [the smoke guide](scripts/smoke.AGENTS.md) for details. A successful run prints `Verified Firebase sign-up and sign-in...`; a timeout or exception means the full workflow has not passed.
+This calls the real Gemini OCR/LLM models with a synthetic three-page PDF and verifies sign-up/sign-in, upload acceptance, user isolation, two document ranges and Admin telemetry. It creates two emulator accounts and retained upload/log records, and removes only its temporary PDF. Read [the smoke guide](scripts/smoke.AGENTS.md) for details. A successful run prints `Verified Firebase sign-up and sign-in...`; a timeout or exception means the full workflow has not passed.
 
 ## 7. Development checks
 
@@ -207,11 +206,11 @@ This retains named volumes and their uploaded documents, accounts, configuration
 | Command not found after installation | Open a fresh PowerShell 7 terminal and verify PATH/version checks again. |
 | SDK not found in the repository | Run `dotnet --list-sdks`; install 10.0.403 or a compatible newer stable 10.0 SDK selected by `global.json`. |
 | Bundled dependency missing or checksum fails | Restore the tracked `dependencies/blueshift` files from the intended AIESummit revision; rerun `./scripts/verify-dependencies.ps1`. Private Blueshift access is not needed. |
-| Missing Foundry variable | Edit `.env`, save it, then rerun `docker compose config -q`. Never dump the full resolved configuration. |
+| Missing `GEMINI_API_KEY` | Edit `.env`, save it, then rerun `docker compose config -q`. Never dump the full resolved configuration. |
 | Build cannot resolve `api.nuget.org` or download packages/images | Check host and Docker DNS/proxy/VPN connectivity to NuGet, npm and container registries; once restored, rerun `./start.ps1`. Existing build caches are reused. |
 | Port already in use | Check 5173, 18080, 13088 and 19099. A running Hackathon stack uses the same ports. Stop the known conflicting application deliberately or coordinate a port change; do not kill unrelated processes. |
 | Worker repeatedly restarts with emulator `40901` conflict | Inspect bounded worker/emulator logs. On the first local run, restarting `emulator`, waiting for its `User defined entities created for SB Emulator` message, then restarting `worker` resolved this startup race. Emulator restart recreates queue state; pending eligible work is recovered from PostgreSQL by the worker's 45-second recovery cycle. Retain volumes and inspect any remaining failures. |
-| Upload accepted but stuck/failed | Check `docker compose logs --tail 80 api worker` and Admin execution history. Verify persisted provider settings, deployment access and worker readiness. Permanent failures need diagnosis, not repeated upload attempts. |
+| Upload accepted but stuck/failed | Check `docker compose logs --tail 80 api worker` and Admin execution history. Verify persisted provider settings, model access, `gemini-gateway` health and worker readiness. Permanent failures need diagnosis, not repeated upload attempts. |
 | Workspace loads but login fails | Verify `/firebase-config` through the workspace proxy, Firebase container state, matching demo project and Development/emulator settings. |
 | Admin rejects a previously working token | Rerun `./start.ps1` and copy the renewed token from its local file. |
 

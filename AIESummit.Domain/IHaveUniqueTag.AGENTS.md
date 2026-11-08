@@ -49,8 +49,8 @@ Choose canonical lowercase spellings for new application configuration. Keep the
 | Value | Kind | Current use |
 | --- | --- | --- |
 | `split-upload` | `LLMStep.Tag` | `SplitStep.Tag` constant, initial step seed and registered code-step binding |
-| `foundry-split` | `LLMModel.Tag` | Bootstrap lookup and initial model used by a new split step |
-| `mistral-ocr` | `APIInfo.Identifier` | OCR credential lookup and initial credential seed |
+| `foundry-split` | `LLMModel.Tag` | Bootstrap lookup and initial model used by a new split step; name kept from the earlier Azure Foundry setup for persisted identity |
+| `gemini-ocr` | `APIInfo.Identifier` | OCR credential lookup and initial credential seed |
 | `openai` | `APIInfo.Identifier` | LLM credential lookup and initial credential seed |
 
 The credential identifiers are not evidence that `APIInfo` uses this tag interface. They are separate lookup fields. Likewise, agent configuration seeding currently checks whether any row of the relevant configuration type exists. It does not use `IHaveUniqueTag`.
@@ -61,7 +61,7 @@ The credential identifiers are not evidence that `APIInfo` uses this tag interfa
 
 `Bootstrap.InitializeAsync` creates a missing schema, opens a transaction and obtains PostgreSQL advisory transaction lock `825833001`. Inside that lock it looks up the model by exact tag, adds it only when missing, checks for the step tag, and adds the step only when missing. It saves and commits once the initial configuration is prepared.
 
-Existing model and step rows are preserved. Startup does not overwrite an operator-edited model name, provider, prompt, template, enabled flag or existing step-to-model association. `LLM_MODEL` supplies the initial model name, defaulting to `gpt-4.1-mini`. Changing that environment variable does not update a model already stored under `foundry-split`.
+Existing model and step rows are preserved. Startup does not overwrite an operator-edited model name, provider, prompt, template, enabled flag or existing step-to-model association. `LLM_MODEL` supplies the initial model name, defaulting to `gemini-3.8-flash`. Changing that environment variable does not update a model already stored under `foundry-split`.
 
 This behavior is intentional idempotent creation. It is not a general source-to-database synchronization mechanism. Source changes to `SplitStep.Definition()` do not automatically update an existing database step. Review the stored configuration when validating a prompt change, and use an explicitly designed update path for the fields the task intends to change.
 
@@ -81,7 +81,7 @@ Horus documents a mandatory `Voiston.CLI repo LLMStep update-from-code` sequence
 
 ## Tagged sample providers
 
-[SplitSamples.cs](../AIESummit.Agents/SplitSamples.cs) defines the initial split model and step through `IUniqueTagSampleProvider.ProvideSamples()`. Bootstrap explicitly loads and validates those samples with `TaggedSampleCatalog`, resolves the model tag to a tracked row, and inserts only missing records. `LLM_MODEL` still overrides the deployment name on first insertion. Existing configuration remains operator-managed. Assembly discovery and CLI synchronization are optional extension paths.
+[SplitSamples.cs](../AIESummit.Agents/SplitSamples.cs) defines the initial split model and step through `IUniqueTagSampleProvider.ProvideSamples()`. Bootstrap explicitly loads and validates those samples with `TaggedSampleCatalog`, resolves the model tag to a tracked row, and inserts only missing records. `LLM_MODEL` still overrides the model name on first insertion. Existing configuration remains operator-managed. Assembly discovery and CLI synchronization are optional extension paths.
 
 For a future global classification catalog, give the entity a stable `Tag` and a unique EF index. Put its default categories in a dedicated sample provider, validate the definitions together, and register them in startup's missing-only seed path. Keep the human-readable label editable independently of the tag. Store a document's selected category as a relationship to the catalog entry. Define the actual vocabulary and its validation before adding such a catalog.
 

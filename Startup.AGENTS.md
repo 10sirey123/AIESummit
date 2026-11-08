@@ -8,7 +8,7 @@ The supported local entrypoint is [start.ps1](start.ps1). It verifies the commit
 
 - PowerShell 7 and the committed `dependencies/blueshift` bundle must be available. Git is needed to clone AIESummit; no Blueshift repository access is required.
 - Docker must be running with Linux-container support, working Compose support for `--wait`, sufficient memory and access to the configured image registries.
-- Populate a local `.env` using the keys in [.env.example](.env.example). Required Foundry endpoint and key values must be available for API startup and live processing.
+- Populate a local `.env` using the keys in [.env.example](.env.example). A `GEMINI_API_KEY` must be available for API startup and live processing.
 - Ensure local ports 18080, 13088 and 19099 are available for the application, Admin and Firebase Auth emulator.
 - Use the repository's existing dependency revision. Do not regenerate dependency artifacts as an incidental startup repair.
 
@@ -48,7 +48,7 @@ Firebase app login and Admin operator login are separate systems. An Admin token
 
 ## Configuration versus persisted state
 
-Compose reads `.env` for substitutions such as Foundry values, provider model defaults and Firebase mode. API bootstrap requires the Foundry endpoint and key, creates a missing schema and seeds absent configuration rows.
+Compose reads `.env` for substitutions such as the Gemini key, provider model defaults and Firebase mode. API bootstrap requires the Gemini key, creates a missing schema and seeds absent configuration rows.
 
 Existing APIInfo, LLM model and step rows are preserved. Editing `.env` and restarting does not rotate a stored APIInfo credential or replace an existing model binding. Similarly, changing `SplitStep.Definition()` does not automatically overwrite the stored step template. Inspect effective persisted configuration before concluding that a new default is active.
 
