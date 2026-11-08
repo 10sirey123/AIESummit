@@ -29,7 +29,7 @@ app.MapGet("/api/attempts", async () => {
     if (env.GetValueOrDefault("MONGODB_TLS12") == "true") settings.SslSettings = new() { EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 };
     var db = new MongoClient(settings).GetDatabase(env.GetValueOrDefault("MONGODB_DATABASE", new MongoUrl(uri).DatabaseName ?? "aiesummit_evaluation"));
     var rows = await db.GetCollection<BsonDocument>("improvement_attempts").Find(new BsonDocument()).Sort(new BsonDocument("createdAt", -1)).Limit(200)
-        .Project(new BsonDocument { { "_id", 1 }, { "title", 1 }, { "status", 1 }, { "runId", 1 }, { "createdAt", 1 } }).ToListAsync();
+        .Project(new BsonDocument { { "_id", 1 }, { "title", 1 }, { "status", 1 }, { "runId", 1 }, { "createdAt", 1 }, { "candidateCommit", 1 }, { "baseCommit", 1 } }).ToListAsync();
     return Results.Ok(rows.Select(r => BsonTypeMapper.MapToDotNetValue(r)));
 });
 app.MapGet("/health", () => new { status = "ok" });

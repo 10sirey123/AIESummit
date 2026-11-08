@@ -116,3 +116,7 @@ The separate read-only dashboard starts with `./scripts/start-observatory.ps1` a
 The Observatory opens on a global overview with per-benchmark bar charts of validated detection totals across measured attempts. Click a bar to open the benchmark detail and that run; use All benchmarks to return. Totals sum TP across documents/targets within a run, never across repeated attempts or different manifests.
 
 Attempt detail includes Extraction coverage, a document-by-target matrix joined to exact expectation snapshots. Expected/found cells are green; expected/missed or rejected cells are pink. Failures and unexpected findings have separate colors and labels. Click document identifiers to inspect their workflow graph.
+
+The Observatory automatically refreshes run discovery every 15 seconds. In-progress runs without final quality summaries appear in a pending section instead of being silently hidden. A completed run becomes a bar in its manifest group.
+
+The homepage presents a single chronological bar chart of validated expected items found (micro TP) across scored 20-document attempts. One-document diagnostics are excluded. Values and first/latest delta are data-driven; manifest differences are disclosed beneath the chart. Bar clicks open attempt details.
