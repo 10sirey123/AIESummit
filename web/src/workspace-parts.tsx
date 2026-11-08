@@ -68,18 +68,18 @@ export function UploadCard({ upload, selected, onOpen, targets }: { upload: Uplo
   const created = Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(upload.created) ? upload.created : `${upload.created}Z`);
   return <button className="upload-card" aria-current={selected ? 'true' : undefined} onClick={onOpen}>
     <span className="upload-card-top">
-      <strong>{upload.fileName}</strong>
+      <strong title={upload.fileName}>{upload.fileName}</strong>
       <span className="status-pill" data-status={upload.status}>{statusLabel[upload.status]}</span>
     </span>
     <span className="upload-card-meta">
       {upload.pageCount ? `${upload.pageCount} page${upload.pageCount === 1 ? '' : 's'} · ` : ''}{Number.isNaN(created) ? '' : when.format(created)}
     </span>
     <TargetChips targets={targets} />
-    {upload.status === 'failed' && <span className="upload-card-error">{upload.error ?? 'Processing failed.'}</span>}
+    {upload.status === 'failed' && <span className="upload-card-error" title={upload.error ?? undefined}>{upload.error ?? 'Processing failed.'}</span>}
   </button>;
 }
 
-function reviewedCount(uploadId: number, keys: string[]) {
+export function reviewedCount(uploadId: number, keys: string[]) {
   try {
     const decisions = JSON.parse(localStorage.getItem(`clauselens-review-${uploadId}`) ?? '{}') as Record<string, unknown>;
     return keys.filter(key => key in decisions).length;

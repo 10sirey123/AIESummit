@@ -5,6 +5,8 @@ import { headline, orderedTargets, outcomeShort, targetMeta, uploadTargets, valu
 import { useCatalog, useManyExtractions } from './extraction-store';
 import { TargetIcon } from './extraction-view';
 import type { OpenRequest } from './workspace';
+import { ComparePair } from './compare-pair';
+import { useActiveRules } from './playbook-store';
 
 const maxColumns = 6;
 
@@ -17,6 +19,8 @@ export function CompareView({ session, onOpen }: { session: Session; onOpen: (re
   const [focusTag, setFocusTag] = useState<string>();
   const [onlyDiffer, setOnlyDiffer] = useState(false);
   const catalog = useCatalog(session);
+  const [mode, setMode] = useState<'pair' | 'matrix'>('pair');
+  const { playbook, rules } = useActiveRules();
 
   useEffect(() => {
     let live = true;
@@ -45,11 +49,17 @@ export function CompareView({ session, onOpen }: { session: Session; onOpen: (re
         <h2>Compare contracts</h2>
         <p>Extracted terms side by side. Each term type keeps its icon and color everywhere in ClauseLens.</p>
       </div>
+      <div className="mode-switch compare-modes" role="tablist" aria-label="Comparison mode">
+        {([['pair', 'Two contracts'], ['matrix', 'All contracts']] as const).map(([value, label]) =>
+          <button key={value} type="button" role="tab" aria-selected={mode === value} onClick={() => setMode(value)}>{label}</button>)}
+      </div>
     </header>
     {error && <p className="error" role="alert">{error}</p>}
     {!uploads && !error && <p role="status">Loading contracts…</p>}
     {uploads && !ready.length && <p>No processed contracts yet. Upload contracts in the Contracts view first.</p>}
-    {ready.length > 0 && <>
+    {ready.length > 0 && mode === 'pair' && <ComparePair ready={ready} states={states} order={order} rules={rules}
+      playbookName={`${playbook.name} v${playbook.published.version}`} onOpen={onOpen} />}
+    {ready.length > 0 && mode === 'matrix' && <>
       <section className="compare-controls" aria-label="Choose contracts">
         <p className="detail-label">Contracts · up to {maxColumns}</p>
         <div className="contract-pills">
