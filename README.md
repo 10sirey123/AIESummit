@@ -7,7 +7,7 @@ The local [self-improvement workbench](docs/self-improvement.md) is available wi
 
 Meta Muse Wonder is available through the same native Blueshift page-section LLMStep. See [Meta configuration and verification](docs/meta-analysis.md) for the bundled version, explicit `.env`-to-APIInfo import and the model-specific acceptance check.
 
-AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Per-page section descriptions and a first ten-target contract extraction backend are implemented. Legal risk analysis and frontend extraction cards remain future work. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
+AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Per-page section descriptions and a first ten-target contract extraction backend are implemented. The React workspace displays extracted terms and verified evidence in a searchable contract library and focused Findings / Source / Summary / Key dates tabs. Legal risk judgments remain outside model output; reviewer playbooks supply local tiers. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
 
 ## Run locally
 

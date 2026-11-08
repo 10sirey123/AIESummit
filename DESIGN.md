@@ -185,3 +185,9 @@ The compact panel radius (6px) is shared by graphite panels, inputs, the brand i
 - **Do** keep rendered Markdown readable, provide the original source, and preserve page boundaries.
 - **Don't** use colored glows, translucent surfaces, or decorative motion.
 - **Don't** use mint as a general accent or let a status dot stand alone.
+
+## Focused contract workspace
+
+The React app starts with a full-width searchable contract library. Opening a contract replaces the library with four keyboard-accessible tabs: **Findings**, **Source**, **Summary**, and **Key dates**. All contracts returns to the library; the title-row switcher opens another contract. Dropping a file during review returns to intake so validation and upload errors stay visible.
+
+Findings pairs the term list with a readable detail area. A selector switches between extracted terms and page sections. Source pairs one original PDF page (or OCR Markdown) with the selected finding; evidence links open that page directly. PDF bytes load only when Source is opened. Mobile stacks the content without a fixed bottom sheet. Summary explicitly uses page sections and the playbook, independently of extracted-term decisions; Key dates uses its separate text heuristics. Local review decisions and all evidence validation retain their existing semantics.

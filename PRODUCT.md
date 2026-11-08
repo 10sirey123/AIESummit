@@ -24,7 +24,7 @@ Evidence-first, no AI verdicts. Every extracted term is anchored to an exact quo
 
 ## Operating Context
 
-The reviewer signs in, uploads a PDF or image (up to 30 pages), watches OCR, document splitting and analysis progress, then reviews in a desk: original PDF page or OCR Markdown in the centre, extracted terms or page findings on the left, the selected finding with its values and evidence on the right. They accept or reject page findings, follow cross-references and defined terms, compare two contracts clause by clause, check a portfolio list, and export a negotiation summary or key dates.
+The reviewer signs in, uploads a PDF or image (up to 30 pages), watches OCR, document splitting and analysis progress, then opens a focused review with Findings, Source, Summary and Key dates tabs. Findings pairs a list and detail; Source pairs one original PDF page or OCR Markdown with its evidence detail. They accept or reject page findings, follow cross-references and defined terms, compare two contracts clause by clause, check a portfolio list, and export a negotiation summary or key dates.
 
 The product is designed for real reviewers beyond the AIE Code Summit hackathon event; durability and day-to-day usefulness outrank demo theatrics.
 

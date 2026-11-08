@@ -236,8 +236,9 @@ export function ReviewRail({ findings, decisions, selected, tag, totalPages, cur
   </aside>;
 }
 
-export function FindingDetail({ finding, findings, decision, located, rejectRequest, links, terms, evaluation, onDecide, onSelect, onNext, onClose, onFollow, onTermGo }: {
+export function FindingDetail({ finding, findings, decision, located, rejectRequest, links, terms, evaluation, onDecide, onSelect, onNext, onClose, onFollow, onTermGo, sourceVisible = true }: {
   finding: ReviewFinding; findings: ReviewFinding[]; decision?: Decision; located?: boolean; rejectRequest?: number;
+  sourceVisible?: boolean;
   links?: ClauseLinks; terms?: Term[]; evaluation?: Evaluation;
   onDecide: (decision?: Decision) => void; onSelect: (finding: ReviewFinding) => void; onNext: () => void; onClose: () => void;
   onFollow?: (link: ClauseLink) => void; onTermGo?: (term: Term) => void;
@@ -258,7 +259,7 @@ export function FindingDetail({ finding, findings, decision, located, rejectRequ
     <div className="detail-block">
       <p className="detail-label">Evidence · what the document says</p>
       <blockquote className="detail-quote">{finding.quote}</blockquote>
-      <p className="evidence-status" role="status">{located === undefined ? 'Finding it on the page…' : located ? `Highlighted in yellow on page ${finding.page}` : 'The exact quote could not be located on the page. Compare it with the source.'}</p>
+      {sourceVisible && <p className="evidence-status" role="status">{located === undefined ? 'Finding it on the page…' : located ? `Highlighted in yellow on page ${finding.page}` : 'The exact quote could not be located on the page. Compare it with the source.'}</p>}
     </div>
 
     <div className="detail-block">

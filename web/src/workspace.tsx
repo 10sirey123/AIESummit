@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { PanelLeftClose, PanelLeftOpen, UploadCloud } from 'lucide-react';
+import { ArrowLeft, Search, UploadCloud } from 'lucide-react';
 import { errorMessage, type Session, type Upload, type UploadDetail } from './api';
 import { DocumentViewer } from './document-viewer';
 import { countPdfPages } from './pdf-page';
 import { isProcessing, pendingUpload as pending, ProcessingPanel, ProcessingSummary } from './processing-view';
-import { UploadCard, UploadDropzone, WorkspaceOverview } from './workspace-parts';
-import { loadExtractions, useCatalog, useExtractions, useManyExtractions } from './extraction-store';
-import { uploadTargets } from './extraction-meta';
+import { UploadCard, UploadDropzone } from './workspace-parts';
+import { loadExtractions, useCatalog, useExtractions } from './extraction-store';
 
 /** Another view (Compare) asking to open an upload, optionally at an extracted finding's evidence. */
 export type OpenRequest = { uploadId: number; page?: number; quote?: string; finding?: string; request: number };
@@ -29,19 +28,16 @@ export function Workspace({ session, onOpenPlaybook, openRequest, onUploadsChang
   const [dropped, setDropped] = useState<{ file: File; at: number }>();
   const [uploadError, setUploadError] = useState('');
   const [focus, setFocus] = useState<OpenRequest>();
-  // While a contract is open the list collapses so the reader gets the full width; the choice is remembered.
-  const [listOpen, setListOpen] = useState(() => { try { return localStorage.getItem('clauselens-list-open') === 'true'; } catch { return false; } });
-  useEffect(() => { try { localStorage.setItem('clauselens-list-open', String(listOpen)); } catch { /* keep in memory */ } }, [listOpen]);
-  const collapsed = selected !== undefined && !listOpen;
+  const [query, setQuery] = useState('');
+  const collapsed = selected !== undefined;
+  const visibleUploads = uploads.filter(upload => upload.fileName.toLowerCase().includes(query.trim().toLowerCase()));
   useEffect(() => { if (openRequest) { setSelected(openRequest.uploadId); setFocus(openRequest); } }, [openRequest?.request]);
-  const readyIds = uploads.filter(row => row.status === 'ready').map(row => row.id).slice(0, 40);
-  const listExtractions = useManyExtractions(session, readyIds);
   useEffect(() => { onUploadsChange?.(uploads); }, [uploads]);
   const resultTitle = useRef<HTMLHeadingElement>(null);
   const uploadsTitle = useRef<HTMLHeadingElement>(null);
 
   function revealResult() {
-    if (window.matchMedia('(max-width: 690px)').matches) resultTitle.current?.focus();
+    resultTitle.current?.focus();
   }
 
   useEffect(() => {
@@ -117,22 +113,24 @@ export function Workspace({ session, onOpenPlaybook, openRequest, onUploadsChang
     <main className="shell workspace"
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true); } }}
       onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }}
-      onDrop={event => { event.preventDefault(); setDragging(false); const file = event.dataTransfer.files?.[0]; if (file) setDropped({ file, at: Date.now() }); }}>
+      onDrop={event => { event.preventDefault(); setDragging(false); const file = event.dataTransfer.files?.[0]; if (file) { setSelected(undefined); setDropped({ file, at: Date.now() }); } }}>
       {dragging && <div className="drop-overlay" aria-hidden="true"><UploadCloud size={28} /> Drop to add contract</div>}
-      <div className="workspace-grid" data-collapsed={collapsed || undefined}>
+      <div className="workspace-grid focused-workspace" data-collapsed={collapsed || undefined}>
         <section className="upload-list" aria-labelledby="uploads-title" hidden={collapsed}>
           <div className="upload-list-head">
-            <h2 id="uploads-title" tabIndex={-1} ref={uploadsTitle}>Contracts</h2>
+            <div><h2 id="uploads-title" tabIndex={-1} ref={uploadsTitle}>Your contracts</h2><p>Choose a contract to review its findings and source.</p></div>
             {uploads.length > 0 && <span>{uploads.length}</span>}
           </div>
           <UploadDropzone sending={sending} error={uploadError} onUpload={upload} incoming={dropped} />
+          {uploads.length > 0 && <label className="library-search"><Search size={18} aria-hidden="true" /><span className="visually-hidden">Search contracts</span><input type="search" placeholder="Search contracts" value={query} onChange={event => setQuery(event.target.value)} /></label>}
           {initial && <p role="status">Loading uploads…</p>}
           {listError && <><p role="alert" className="error">{listError}</p><button className="button secondary" onClick={() => void load()}>Reload uploads</button></>}
-          {!initial && !listError && !uploads.length && <p className="upload-empty">Uploaded contracts appear here.</p>}
+          {!initial && !listError && !uploads.length && <div className="library-empty"><h3>Add your first contract</h3><p>Upload a PDF or scan to find key terms, check the evidence, and prepare your review.</p></div>}
+          {uploads.length > 0 && !visibleUploads.length && <p role="status" className="library-empty">No contracts match “{query}”. <button className="text-button" onClick={() => setQuery('')}>Clear search</button></p>}
           <ul>
-            {uploads.map(item => (
+            {visibleUploads.map(item => (
               <li key={item.id}>
-                <UploadCard upload={item} selected={selected === item.id} targets={uploadTargets(listExtractions.get(item.id)?.results)} onOpen={() => {
+                <UploadCard upload={item} selected={selected === item.id} onOpen={() => {
                   if (selected === item.id) revealResult();
                   setSelected(item.id);
                 }} />
@@ -141,24 +139,20 @@ export function Workspace({ session, onOpenPlaybook, openRequest, onUploadsChang
           </ul>
           {more && <button className="button secondary" disabled={listing} onClick={() => void load(uploads.at(-1)?.id)}>{listing ? 'Loading…' : 'Load older uploads'}</button>}
         </section>
-        {selected === undefined ? (
-          <WorkspaceOverview session={session} uploads={uploads} onOpen={setSelected} onOpenPlaybook={onOpenPlaybook} />
-        ) : <Results key={selected} id={selected} session={session} focus={focus?.uploadId === selected ? focus : undefined}
-          headerStart={<button type="button" className="list-toggle" aria-expanded={!collapsed} onClick={() => setListOpen(value => !value)}
-            title={collapsed ? 'Show the contract list' : 'Hide the contract list to give the reader more room'}>
-            {collapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
-            <span className="visually-hidden">{collapsed ? 'Show contract list' : 'Hide contract list'}</span>
+        {selected !== undefined && <Results key={selected} id={selected} session={session} focus={focus?.uploadId === selected ? focus : undefined}
+          headerStart={<button type="button" className="button secondary library-back" onClick={() => { setSelected(undefined); requestAnimationFrame(() => uploadsTitle.current?.focus()); }}>
+            <ArrowLeft size={16} aria-hidden="true" /> All contracts
           </button>}
-          headerEnd={collapsed && uploads.length > 1 ? <label className="contract-switch"><span className="visually-hidden">Switch contract</span>
+          headerEnd={uploads.length > 1 ? <label className="contract-switch"><span className="visually-hidden">Switch contract</span>
             <select value={selected} onChange={event => setSelected(Number(event.target.value))}>
               {uploads.map(row => <option key={row.id} value={row.id}>{row.fileName}{row.status === 'ready' ? '' : ` · ${labels[row.status].toLowerCase()}`}</option>)}
-            </select></label> : null} onOpenPlaybook={onOpenPlaybook} onUpload={updateUpload} titleRef={resultTitle} backToUploads={() => uploadsTitle.current?.focus()} />}
+            </select></label> : null} onOpenPlaybook={onOpenPlaybook} onUpload={updateUpload} titleRef={resultTitle} />}
       </div>
     </main>
   );
 }
 
-function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlaybook, focus, headerStart, headerEnd }: {
+function Results({ id, session, onUpload, titleRef, onOpenPlaybook, focus, headerStart, headerEnd }: {
   id: number;
   headerStart?: React.ReactNode;
   headerEnd?: React.ReactNode;
@@ -167,7 +161,6 @@ function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlayboo
   onOpenPlaybook?: () => void;
   onUpload: (upload: Upload) => void;
   titleRef: React.Ref<HTMLHeadingElement>;
-  backToUploads: () => void;
 }) {
   const [result, setResult] = useState<UploadDetail>();
   const [error, setError] = useState('');
@@ -226,7 +219,6 @@ function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlayboo
           <p className="result-status" role="status" data-status={result.upload.status}>{labels[result.upload.status]}</p>}
         {headerEnd}
       </div>
-      {!headerEnd && <button className="text-button back-to-uploads" onClick={backToUploads}>Back to uploads</button>}
       {error && <><p role="alert" className="error">{error}</p><button className="button secondary" onClick={() => { setError(''); setAttempt(value => value + 1); }}>Try again</button></>}
       {!result && !error && <p role="status">Loading upload…</p>}
       {result && <>

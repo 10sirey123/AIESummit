@@ -24,9 +24,13 @@ try {
   const pages = [{id: 8, number: 4, markdown: 'Only this page', analysisStatus:'not_started', sections:[], error:null}];
   const viewer = renderToStaticMarkup(createElement(DocumentViewer, { initialMode: 'review', documents: [doc], pages, session: {}, uploadId: 7 }));
   assert.match(viewer, /No section analysis yet/);
-  assert.match(viewer, /Original PDF/);
+  assert.match(viewer, /Contract areas/);
+  assert.doesNotMatch(viewer, /reading-document/);
+  const source = renderToStaticMarkup(createElement(DocumentViewer, { initialMode: 'review', initialArea: 'source', documents: [doc], pages, session: {}, uploadId: 7 }));
+  assert.match(source, /Original PDF/);
+  assert.match(source, /Source page navigation/);
+  assert.doesNotMatch(source, /class="review-rail/);
   assert.match(viewer, /role="tabpanel"/);
-  assert.match(viewer, /Source page navigation/);
   const completed = renderToStaticMarkup(createElement(DocumentViewer, { initialMode: 'review',documents:[doc], pages:[{...pages[0],analysisStatus:'ready', sections:[{heading:'Term',classification:'renewal',summary:'A factual summary',quote:'Evidence from this page'}]}],session:{},uploadId:7}));
   assert.match(completed,/A factual summary/);
   assert.match(completed,/Evidence from this page/);

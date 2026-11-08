@@ -92,6 +92,10 @@ Preserve the distinction between `LLMPrompt.DocumentID`, which identifies a poly
 
 Keep calls to the framework base context when overriding persistence. `AIESummitDb.SaveChangesAsync` normalizes nullable prompt strings and then calls `base.SaveChangesAsync`. Bypassing that base path can skip the framework's publishing behavior.
 
+## Focused React workspace
+
+The main React app uses a searchable full-width contract library and four review tabs: Findings, Source, Summary and Key dates. Findings and Source each show at most two adjacent work areas; mobile content stacks without a fixed sheet. Evidence links retain the selected finding and open its source page. Summary counts page-section decisions separately from extracted-term confirmations. See `web/AGENTS.md` for current behavior; earlier descriptions of a simultaneous three-column desk are superseded.
+
 ## HTTP and browser boundaries
 
 All `/api/v1` routes require an authenticated principal with `sub`. Lists filter by owner before projection. Individual upload requests return 404 for a different owner. Image reads require both the requested upload relationship and that upload's owner. A valid Firebase token alone does not authorize reading an arbitrary row.

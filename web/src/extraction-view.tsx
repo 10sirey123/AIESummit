@@ -176,10 +176,11 @@ function catalogTargets(catalog: ExtractionType[] | undefined, selections: Docum
 }
 
 /** Right panel: one finding, the reviewer's decision, its structured values and exact source evidence. */
-export function ExtractionDetail({ session, uploadId, item, selection, documents, activeEvidence, located, onEvidence, onClose, decision, onDecide, flagRequest }: {
+export function ExtractionDetail({ session, uploadId, item, selection, documents, activeEvidence, located, onEvidence, onClose, decision, onDecide, flagRequest, sourceVisible = true }: {
   session: Session; uploadId: number; item: SelectedFinding; selection?: DocumentSelection; documents: DocumentResult[];
   activeEvidence?: number; located?: boolean; onEvidence: (evidence: ExtractionEvidence, index: number) => void; onClose: () => void;
   decision?: Decision; onDecide: (decision?: Decision) => void; flagRequest?: number;
+  sourceVisible?: boolean;
 }) {
   const meta = targetMeta(item.tag);
   const { finding } = item;
@@ -216,7 +217,7 @@ export function ExtractionDetail({ session, uploadId, item, selection, documents
       <p className="decision-note">Your decisions are saved in this browser.</p>
     </div>
 
-    <div className="detail-block">
+    {!(rows.length === 1 && rows[0].text === headline(item.tag, finding)) && <div className="detail-block">
       <p className="detail-label">Extracted values</p>
       {finding.schemaVersion !== 1 && <p className="detail-muted">Value schema v{finding.schemaVersion} is not recognised by this client; values are shown as raw data.</p>}
       {rows.length ? <dl className="value-table">
@@ -230,7 +231,7 @@ export function ExtractionDetail({ session, uploadId, item, selection, documents
           </div>;
         })}
       </dl> : <p className="detail-muted">Clause found; it states no structured values.</p>}
-    </div>
+    </div>}
 
     <div className="detail-block">
       <p className="detail-label">Source evidence</p>
@@ -244,9 +245,10 @@ export function ExtractionDetail({ session, uploadId, item, selection, documents
                 <span className="match-badge" data-exact={exact || undefined}>{exact ? 'Exact quote' : `Close match${evidence.matchScore !== null ? ` · ${Math.round(evidence.matchScore * 100)}% of words` : ''}`}</span>
               </span>
               <blockquote>{(text => text.length > 420 ? `${text.slice(0, 420)}…` : text)(cleanQuote(evidence.quote))}</blockquote>
+              {!sourceVisible && <span className="evidence-open">View source on page {evidence.page} <ChevronRight size={14} aria-hidden="true" /></span>}
             </button>
             {activeEvidence === index && <div className="evidence-checks" role="status">
-              <p>{located === undefined ? 'Finding it on the page…' : located ? `Highlighted on page ${evidence.page}` : 'Shown on the page; the passage could not be highlighted in this view.'}</p>
+              {sourceVisible && <p>{located === undefined ? 'Finding it on the page…' : located ? `Highlighted on page ${evidence.page}` : 'Shown on the page; the passage could not be highlighted in this view.'}</p>}
               {verify && <p data-ok={verify.ok}>{verify.ok ? <Check size={12} aria-hidden="true" /> : <AlertTriangle size={12} aria-hidden="true" />} {verify.text}</p>}
               {!exact && <p className="evidence-explain">The extracted wording differed slightly from the page, so the passage shown is the closest one on that page. Read it before relying on the value.</p>}
             </div>}
