@@ -3,7 +3,7 @@
 SubQ Preview is available through native BlueShift LLMSteps with its own persisted connection. See [SubQ configuration and verification](docs/subq-analysis.md) for key import, low reasoning and model-specific checks.
 
 
-The local [self-improvement workbench](docs/self-improvement.md) is available with `./scripts/start-improvement.ps1` at `http://127.0.0.1:18110`. It uses Muse/Codex to propose extraction-step changes, waits for approval, implements only the workflow graph in an isolated worktree, and evaluates through the current harness. Compare versioned expected/found targets per document, token usage, cached nodes and complete graphs without recreating the database.
+The local [self-improvement workbench](docs/self-improvement.md) is available with `./scripts/start-improvement.ps1` at `http://127.0.0.1:18110`. It uses Muse/Codex to propose extraction-step changes, waits for approval, implements only the workflow graph in an isolated worktree, and evaluates through the current harness. Compare versioned expected/found targets per document, token usage, cached nodes and complete graphs without recreating the database. The UI separates attempt review, progress, document coverage and run history, with status-labeled attempt selection and cancellable proposal drafts.
 
 Meta Muse Wonder is available through the same native Blueshift page-section LLMStep. See [Meta configuration and verification](docs/meta-analysis.md) for the bundled version, explicit `.env`-to-APIInfo import and the model-specific acceptance check.
 
