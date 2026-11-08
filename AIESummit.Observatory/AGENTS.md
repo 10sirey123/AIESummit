@@ -19,3 +19,5 @@ Homepage evolution now uses one chronological chart of validated expected items 
 Historical baseline run configuration may contain `sourceCommitEstimate` with sha, basis, certainty and recordedAt. This additive provenance backfill does not alter scores or graph records. The homepage uses it only after explicit commit metadata, and labels estimates with ≈. Original pre-backfill records are retained under ignored artifacts/commit-backfill.
 
 Coverage comparison has Show previous / Show current toggles. Previous selects the immediately earlier scored evaluation with the same document count, across manifests. Cells match sampleId and exact expectationId; missing matches remain not run. Current document order is preserved. Header labels identify which run is displayed; summary metrics continue to describe the selected current run.
+
+A separate Segmentation benchmark tab displays the user-supplied November 7, 2026 fixed SubQ Preview/Muse Wonder sample, including timings, tokens, per-input medians, boundary limitations and supplied pricing. It is static and separate from MongoDB extraction scoring; no Preview price is inferred from Snap. No source URLs were supplied.
