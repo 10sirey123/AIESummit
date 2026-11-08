@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { UploadCloud } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, UploadCloud } from 'lucide-react';
 import { errorMessage, type Session, type Upload, type UploadDetail } from './api';
 import { DocumentViewer } from './document-viewer';
 import { countPdfPages } from './pdf-page';
@@ -29,6 +29,10 @@ export function Workspace({ session, onOpenPlaybook, openRequest, onUploadsChang
   const [dropped, setDropped] = useState<{ file: File; at: number }>();
   const [uploadError, setUploadError] = useState('');
   const [focus, setFocus] = useState<OpenRequest>();
+  // While a contract is open the list collapses so the reader gets the full width; the choice is remembered.
+  const [listOpen, setListOpen] = useState(() => { try { return localStorage.getItem('clauselens-list-open') === 'true'; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem('clauselens-list-open', String(listOpen)); } catch { /* keep in memory */ } }, [listOpen]);
+  const collapsed = selected !== undefined && !listOpen;
   useEffect(() => { if (openRequest) { setSelected(openRequest.uploadId); setFocus(openRequest); } }, [openRequest?.request]);
   const readyIds = uploads.filter(row => row.status === 'ready').map(row => row.id).slice(0, 40);
   const listExtractions = useManyExtractions(session, readyIds);
@@ -115,8 +119,8 @@ export function Workspace({ session, onOpenPlaybook, openRequest, onUploadsChang
       onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }}
       onDrop={event => { event.preventDefault(); setDragging(false); const file = event.dataTransfer.files?.[0]; if (file) setDropped({ file, at: Date.now() }); }}>
       {dragging && <div className="drop-overlay" aria-hidden="true"><UploadCloud size={28} /> Drop to add contract</div>}
-      <div className="workspace-grid">
-        <section className="upload-list" aria-labelledby="uploads-title">
+      <div className="workspace-grid" data-collapsed={collapsed || undefined}>
+        <section className="upload-list" aria-labelledby="uploads-title" hidden={collapsed}>
           <div className="upload-list-head">
             <h2 id="uploads-title" tabIndex={-1} ref={uploadsTitle}>Contracts</h2>
             {uploads.length > 0 && <span>{uploads.length}</span>}
@@ -139,14 +143,25 @@ export function Workspace({ session, onOpenPlaybook, openRequest, onUploadsChang
         </section>
         {selected === undefined ? (
           <WorkspaceOverview session={session} uploads={uploads} onOpen={setSelected} onOpenPlaybook={onOpenPlaybook} />
-        ) : <Results key={selected} id={selected} session={session} focus={focus?.uploadId === selected ? focus : undefined} onOpenPlaybook={onOpenPlaybook} onUpload={updateUpload} titleRef={resultTitle} backToUploads={() => uploadsTitle.current?.focus()} />}
+        ) : <Results key={selected} id={selected} session={session} focus={focus?.uploadId === selected ? focus : undefined}
+          headerStart={<button type="button" className="list-toggle" aria-expanded={!collapsed} onClick={() => setListOpen(value => !value)}
+            title={collapsed ? 'Show the contract list' : 'Hide the contract list to give the reader more room'}>
+            {collapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+            <span className="visually-hidden">{collapsed ? 'Show contract list' : 'Hide contract list'}</span>
+          </button>}
+          headerEnd={collapsed && uploads.length > 1 ? <label className="contract-switch"><span className="visually-hidden">Switch contract</span>
+            <select value={selected} onChange={event => setSelected(Number(event.target.value))}>
+              {uploads.map(row => <option key={row.id} value={row.id}>{row.fileName}{row.status === 'ready' ? '' : ` · ${labels[row.status].toLowerCase()}`}</option>)}
+            </select></label> : null} onOpenPlaybook={onOpenPlaybook} onUpload={updateUpload} titleRef={resultTitle} backToUploads={() => uploadsTitle.current?.focus()} />}
       </div>
     </main>
   );
 }
 
-function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlaybook, focus }: {
+function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlaybook, focus, headerStart, headerEnd }: {
   id: number;
+  headerStart?: React.ReactNode;
+  headerEnd?: React.ReactNode;
   focus?: OpenRequest;
   session: Session;
   onOpenPlaybook?: () => void;
@@ -204,8 +219,14 @@ function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlayboo
 
   return (
     <section className="results" aria-labelledby="result-title">
-      <h2 id="result-title" tabIndex={-1} ref={titleRef}>{result?.upload.fileName ?? 'Document results'}</h2>
-      <button className="text-button back-to-uploads" onClick={backToUploads}>Back to uploads</button>
+      <div className="results-head">
+        {headerStart}
+        <h2 id="result-title" tabIndex={-1} ref={titleRef}>{result?.upload.fileName ?? 'Document results'}</h2>
+        {result && !isProcessing(result) && result.upload.status !== 'failed' && !watched &&
+          <p className="result-status" role="status" data-status={result.upload.status}>{labels[result.upload.status]}</p>}
+        {headerEnd}
+      </div>
+      {!headerEnd && <button className="text-button back-to-uploads" onClick={backToUploads}>Back to uploads</button>}
       {error && <><p role="alert" className="error">{error}</p><button className="button secondary" onClick={() => { setError(''); setAttempt(value => value + 1); }}>Try again</button></>}
       {!result && !error && <p role="status">Loading upload…</p>}
       {result && <>
@@ -213,7 +234,7 @@ function Results({ id, session, onUpload, titleRef, backToUploads, onOpenPlayboo
           ? (isProcessing(result) || result.upload.status === 'failed'
             ? <ProcessingPanel detail={result} sourcePages={sourcePages} compact={result.pages.length > 0} onOpenPage={(page, quote) => setFocusPage(previous => ({ page, quote, request: (previous?.request ?? 0) + 1 }))} />
             : <ProcessingSummary detail={result} />)
-          : <p className="result-status" role="status" data-status={result.upload.status}>{labels[result.upload.status]}</p>}
+          : null}
         {result.upload.error && <p className="error">{result.upload.error}</p>}
         {result.upload.status === 'ready' && !result.documents.length && <p>No documents were returned for this upload.</p>}
         {result.pages.length > 0 && <DocumentViewer documents={result.documents} pages={result.pages} session={session} uploadId={id} focusPage={focusPage} fileName={result.upload.fileName} onOpenPlaybook={onOpenPlaybook} extractions={extractions} catalog={catalog} onAnalysisQueued={() => setAttempt(value => value + 1)} />}

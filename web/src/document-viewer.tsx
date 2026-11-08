@@ -6,10 +6,10 @@ import { errorMessage, type DocumentResult, type ExtractionEvidence, type Extrac
 import { PdfPage } from './pdf-page';
 import { rehypeEvidence, rehypeTerms } from './highlight';
 import { clauseContext, clauseLinks, glossary, sectionIndex, termsIn, type ClauseLink, type Term } from './contract-links';
-import { FindingDetail, LinkedClausePanel, orderFindings, ReviewRail, reviewFindings, useDecisions, type ReviewFinding } from './review-desk';
+import { FindingDetail, LinkedClausePanel, orderFindings, ReviewRail, reviewFindings, useDecisions, type Decision, type ReviewFinding } from './review-desk';
 import { evaluate, useActiveRules } from './playbook-store';
 import { KeyDates, NegotiationSummary } from './summary-view';
-import { ExtractionDetail, ExtractionHint, ExtractionRail, ExtractionStatus, flattenFindings, type SelectedFinding } from './extraction-view';
+import { cleanQuote, ExtractionDetail, ExtractionHint, ExtractionRail, ExtractionStatus, flattenFindings, type SelectedFinding } from './extraction-view';
 import { orderedTargets, selectAnalyses } from './extraction-meta';
 import type { UploadExtractions } from './extraction-store';
 
@@ -40,8 +40,9 @@ export function MarkdownBody({ markdown, highlight, extra, terms, onTerm }: {
       return onTerm && term ? <button type="button" className="defined-term" title="Show definition" onClick={() => onTerm(term)}>{children}</button> : <dfn>{children}</dfn>;
     },
     h1: ({ children }) => <h4>{children}</h4>,
-    h2: ({ children }) => <h5>{children}</h5>,
-    h3: ({ children }) => <h6>{children}</h6>,
+    h2: ({ children }) => <h4>{children}</h4>,
+    h3: ({ children }) => <h5>{children}</h5>,
+    h4: ({ children }) => <h6>{children}</h6>,
     a: ({ href, children }) => href ? <a href={href} target="_blank" rel="noopener noreferrer">{children}</a> : <span>{children}</span>,
     img: ({ alt }) => <span className="markdown-image-reference">Image reference: {alt || 'Untitled image'}</span>,
     table: ({ children }) => <div className="markdown-table" role="region" aria-label="Document table" tabIndex={0}><table>{children}</table></div>,
@@ -69,6 +70,21 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
   const [xSelected, setXSelected] = useState<string>();
   const [xEvidence, setXEvidence] = useState<number>();
   const xItem = extracted.find(item => item.key === xSelected);
+  const [xFlag, setXFlag] = useState(0);
+  // On wide screens open the first extracted term so the reader starts on evidence, not an empty panel.
+  const preselected = useRef(false);
+  useEffect(() => {
+    if (preselected.current || mode !== 'extractions' || xSelected || !extracted.length || !pages.length) return;
+    preselected.current = true;
+    if (window.matchMedia('(min-width: 1001px)').matches) showExtraction(extracted.find(item => !decisions[item.key]) ?? extracted[0]);
+  }, [extracted.length, pages.length, mode]);
+  function decideExtraction(item: SelectedFinding, decision?: Decision) {
+    decide(item.key, decision);
+    if (!decision) return;
+    const at = extracted.findIndex(entry => entry.key === item.key);
+    const next = [...extracted.slice(at + 1), ...extracted.slice(0, at)].find(entry => entry.key !== item.key && !decisions[entry.key]);
+    if (next) showExtraction(next);
+  }
   const [bulkNotice, setBulkNotice] = useState<{ text: string; undo: () => void }>();
   const findings = reviewFindings(pages);
   const { playbook: activePlaybook, rules } = useActiveRules();
@@ -93,7 +109,7 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
     if (!evidence) return;
     setPageNumber(evidence.page);
     setLocated(undefined);
-    setEvidence({ page: evidence.page, key: `${item.key}-${index}`, quote: evidence.quote });
+    setEvidence({ page: evidence.page, key: `${item.key}-${index}`, quote: cleanQuote(evidence.quote) || evidence.quote });
   }
   function step(by: number) {
     if (mode === 'extractions') {
@@ -149,7 +165,7 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
   const linkViewLinks = useMemo(() => linkView ? clauseLinks(pages, index, linkView.page, linkView.quote) : undefined, [linkView?.key, pages, index]);
   const termsOnPage = useMemo(() => page ? termsIn(page.markdown, definedTerms).map(item => item.term) : [], [page?.number, page?.markdown, definedTerms]);
   const tagExtras = mode === 'extractions'
-    ? (xItem && page ? xItem.finding.evidence.filter((item, index) => item.page === page.number && index !== xEvidence).map(item => item.quote) : [])
+    ? (xItem && page ? xItem.finding.evidence.filter((item, index) => item.page === page.number && index !== xEvidence).map(item => cleanQuote(item.quote)) : [])
     : tag && page ? findings.filter(item => item.type === tag && item.page === page.number && item.key !== shownEvidence?.key).map(item => item.quote) : [];
   useEffect(() => { if (reading.current) reading.current.scrollTop = 0; }, [page?.number, view]);
   // In the Markdown view, bring the highlighted evidence into view and report whether it was found.
@@ -194,6 +210,8 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
     const key = event.key.toLowerCase();
     if (key === 'j') step(1);
     else if (key === 'k') step(-1);
+    else if (mode === 'extractions' && xItem && key === 'a' && !decisions[xItem.key]) decideExtraction(xItem, { decision: 'accepted' });
+    else if (mode === 'extractions' && xItem && key === 'r' && !decisions[xItem.key]) setXFlag(value => value + 1);
     else if (mode !== 'review') return;
     else if (key === 'a' && selected && !decisions[selected.key]) decide(selected.key, { decision: 'accepted' });
     else if (key === 'r' && selected && !decisions[selected.key]) setRejectRequest(value => value + 1);
@@ -216,8 +234,12 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
     finally { setQueuing(false); }
   }
 
-  return <div className="document-viewer" ref={root} onKeyDown={onDeskKey}>
+  return <div className="document-viewer" ref={root} onKeyDown={onDeskKey} tabIndex={-1}>
     <div className="desk-toolbar">
+      <label className="mode-select"><span className="visually-hidden">Review mode</span>
+        <select value={mode} onChange={event => setMode(event.target.value as typeof mode)}>
+          <option value="extractions">Extracted terms</option><option value="review">Page review</option><option value="summary">Negotiation summary</option><option value="dates">Key dates</option>
+        </select></label>
       <div className="mode-switch" role="tablist" aria-label="Review mode">
         {([['extractions', 'Extracted terms'], ['review', 'Page review'], ['summary', 'Negotiation summary'], ['dates', 'Key dates']] as const).map(([value, label]) =>
           <button key={value} type="button" role="tab" aria-selected={mode === value} onClick={() => setMode(value)}>{label}</button>)}
@@ -264,9 +286,11 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
     : mode === 'dates' ? <KeyDates fileName={fileName ?? doc?.title ?? 'Contract'} pages={pages} onOpen={(pageNumber, sentence) => {
       setMode('review'); setPageNumber(pageNumber); setLocated(undefined); setEvidence({ page: pageNumber, key: `date-${Date.now()}`, quote: sentence });
     }} />
-    : <>{mode === 'extractions' && <ExtractionStatus session={session} uploadId={uploadId} state={extractions} documents={documents} />}
+    : <>
     <div className="reader-grid" data-annotations={annotations}>
-      {mode === 'extractions' ? <ExtractionRail catalog={catalog} selections={selections} documents={documents} selected={xSelected} onSelect={item => showExtraction(item)} />
+      {mode === 'extractions' ? <ExtractionRail catalog={catalog} selections={selections} documents={documents} selected={xSelected} onSelect={item => showExtraction(item)}
+        status={<ExtractionStatus session={session} uploadId={uploadId} state={extractions} documents={documents} />}
+        decisions={decisions} onOpenSummary={() => setMode('summary')} />
       : <ReviewRail findings={findings} decisions={decisions} selected={selected?.key} tag={tag} totalPages={pages.length} currentPage={page.number}
         analyzing={pages.some(item => item.analysisStatus === 'analyzing')} tierOf={tierOf} playbookName={`${activePlaybook.name} v${activePlaybook.published.version}`} onOpenPlaybook={onOpenPlaybook} onSelect={selectFinding} onTag={next => {
           setTag(next);
@@ -305,10 +329,11 @@ export function DocumentViewer({ documents, pages, session, uploadId, onAnalysis
           <h4>Extracted images on this page</h4><div className="document-actions">{doc.images.filter(image => image.page === page.number).map(image => <ExtractedImage key={image.id} session={session} uploadId={uploadId} image={image} />)}</div>
         </section>}
       </article>
-      {mode === 'extractions' ? <aside className="annotation-panel" id={`annotations-${uploadId}`} aria-label="Extracted term" hidden={!annotations}>
+      {mode === 'extractions' ? <aside className="annotation-panel" id={`annotations-${uploadId}`} aria-label="Extracted term" hidden={!annotations} data-sheet={xItem ? 'open' : undefined}>
         {xItem ? <ExtractionDetail session={session} uploadId={uploadId} item={xItem} selection={selections.find(item => item.documentId === xItem.documentId)} documents={documents}
           activeEvidence={xEvidence} located={shownEvidence?.key === `${xItem.key}-${xEvidence}` ? located : undefined}
-          onEvidence={(_, index) => showExtraction(xItem, index)} onClose={() => { setXSelected(undefined); setEvidence(undefined); }} />
+          onEvidence={(_, index) => showExtraction(xItem, index)} onClose={() => { setXSelected(undefined); setEvidence(undefined); }}
+          decision={decisions[xItem.key]} onDecide={decision => decideExtraction(xItem, decision)} flagRequest={xFlag} />
           : <ExtractionHint count={extracted.length} />}
       </aside>
       : selected && selected.page === page.number ? <aside className="annotation-panel" id={`annotations-${uploadId}`} aria-label="Selected finding" hidden={!annotations}>

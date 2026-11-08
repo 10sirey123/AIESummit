@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Maximize2, MoveHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { joinPieces, locate, spansByOwner } from './highlight';
@@ -15,8 +16,10 @@ export async function countPdfPages(blob: Blob) {
 type Box = { left: number; top: number; width: number; height: number; secondary?: boolean };
 type TextItem = { str: string; transform: number[]; width: number; height: number; hasEOL?: boolean };
 
-// PDF.js paints exactly one original page into one canvas, with fit-page sizing.
+// PDF.js paints exactly one original page into one canvas. With evidence selected it fits the page width and
+// scrolls to the highlight so the clause is readable; otherwise it fits the whole page. The reader can zoom.
 // An optional evidence quote is located in the page's text layer and outlined over the canvas.
+type Fit = 'auto' | 'page' | 'width';
 export function PdfPage({ blob, pageNumber, highlight, secondary, onHighlight }: {
   blob: Blob; pageNumber: number; highlight?: string; secondary?: string[]; onHighlight?: (found: boolean) => void;
 }) {
@@ -29,6 +32,9 @@ export function PdfPage({ blob, pageNumber, highlight, secondary, onHighlight }:
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [error, setError] = useState('');
   const [rendering, setRendering] = useState(true);
+  const [fit, setFit] = useState<Fit>('auto');
+  const [zoom, setZoom] = useState(1);
+  const mode = fit === 'auto' ? (highlight ? 'width' : 'page') : fit;
   const reportHighlight = useRef(onHighlight);
   reportHighlight.current = onHighlight;
 
@@ -72,7 +78,8 @@ export function PdfPage({ blob, pageNumber, highlight, secondary, onHighlight }:
         const page = await pdf.getPage(pageNumber);
         if (disposed) return;
         const natural = page.getViewport({ scale: 1 });
-        const scale = Math.max(.01, Math.min((size.width - 24) / natural.width, (size.height - 24) / natural.height));
+        const widthFit = (size.width - 24) / natural.width;
+        const scale = Math.max(.01, (mode === 'width' ? widthFit : Math.min(widthFit, (size.height - 24) / natural.height)) * zoom);
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
         const viewport = page.getViewport({ scale: scale * ratio });
         target.width = Math.ceil(viewport.width); target.height = Math.ceil(viewport.height);
@@ -106,19 +113,35 @@ export function PdfPage({ blob, pageNumber, highlight, secondary, onHighlight }:
         };
         const primary = highlight ? boxesFor(highlight, false) : [];
         setBoxes([...others.filter(quote => quote !== highlight).flatMap(quote => boxesFor(quote, true)), ...primary]);
+        // Bring the clause into view: a third of the way down the stage, horizontally centred when zoomed.
+        if (primary.length && stage.current) {
+          const top = Math.min(...primary.map(box => box.top)), left = Math.min(...primary.map(box => box.left));
+          stage.current.scrollTop = Math.max(0, top + 12 - stage.current.clientHeight / 3);
+          if (zoom > 1) stage.current.scrollLeft = Math.max(0, left - 24);
+        }
         if (highlight) reportHighlight.current?.(primary.length > 0);
       } catch {
         if (!disposed) { setError('This original PDF page could not be rendered. Try another page or view its Markdown.'); setRendering(false); }
       }
     })();
     return () => { disposed = true; task?.cancel(); };
-  }, [pdf, pageNumber, size, highlight, secondaryKey]);
+  }, [pdf, pageNumber, size, highlight, secondaryKey, mode, zoom]);
 
-  return <div className="pdf-stage" ref={stage} aria-busy={!error && rendering}>
+  const step = (by: number) => setZoom(value => Math.min(3, Math.max(.5, Math.round((value + by) * 4) / 4)));
+  return <div className="pdf-viewer">
+    <div className="pdf-tools" role="toolbar" aria-label="Page zoom">
+      <button type="button" aria-pressed={mode === 'page' && zoom === 1} title="Fit the whole page" onClick={() => { setFit('page'); setZoom(1); }}><Maximize2 size={14} aria-hidden="true" /><span className="visually-hidden">Fit page</span></button>
+      <button type="button" aria-pressed={mode === 'width' && zoom === 1} title="Fit the page width" onClick={() => { setFit('width'); setZoom(1); }}><MoveHorizontal size={14} aria-hidden="true" /><span className="visually-hidden">Fit width</span></button>
+      <button type="button" title="Zoom out" disabled={zoom <= .5} onClick={() => step(-.25)}><ZoomOut size={14} aria-hidden="true" /><span className="visually-hidden">Zoom out</span></button>
+      <span className="pdf-zoom" aria-live="polite">{Math.round(zoom * 100)}%</span>
+      <button type="button" title="Zoom in" disabled={zoom >= 3} onClick={() => step(.25)}><ZoomIn size={14} aria-hidden="true" /><span className="visually-hidden">Zoom in</span></button>
+    </div>
+  <div className="pdf-stage" ref={stage} aria-busy={!error && rendering} data-fit={mode} data-zoomed={zoom > 1 || undefined}>
     {!error && <div className="pdf-canvas-wrap" style={{ width: frame.width || undefined, height: frame.height || undefined }}>
       <canvas ref={canvas} role="img" aria-label={`Original PDF page ${pageNumber}`} style={{ visibility: rendering ? 'hidden' : 'visible' }} />
       {!rendering && boxes.map((box, index) => <span key={index} className="pdf-evidence-box" data-secondary={box.secondary || undefined} aria-hidden="true" style={{ left: box.left, top: box.top, width: box.width, height: box.height }} />)}
     </div>}
     {error ? <p className="error" role="alert">{error}</p> : rendering && <p className="pdf-loading" role="status">Rendering page {pageNumber}…</p>}
+  </div>
   </div>;
 }

@@ -1,25 +1,31 @@
 import { Ban, BellRing, CalendarCheck, CalendarX, ClipboardCheck, DoorOpen, RefreshCw, ShieldAlert, ShieldCheck, Tag, Umbrella, type LucideIcon } from 'lucide-react';
+import { evaluate, tiers, type Evaluation, type Rule, type Tier } from './playbook-store';
 import type { DocumentAnalysis, ExtractionFinding, ExtractionResults, ExtractionType, ExtractionValues, TargetOutcome } from './api';
 
-/** Visual identity of each extraction target: the same icon and color everywhere (rail, contract list, compare matrix). */
+/**
+ * Visual identity of each extraction target: its icon and name, the same everywhere (rail, contract list, compare).
+ * Colour is deliberately neutral graphite for every type (Modern Dark: colour is a small signal, not a category key);
+ * state (found / not found / selected) is carried by brightness and the single selection accent in CSS.
+ */
+const TYPE_TONE = '#c9ced3';
 export type TargetMeta = { tag: string; name: string; short: string; icon: LucideIcon; color: string; order: number; primary: string[] };
 
 const known: Omit<TargetMeta, 'order'>[] = [
-  { tag: 'agreement-effective-date', name: 'Effective date', short: 'Effective', icon: CalendarCheck, color: '#5ec8ff', primary: ['date', 'dateExpression'] },
-  { tag: 'agreement-expiration', name: 'Initial expiration', short: 'Expiration', icon: CalendarX, color: '#ff8a65', primary: ['date', 'dateExpression', 'term'] },
-  { tag: 'renewal-term', name: 'Renewal mechanism', short: 'Renewal', icon: RefreshCw, color: '#66d9a0', primary: ['mechanism', 'term'] },
-  { tag: 'non-renewal-notice', name: 'Non-renewal notice', short: 'Notice', icon: BellRing, color: '#f5c451', primary: ['term', 'conditions'] },
-  { tag: 'termination-convenience', name: 'Termination for convenience', short: 'Termination', icon: DoorOpen, color: '#a78bfa', primary: ['term', 'mechanism'] },
-  { tag: 'non-compete', name: 'Non-compete', short: 'Non-compete', icon: Ban, color: '#f472b6', primary: ['term', 'geography', 'activity'] },
-  { tag: 'liability-cap', name: 'Liability cap', short: 'Liability cap', icon: ShieldCheck, color: '#60a5fa', primary: ['money', 'formula'] },
-  { tag: 'uncapped-liability', name: 'Uncapped liability', short: 'Uncapped', icon: ShieldAlert, color: '#f87171', primary: ['activity', 'exclusions'] },
-  { tag: 'audit-rights', name: 'Audit rights', short: 'Audit', icon: ClipboardCheck, color: '#c6e05a', primary: ['activity', 'term', 'mechanism'] },
-  { tag: 'insurance-obligations', name: 'Insurance obligations', short: 'Insurance', icon: Umbrella, color: '#2dd4bf', primary: ['money', 'activity'] },
+  { tag: 'agreement-effective-date', name: 'Effective date', short: 'Effective', icon: CalendarCheck, color: TYPE_TONE, primary: ['date', 'dateExpression'] },
+  { tag: 'agreement-expiration', name: 'Initial expiration', short: 'Expiration', icon: CalendarX, color: TYPE_TONE, primary: ['date', 'dateExpression', 'term'] },
+  { tag: 'renewal-term', name: 'Renewal mechanism', short: 'Renewal', icon: RefreshCw, color: TYPE_TONE, primary: ['mechanism', 'term'] },
+  { tag: 'non-renewal-notice', name: 'Non-renewal notice', short: 'Notice', icon: BellRing, color: TYPE_TONE, primary: ['term', 'conditions'] },
+  { tag: 'termination-convenience', name: 'Termination for convenience', short: 'Termination', icon: DoorOpen, color: TYPE_TONE, primary: ['term', 'mechanism'] },
+  { tag: 'non-compete', name: 'Non-compete', short: 'Non-compete', icon: Ban, color: TYPE_TONE, primary: ['term', 'geography', 'activity'] },
+  { tag: 'liability-cap', name: 'Liability cap', short: 'Liability cap', icon: ShieldCheck, color: TYPE_TONE, primary: ['money', 'formula'] },
+  { tag: 'uncapped-liability', name: 'Uncapped liability', short: 'Uncapped', icon: ShieldAlert, color: TYPE_TONE, primary: ['activity', 'exclusions'] },
+  { tag: 'audit-rights', name: 'Audit rights', short: 'Audit', icon: ClipboardCheck, color: TYPE_TONE, primary: ['activity', 'term', 'mechanism'] },
+  { tag: 'insurance-obligations', name: 'Insurance obligations', short: 'Insurance', icon: Umbrella, color: TYPE_TONE, primary: ['money', 'activity'] },
 ];
 const byTag = new Map(known.map((item, order) => [item.tag, { ...item, order }]));
 
 export function targetMeta(tag: string, name?: string): TargetMeta {
-  return byTag.get(tag) ?? { tag, name: name ?? tag.replaceAll('-', ' '), short: name ?? tag, icon: Tag, color: '#9ca3af', order: 100, primary: [] };
+  return byTag.get(tag) ?? { tag, name: name ?? tag.replaceAll('-', ' '), short: name ?? tag, icon: Tag, color: TYPE_TONE, order: 100, primary: [] };
 }
 
 /** Catalog order for display: known targets first in their fixed order, then any new ones alphabetically. */
@@ -133,4 +139,16 @@ export function uploadTargets(results?: ExtractionResults): UploadTargets {
     }
   }
   return map;
+}
+
+/** Playbook tier for an extracted finding, using the same rules as the page review (type name + quotes + values). */
+export function tierExtraction(tag: string, finding: ExtractionFinding, rules: Rule[]): Evaluation {
+  const values = valueRows(finding.values).map(row => row.text).join(' ');
+  return evaluate({ type: targetMeta(tag).name, heading: finding.title,
+    quote: finding.evidence.map(item => item.quote).join(' '), summary: `${finding.title} ${finding.summary} ${values}` }, rules);
+}
+
+/** The most serious tier in a list ("Walk-away" first); "Not tiered" when empty. */
+export function worstTier(list: Tier[]): Tier {
+  return list.reduce<Tier>((worst, tier) => tiers.indexOf(tier) < tiers.indexOf(worst) ? tier : worst, 'Not tiered');
 }

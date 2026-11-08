@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-11-06T20:58:15.722Z",
         "reason": "Geist Mono is required by docs/ui.md"
+      },
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "files": [
+          "web/src/summary-view.tsx"
+        ],
+        "createdAt": "2026-11-07T22:48:58.603Z",
+        "reason": "Word-compatible .doc export of the negotiation memo needs a font every Word install has; not app UI"
       }
     ]
   }
