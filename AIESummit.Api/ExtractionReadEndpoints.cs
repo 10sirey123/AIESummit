@@ -25,7 +25,8 @@ public static class ExtractionReadEndpoints
         var available = stepEnabled && enabledTargetCount > 0;
         var documents = await db.Documents.AsNoTracking().Where(d => d.UploadId == id && d.IsCurrent)
             .OrderBy(d => d.FirstPage).Select(d => new { id = d.ID, d.Title, d.FirstPage, d.LastPage }).ToListAsync(ct);
-        var attempts = await db.DocumentAnalyses.AsNoTracking().Where(a => a.Document.UploadId == id && a.Document.IsCurrent)
+        var attempts = await db.DocumentAnalyses.AsNoTracking().Where(a => a.Document.UploadId == id && a.Document.IsCurrent
+                && !a.RequestKey.StartsWith(AnalysisFactory.ImprovementRequestPrefix))
             .Select(a => new AnalysisAttemptState(a.ID, a.DocumentId, a.CompletedAt, a.Error, a.LLMStepStatus, a.LLMPrompts.Any())).ToListAsync(ct);
         var selections = documents.Select(d => ExtractionReadModel.Select(d.id, attempts, available)).ToArray();
         var pages = await db.Pages.AsNoTracking().Where(p => p.UploadId == id)

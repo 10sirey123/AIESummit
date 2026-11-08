@@ -13,13 +13,21 @@ string Option(string name, string fallback) { var i = Array.IndexOf(args, name);
 async Task Write(string file, object value) { Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(file))!); await File.WriteAllTextAsync(file, JsonSerializer.Serialize(value, json)); }
 try
 {
+    if (args.Length >= 3 && args[0] == "enrich-results")
+    {
+        var runId = Option("--run", ""); if (string.IsNullOrWhiteSpace(runId)) throw new InvalidDataException("enrich-results requires --run RUN_ID.");
+        var count = await MongoInstrumentation.EnrichRunAsync(Option("--env-file", ".env"), args[1], args[2], runId,
+            Option("--output", Path.Combine("artifacts", "improvement-enrichment", runId)), Option("--partition", "development"));
+        Console.WriteLine($"Attached expected labels and observations to {count} retained documents in run {runId}; no inference was performed."); return 0;
+    }
     if (args.Length > 0 && args[0] == "history")
     {
         var history = await MongoHistory.OpenAsync(Option("--env-file", ".env"));
         var kind = Option("--kind", "runs");
         var data = kind == "matrix"
             ? await history.MatrixAsync(Option("--source", ""), Option("--expectation", ""))
-            : await history.QueryAsync(kind, Option("--run", ""), Option("--sample", ""), Option("--source", ""), int.Parse(Option("--limit", "50")));
+            : await history.QueryAsync(kind, Option("--run", ""), Option("--sample", ""), Option("--source", ""), int.Parse(Option("--limit", "50")),
+                Option("--step-tag", ""), Option("--page-number", "") is { Length: > 0 } pageNumber ? int.Parse(pageNumber) : null);
         Console.WriteLine(JsonSerializer.Serialize(data, json)); return 0;
     }
     if (args.Length > 0 && args[0] is "mongo-check" or "replay")

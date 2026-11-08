@@ -1,5 +1,16 @@
 # AIESummit repository guide
 
+## SubQ Preview through native BlueShift
+
+The bundle `10.0.0-aiesummit.cc69aa4.subq1` adds SubQ (provider enum 6) using bearer-authenticated Responses and separate persisted `APIInfo(subq)`. Existing provider values and credentials are preserved. Bootstrap seeds a disabled empty-key connection and `LLMModel(subq-preview)` without changing existing steps. Explicitly import `SUBQ_API_KEY` with `./scripts/configure-subq.ps1 -ImportLocalKey`; add `-SelectPageStep` to select SubQ and low reasoning for page classification. Preview organization access is required. Live testing found prose before strict JSON with reasoning `none`; use `low` and keep normal parsing/evidence validation. See [SubQ setup](docs/subq-analysis.md).
+
+
+## Self-improvement workbench
+
+`AIESummit.Improvement` is the local approval-driven operator UI on `http://127.0.0.1:18110`; start with `./scripts/start-improvement.ps1`. Read [the improvement guide](docs/self-improvement.md), [workbench guide](AIESummit.Improvement/AGENTS.md), and [native workflow runner guide](AIESummit.WorkflowRunner/AGENTS.md). Candidates change only `improvement/workflow.json` in approved worktrees. Native experiment analyses use reserved `improvement/` request keys, remain excluded from ordinary reader results, and reuse terminal node results without deleting PostgreSQL data. MongoDB retains full benchmark expectations, per-attempt observations and exact graphs; bounded read-only history supports Codex learning. Logical and newly consumed token metrics are separate. Historical unreported directional usage remains unknown.
+
+The experimental graph supports page-first target detection (`kind: detect-pages`) followed by singleton target extraction (`selectedPagesFrom`). Detectors classify each frozen OCR page as present, absent or uncertain; only present/uncertain pages receive specialized extraction, with that page's OCR and target definition alone. Detector decisions are routing signals, never scored findings. Every final extraction target is assigned exactly once, while detectors may combine/overlap targets. Unchanged page extraction inputs reuse their native results even when detectors change. Exact graphs and token totals include detector calls, selected extraction calls and explicit skipped/derived states. Only all-successful absent decisions can derive a no-finding result; failed routing and frozen split failures remain visible. Read the runner guide before changing this infrastructure; normal candidates edit only the graph.
+
 ## Purpose and scope
 
 AIESummit turns a user's PDF or image into ordered Markdown documents. Firebase identifies the user. PostgreSQL retains uploads, OCR pages, extracted images, prompts and document results. BlueShift agents call the configured OCR and language-model deployments. A separate BlueShift Admin service exposes configuration and operational telemetry to operators.
@@ -181,6 +192,8 @@ The fixture file is deleted in `finally`. The created local accounts, uploaded r
 
 `AIESummit.Tests` contains focused section-evidence validation and EF relationship-model tests. Run `dotnet test AIESummit.Tests/AIESummit.Tests.csproj`; the separate `AIESummit.Evaluation` CLI exercises the authenticated upload/OCR/split/extraction workflow. `AIESummit.Extraction.Tests` and `scripts/test-extractions.ps1` add deterministic and disposable PostgreSQL/MongoDB coverage. Do not report zero discovered tests as coverage. Add focused tests when changing meaningful logic and verify the full workflow when the change crosses authentication, persistence or agent boundaries. Browser layout, keyboard behavior and session-race interactions need browser checks beyond the smoke script.
 
+Run `npm run test:extraction-progress` from `web` for extraction status copy, OCR/splitting-to-extraction polling transitions and stale-cache recovery. OCR completion does not imply that the shared prompt queue has completed splitting or extraction; inspect prompt state before retrying a waiting upload.
+
 ## Troubleshooting and lessons to preserve
 
 | Symptom or change | Evidence to inspect | Required invariant |
@@ -253,7 +266,7 @@ The intake scaffold above was imported from the working tree of `../hackathon` (
 
 ## Page reader and section-analysis workflow
 
-Meta support is bundled as `10.0.0-aiesummit.cc69aa4.meta1`, combining the sibling framework's `10.0.0-preview.meta.1` changes with existing compatibility patches. Read [Meta setup and validation](docs/meta-analysis.md). Bootstrap seeds disabled empty-key `APIInfo(meta)` and `LLMModel(meta-muse-wonder)` without changing existing selections. `scripts/configure-meta.ps1 -ImportLocalKey` explicitly imports local `META_API_KEY` into write-only APIInfo and selects `muse-wonder-1.0` on the native page LLMStep. Workers resolve the persisted key. Keep the Meta patch, package pins, all hosts and manifest together. Use `-ExpectedPageModel muse-wonder-1.0` with the page smoke to assert the actual used model/provider, not only a successful response. Five focused .NET tests cover evidence/mapping and the Meta transport contract.
+Meta support is bundled as `10.0.0-aiesummit.cc69aa4.subq1`, combining the sibling framework's `10.0.0-preview.meta.1` changes with existing compatibility patches. Read [Meta setup and validation](docs/meta-analysis.md). Bootstrap seeds disabled empty-key `APIInfo(meta)` and `LLMModel(meta-muse-wonder)` without changing existing selections. `scripts/configure-meta.ps1 -ImportLocalKey` explicitly imports local `META_API_KEY` into write-only APIInfo and selects `muse-wonder-1.0` on the native page LLMStep. Workers resolve the persisted key. Keep the Meta patch, package pins, all hosts and manifest together. Use `-ExpectedPageModel muse-wonder-1.0` with the page smoke to assert the actual used model/provider, not only a successful response. Five focused .NET tests cover evidence/mapping and the Meta transport contract.
 
 Read [docs/page-analysis.md](docs/page-analysis.md) for the original-source endpoint, one-page PDF/Markdown reader, Gemini APIInfo setup, native LLMStep processing, additive schema upgrade and validation. `OcrPage` now implements `ILlmCapable` with its own mapped `LLMPrompts` (`OcrPage_ID`), step state, result JSON, validated section JSON and error. `PageSectionsStep` (`classify-page-sections`) runs through framework `LLMStepAgent<OcrPage>`, `LLMPromptFactory` and `LlmPromptAgent`; it is not an application provider loop. Its generated summaries/classifications must retain separately validated exact source quotes. Telemetry resolves page subjects/prompts to the root upload; worker/recovery include `ocrpage` queues.
 
@@ -276,3 +289,7 @@ Contract evidence uses exact-first anchoring with an inclusive 50% page-local mu
 ## MongoDB tester connectivity
 
 The tester now has verified Atlas primary reads/writes, and the saved 20-file baseline has been replayed into the configured database. Read [MongoDB diagnostics](docs/evaluation-instrumentation.md#connectivity-checks-and-the-resolved-tls-failure) before investigating connection failures: this network can use different outbound IPs for different destinations. `scripts/mongodb-probe.js` is the read-only mongosh entrypoint; it never prints the URI or changes access settings.
+
+## Read-only benchmark dashboard
+
+`AIESummit.Observatory/` is a separate .NET 10 / React dashboard for MongoDB evaluation history. Start with `./scripts/start-observatory.ps1` (UI 18115, read-only API 18114). Read its `AGENTS.md` and `docs/self-improvement.md` before changes. Compare scored workflow runs within a manifest hash; show exact document graph membership and keep unknown usage unknown. This dashboard cannot approve attempts or invoke providers.

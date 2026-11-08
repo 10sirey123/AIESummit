@@ -1,5 +1,7 @@
 # AIESummit.Domain entity guide
 
+`AnalysisFactory.ImprovementRequestPrefix` reserves `improvement/` for content-addressed experimental analyses. They retain existing immutable page/evidence relationships and terminal states, but are excluded from normal API result selection and metrics. The improvement runner adds rows without changing the application schema or replacing current documents.
+
 `ExtractionEvidence` also retains `ModelQuote`, `MatchMethod` and `MatchScore`; additive upgrade 004 preserves legacy exact evidence. See [matching policy](../docs/evidence-matching.md).
 
 The extraction model is implemented: `ExtractionType`, `DocumentAnalysis : ILlmCapable`, `AnalysisTargetResult`, `Extraction`, `ExtractionEvidence` and `PageTextRevision`. See [contract extraction](../docs/contract-extraction.md). Keep analysis prompts separately mapped, snapshot text immutable, values validated and owner access rooted through the upload. `Document.IsCurrent` retains superseded split versions. Upgrade 003 preserves data; extraction seeds are missing-only.

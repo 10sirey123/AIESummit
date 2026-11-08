@@ -1,0 +1,131 @@
+diff --git a/Blueshift.Agents/AgentServiceCollectionExtensions.cs b/Blueshift.Agents/AgentServiceCollectionExtensions.cs
+index 811d3a5..248edb4 100644
+--- a/Blueshift.Agents/AgentServiceCollectionExtensions.cs
++++ b/Blueshift.Agents/AgentServiceCollectionExtensions.cs
+@@ -37,6 +37,7 @@ public static class AgentServiceCollectionExtensions
+         services.AddHttpClient(LlmProviderFactory.OpenAIClientName);
+         services.AddHttpClient(LlmProviderFactory.GeminiClientName);
+         services.AddHttpClient(LlmProviderFactory.MetaClientName);
++        services.AddHttpClient(LlmProviderFactory.SubQClientName);
+         services.TryAddSingleton<ILlmProviderFactory>(sp =>
+             new LlmProviderFactory(
+                 sp.GetRequiredService<IHttpClientFactory>(),
+diff --git a/Blueshift.Agents/LLM/LlmPromptContracts.cs b/Blueshift.Agents/LLM/LlmPromptContracts.cs
+index 05fe06e..e1d2c39 100644
+--- a/Blueshift.Agents/LLM/LlmPromptContracts.cs
++++ b/Blueshift.Agents/LLM/LlmPromptContracts.cs
+@@ -18,6 +18,7 @@ namespace Blueshift.Agents.LLM
+     {
+         OpenAI.OpenAIAPI CreateOpenAI();
+         Meta.MetaAPI CreateMeta() => new();
++        SubQ.SubQAPI CreateSubQ() => new();
+         Gemini.GeminiAPI CreateGemini();
+         Mock.MockAPI CreateMock();
+     }
+diff --git a/Blueshift.Agents/LLM/LlmPromptWorker.cs b/Blueshift.Agents/LLM/LlmPromptWorker.cs
+index f7a432a..2e538eb 100644
+--- a/Blueshift.Agents/LLM/LlmPromptWorker.cs
++++ b/Blueshift.Agents/LLM/LlmPromptWorker.cs
+@@ -387,10 +387,19 @@ namespace Blueshift.Agents.LLM
+             {
+                 case LLMAPIProvider.OpenAI:
+                 case LLMAPIProvider.Meta:
+-                    Func<OpenAIAPI> createResponsesProvider = provider == LLMAPIProvider.Meta
+-                        ? () => providers.CreateMeta()
+-                        : providers.CreateOpenAI;
+-                    identifier = provider == LLMAPIProvider.Meta ? "meta" : "openai";
++                case LLMAPIProvider.SubQ:
++                    Func<OpenAIAPI> createResponsesProvider = provider switch
++                    {
++                        LLMAPIProvider.Meta => () => providers.CreateMeta(),
++                        LLMAPIProvider.SubQ => () => providers.CreateSubQ(),
++                        _ => providers.CreateOpenAI
++                    };
++                    identifier = provider switch
++                    {
++                        LLMAPIProvider.Meta => "meta",
++                        LLMAPIProvider.SubQ => "subq",
++                        _ => "openai"
++                    };
+ 
+                     // obtain from database or cache only what matters from ApiInfo
+                     api_info = GetApiProjection(
+diff --git a/Blueshift.Agents/LLM/LlmProviderFactory.cs b/Blueshift.Agents/LLM/LlmProviderFactory.cs
+index fcf1114..bb97c35 100644
+--- a/Blueshift.Agents/LLM/LlmProviderFactory.cs
++++ b/Blueshift.Agents/LLM/LlmProviderFactory.cs
+@@ -8,6 +8,7 @@ public sealed class LlmProviderFactory : ILlmProviderFactory
+     public const string OpenAIClientName = "Blueshift.LLM.OpenAI";
+     public const string GeminiClientName = "Blueshift.LLM.Gemini";
+     public const string MetaClientName = "Blueshift.LLM.Meta";
++    public const string SubQClientName = "Blueshift.LLM.SubQ";
+ 
+     private readonly IHttpClientFactory httpClients;
+     private readonly IConfiguration configuration;
+@@ -24,6 +25,9 @@ public sealed class LlmProviderFactory : ILlmProviderFactory
+     public Meta.MetaAPI CreateMeta()
+         => new(httpClients.CreateClient(MetaClientName));
+ 
++    public SubQ.SubQAPI CreateSubQ()
++        => new(httpClients.CreateClient(SubQClientName));
++
+     public Gemini.GeminiAPI CreateGemini()
+         => new(
+             httpClients.CreateClient(GeminiClientName),
+diff --git a/Blueshift.Agents/LLM/SubQ/SubQAPI.cs b/Blueshift.Agents/LLM/SubQ/SubQAPI.cs
+new file mode 100644
+index 0000000..fd6c006
+--- /dev/null
++++ b/Blueshift.Agents/LLM/SubQ/SubQAPI.cs
+@@ -0,0 +1,37 @@
++using System.Net.Http.Headers;
++using Blueshift.Agents.LLM.OpenAI;
++using Blueshift.Domain.Entities;
++
++namespace Blueshift.Agents.LLM.SubQ;
++
++/// <summary>SubQ Model API using the shared Responses protocol and persisted APIInfo credentials.</summary>
++public class SubQAPI : OpenAIAPI
++{
++    public SubQAPI() { }
++    public SubQAPI(HttpClient client) : base(client) { }
++
++    public override string APIIdentifier => "subq";
++    protected override LLMAPIProvider Provider => LLMAPIProvider.SubQ;
++
++    protected override void ConfigureAuthentication(HttpClient client)
++    {
++        client.DefaultRequestHeaders.Remove("api-key");
++        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AppKey);
++    }
++
++    protected override string GetResponsesEndpoint()
++    {
++        var endpoint = AzureEndpoint ?? ApiBaseUri?.ToString();
++        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
++            || uri.Scheme != Uri.UriSchemeHttps || uri.Host != "api.subq.ai"
++            || !uri.IsDefaultPort || !string.IsNullOrEmpty(uri.UserInfo)
++            || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment)
++            || uri.AbsolutePath.TrimEnd('/') is not ("" or "/v1" or "/v1/responses"))
++            throw new InvalidOperationException("SubQ APIInfo.BaseURI must be https://api.subq.ai/v1.");
++
++        return "https://api.subq.ai/v1/responses";
++    }
++
++    protected override string GetAudioTranscriptionsEndpoint()
++        => throw new NotSupportedException("SubQ audio transcription is not supported by this adapter. Use text or image inputs through LLMPrompt.");
++}
+diff --git a/Blueshift.Domain/Entities/LLMModel.cs b/Blueshift.Domain/Entities/LLMModel.cs
+index a8bc839..c3f21dd 100644
+--- a/Blueshift.Domain/Entities/LLMModel.cs
++++ b/Blueshift.Domain/Entities/LLMModel.cs
+@@ -16,7 +16,8 @@ namespace Blueshift.Domain.Entities
+         Mock,
+         Other,
+         Unknown,
+-        Meta = 5
++        Meta = 5,
++        SubQ = 6
+     }
+ 
+     [DisplayMetadata(Blueshift.Domain.Entities.EntityIcons.LLMModel, MenuName = "LLM Model", MenuDescription = "LLM Model Configuration")]

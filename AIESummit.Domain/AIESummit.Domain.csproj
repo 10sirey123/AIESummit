@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
-  <ItemGroup><PackageReference Include="10123.Blueshift.Domain" Version="[10.0.0-aiesummit.cc69aa4.meta1]" /></ItemGroup>
+  <ItemGroup><PackageReference Include="10123.Blueshift.Domain" Version="[10.0.0-aiesummit.cc69aa4.subq1]" /></ItemGroup>
 </Project>

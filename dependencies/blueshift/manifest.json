@@ -15,40 +15,49 @@
     {
       "path": "deploy/patches/meta-provider.patch",
       "sha256": "d45aaab2066ae2e8a4b5f64acdbd91a2a7c319ab77fc08100d554c460453fa23"
+    },
+    {
+      "path": "deploy/patches/subq-provider.patch",
+      "sha256": "0b5434a6df999c671740448fe2c2178492f1a84a54dafa91e4fc625e1d28e7c0"
     }
   ],
-  "packageVersion": "10.0.0-aiesummit.cc69aa4.meta1",
+  "packageVersion": "10.0.0-aiesummit.cc69aa4.subq1",
   "targetFramework": "net10.0",
   "hostRuntime": "linux-x64",
   "selfContained": false,
   "sdkImage": "mcr.microsoft.com/dotnet/sdk:10.0.403",
   "frontendImage": "node:22-alpine",
-  "builtAtUtc": "2026-11-07T20:17:40.6550683Z",
+  "builtAtUtc": "2026-11-07T22:56:49.1952607Z",
   "artifacts": [
     {
-      "path": "packages/10123.Blueshift.Domain.10.0.0-aiesummit.cc69aa4.meta1.nupkg",
-      "bytes": 217197,
-      "sha256": "8175f9ab956ea86a0502aaeb3d33ea10e6bbaa6b7586550666c862e1d840e833"
+      "path": "packages/10123.Blueshift.Domain.10.0.0-aiesummit.cc69aa4.subq1.nupkg",
+      "bytes": 217185,
+      "sha256": "cbac339159ba22f1edfa0b8782bdcae029c43215562aa81429f2e596ecb20fc3"
     },
     {
-      "path": "packages/10123.Blueshift.Agents.10.0.0-aiesummit.cc69aa4.meta1.nupkg",
-      "bytes": 227375,
-      "sha256": "57689e78fdf36a7ae39025089132c0a5c25b9fdb78ff529d1ca441be8e7fd4b6"
+      "path": "packages/10123.Blueshift.Agents.10.0.0-aiesummit.cc69aa4.subq1.nupkg",
+      "bytes": 227792,
+      "sha256": "0bd7f9a454a95a9a34ea5b35567377b4128b806ff985dc037eb90b0e8e32343c"
     },
     {
       "path": "worker-linux-x64.tar.gz",
-      "bytes": 12088038,
-      "sha256": "63b9976137cb3c83d61bf817e09e92431e1d16634add27d572525a3be95e37c0"
+      "bytes": 12088653,
+      "sha256": "f53bc190559d75e76691263d5cb7e6a1e547605bcf1c09f2fca69a5724caaaf9"
     },
     {
       "path": "admin-api-linux-x64.tar.gz",
-      "bytes": 13086073,
-      "sha256": "ff3946afcb76f48ff504a93743f42cac23d1067193fe9eeb734074008f6b07aa"
+      "bytes": 13088045,
+      "sha256": "5780eeb55967019b18ad45a0cb92885514e056af9d98cf6b075715228bcb3506"
     },
     {
       "path": "admin-web.tar.gz",
       "bytes": 523419,
       "sha256": "72a8e83761938bb5a67ff39b21e2c53d0906fa7cbcdef27858cb3a1d5b065b48"
+    },
+    {
+      "path": "cli-linux-x64.tar.gz",
+      "bytes": 11957847,
+      "sha256": "e49dee70552fd9b670686b20b92b37dc833571e545dd5f2c05149f093ea08439"
     },
     {
       "path": "bootstrap-admin-auth.ps1",
@@ -59,11 +68,6 @@
       "path": "nginx.conf",
       "bytes": 816,
       "sha256": "9a867b40d5c146f36eac6d5cc0b4ff2495ccaa836470de00cfe237a3fa738de6"
-    },
-    {
-      "path": "cli-linux-x64.tar.gz",
-      "bytes": 11956990,
-      "sha256": "e917ae4691b01d7f25df204f832f5b0ddc28df6a98607798ef606233fc584d06"
     }
   ]
 }

@@ -10,6 +10,21 @@ namespace AIESummit.Tests;
 
 public sealed class MetaProviderTests
 {
+    [Fact]
+    public async Task ExplicitReasoningEffortIsForwardedToMuse()
+    {
+        using var handler = new ResponseHandler("completed");
+        using var client = new HttpClient(handler);
+        var api = new MetaAPI(client) { Model = "muse-wonder-1.0" };
+        api.SetContext(new ApiBrowserContext { BaseUri = "https://api.meta.ai/v1", AppKey = "synthetic-meta-key" });
+        await api.GetResponse(new LLMPrompt {
+            Prompt = "Inspect the synthetic page.", SystemPrompt = "Return source facts.",
+            ReasoningEffort = "low"
+        });
+        using var body = JsonDocument.Parse(handler.Body!);
+        Assert.Equal("low", body.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
+    }
+
     [Theory]
     [InlineData("completed", true)]
     [InlineData("incomplete", false)]

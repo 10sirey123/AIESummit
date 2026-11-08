@@ -36,6 +36,8 @@ internal static class ExtractionEndpoints
     {
         if (!await Owns(id, user, db, ct)) return Results.NotFound();
         if (string.IsNullOrWhiteSpace(requestKey) || requestKey.Length > 100) return Results.BadRequest(new { error = "requestKey must have 1–100 characters." });
+        if (requestKey.StartsWith(AnalysisFactory.ImprovementRequestPrefix, StringComparison.Ordinal))
+            return Results.BadRequest(new { error = "The improvement/ request-key prefix is reserved for isolated experiments." });
         if (!await db.LLMSteps.AnyAsync(s => s.Tag == ContractExtractionStep.Tag && s.Enabled, ct))
             return Results.Problem("Enable the extraction step in Admin first.", statusCode: 409);
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -55,7 +57,8 @@ internal static class ExtractionEndpoints
     private static async Task<IResult> Get(int id, ClaimsPrincipal user, AIESummitDb db, CancellationToken ct)
     {
         if (!await Owns(id, user, db, ct)) return Results.NotFound();
-        var analyses = await db.DocumentAnalyses.AsNoTracking().Where(a => a.Document.UploadId == id)
+        var analyses = await db.DocumentAnalyses.AsNoTracking().Where(a => a.Document.UploadId == id
+                && !a.RequestKey.StartsWith(AnalysisFactory.ImprovementRequestPrefix))
             .Include(a => a.Document).Include(a => a.LLMPrompts).Include(a => a.Pages).Include(a => a.Targets).ThenInclude(t => t.ExtractionType)
             .Include(a => a.Targets).ThenInclude(t => t.Extractions).ThenInclude(e => e.Evidence).OrderBy(a => a.ID).AsSplitQuery().ToListAsync(ct);
         return Results.Ok(new { analyses = analyses.Select(a => new {
@@ -97,7 +100,8 @@ internal static class ExtractionEndpoints
     {
         if (!await Owns(id, user, db, ct)) return Results.NotFound();
         var pageIds = db.Pages.Where(p => p.UploadId == id).Select(p => p.ID);
-        var analysisIds = db.DocumentAnalyses.Where(a => a.Document.UploadId == id).Select(a => a.ID);
+        var analysisIds = db.DocumentAnalyses.Where(a => a.Document.UploadId == id
+            && !a.RequestKey.StartsWith(AnalysisFactory.ImprovementRequestPrefix)).Select(a => a.ID);
         var raw = await db.LLMPrompts.Where(p => p.DocumentType == nameof(UploadedFile) && p.DocumentID == id
             || p.DocumentType == nameof(OcrPage) && pageIds.Contains(p.DocumentID)
             || p.DocumentType == nameof(DocumentAnalysis) && analysisIds.Contains(p.DocumentID))

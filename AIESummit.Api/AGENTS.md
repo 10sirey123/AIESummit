@@ -1,5 +1,9 @@
 # AIESummit.Api
 
+SubQ bootstrap seeds a disabled empty-key `APIInfo(subq)` and model `subq-preview`, preserving existing rows and step selections. Page-analysis eligibility resolves provider SubQ to that connection. See [SubQ setup](../docs/subq-analysis.md).
+
+The reserved `improvement/` analysis request-key namespace belongs to isolated workflow experiments. Public extraction creation rejects it with 400. Extraction history, latest/last-successful processing summaries and upload metrics exclude those analyses so experiments cannot replace the ordinary reader's selected results. The separate improvement runner reads its own exact analysis/prompt identities.
+
 The additive client read contract is documented in [client-analysis-api.md](../docs/client-analysis-api.md). `ExtractionReadEndpoints` adds an owner-scoped `/uploads/{id}/analysis-summary` and structured metadata on `/extraction-types`; `ExtractionReadModel` defines status/selection and value-schema semantics. Legacy result routes remain compatible. Keep the frontend unchanged when refining this API contract.
 
 `ExtractionEndpoints.cs` implements owner-scoped analysis requests, results and sanitized metrics, plus authenticated catalog reads. See [contract extraction](../docs/contract-extraction.md) and the matching ApiSpec fragments. Bootstrap applies additive upgrade 003 and missing-only seeds. Diagnostic model-reported outcomes are explicitly unvalidated; never present them as accepted findings.

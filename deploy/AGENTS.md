@@ -1,5 +1,7 @@
 # Local deployment and container topology
 
+SubQ uses matched `10.0.0-aiesummit.cc69aa4.subq1` packages and hosts with a separate persisted connection. Bundle patches apply in filename order because SubQ extends the shared Meta Responses hooks. See [SubQ setup](../docs/subq-analysis.md).
+
 Contract extraction adds the `documentanalysis` queue subject to the worker overlay and emulator, with native pending-work recovery. Admin exposes extraction catalog/history/evidence read-only. Tester MongoDB is not the application database or part of this Compose stack; see [contract extraction](../docs/contract-extraction.md).
 
 Meta Muse Wonder uses the native page LLMStep and persisted APIInfo; see [Meta setup](../docs/meta-analysis.md) for version provenance, explicit key import, model selection and verification. The reader labels are provider-neutral.

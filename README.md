@@ -1,5 +1,10 @@
 # AIESummit
 
+SubQ Preview is available through native BlueShift LLMSteps with its own persisted connection. See [SubQ configuration and verification](docs/subq-analysis.md) for key import, low reasoning and model-specific checks.
+
+
+The local [self-improvement workbench](docs/self-improvement.md) is available with `./scripts/start-improvement.ps1` at `http://127.0.0.1:18110`. It uses Muse/Codex to propose extraction-step changes, waits for approval, implements only the workflow graph in an isolated worktree, and evaluates through the current harness. Compare versioned expected/found targets per document, token usage, cached nodes and complete graphs without recreating the database.
+
 Meta Muse Wonder is available through the same native Blueshift page-section LLMStep. See [Meta configuration and verification](docs/meta-analysis.md) for the bundled version, explicit `.env`-to-APIInfo import and the model-specific acceptance check.
 
 AIESummit is the starting point for a contract intake and AI analysis workflow. The imported scaffold currently turns uploaded PDFs and images into individual Markdown documents. Per-page section descriptions and a first ten-target contract extraction backend are implemented. Legal risk analysis and frontend extraction cards remain future work. The app API and BlueShift Admin are separate services. Firebase authenticates app users, and each upload, result, and image is scoped to its owner.
@@ -57,6 +62,8 @@ cd web
 npm ci
 npm run build
 npm run test:viewer
+npm run test:processing
+npm run test:extraction-progress
 cd ..
 ```
 
@@ -135,3 +142,7 @@ The bundled Blueshift CLI supports reviewed, transactional code-to-database conf
 For a prompt change, edit `SplitStep.Definition()` or `PageSectionsStep.Definition()`, then follow the guide's build/export/validate/plan/apply sequence. Changing C# alone does not update an existing database row. Changing a metadata class or its `ConnectTo` logic also requires deploying the application/worker code; seeding only updates configuration. `export -IncludeBindings` deliberately includes model/enabled settings and can replace an existing model selection.
 
 MongoDB primary connectivity and tester writes are now verified, and the saved 20-document baseline is persisted in Atlas. See [connectivity diagnostics](docs/evaluation-instrumentation.md#connectivity-checks-and-the-resolved-tls-failure) for the read-only mongosh probe and the resolved multi-egress-IP access-list issue.
+
+## Extraction Observatory
+
+A separate read-only graph and benchmark dashboard lives in `AIESummit.Observatory/`. Start it with `./scripts/start-observatory.ps1`, then open http://127.0.0.1:18115. It uses local MongoDB settings and does not invoke models. See [the improvement guide](docs/self-improvement.md#extraction-observatory) for metric and graph boundaries.

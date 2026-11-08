@@ -13,6 +13,7 @@ public sealed class MongoInstrumentation
     private readonly IMongoDatabase? db;
     private readonly string folder;
     private readonly Dictionary<string, ExpectedResultsSnapshot> expectations = new(StringComparer.Ordinal);
+    private string? benchmarkPartition;
     public string RunId { get; }
     public string WorkflowId { get; }
     public bool IsOffline => db is null;
@@ -170,11 +171,14 @@ public sealed class MongoInstrumentation
     public async Task<string> RegisterExpectedAsync(string documentRunId, string goldPath, string sourceSha256, string partition = "development")
     {
         var snapshot = ExpectedResults.Create(await File.ReadAllBytesAsync(goldPath), sourceSha256, partition);
+        if (benchmarkPartition != null && benchmarkPartition != partition) throw new InvalidDataException("A benchmark run cannot mix development and confirmation documents.");
+        benchmarkPartition = partition;
         expectations[documentRunId] = snapshot;
         // Content-addressed labels are never overwritten with a different label version.
         await Upsert("evaluation_expectations", snapshot.Id, snapshot);
         await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
             { "expectationId", snapshot.Id }, { "partition", partition }, { "labelSha256", snapshot.LabelSha256 } });
+        await Command("evaluation_runs", RunId, "update", new BsonDocument("partition", partition));
         return snapshot.Id;
     }
 
@@ -189,14 +193,13 @@ public sealed class MongoInstrumentation
         var telemetry = ToBson(payload); telemetry.Remove("prediction");
         await Command("evaluation_documents", documentRunId, "update", new BsonDocument {
             { "status", payload.GetProperty("status").GetString() }, { "completedAt", DateTime.UtcNow }, { "result", telemetry } });
-        if (expectations.TryGetValue(documentRunId, out var expected))
-            await Upsert("evaluation_observations", documentRunId, new {
-                runId = RunId, documentRunId, workflowId = WorkflowId, expectationId = expected.Id,
-                sampleId = expected.SampleId, sourceSha256 = expected.SourceSha256, partition = expected.Partition,
-                status = payload.GetProperty("status").GetString(), targets = ExpectedResults.Observe(expected, payload),
-                matching = "Document/target presence only; gold span counts are not independently matched clause counts.",
-                resultPath = Path.GetFullPath(resultFile) });
-        if (metrics is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("prompts", out var prompts))
+        await RecordObservationsAsync(documentRunId, resultFile, payload);
+        // The workflow runner records exact native node identities separately. Inferring baseline families here
+        // would duplicate those calls and incorrectly imply intake/OCR execution for reused fixtures.
+        var hasExplicitGraph = payload.TryGetProperty("graph", out var explicitGraph) && explicitGraph.ValueKind == JsonValueKind.Object
+            && explicitGraph.TryGetProperty("nodes", out var explicitNodes) && explicitNodes.ValueKind == JsonValueKind.Array
+            && explicitGraph.TryGetProperty("edges", out var explicitEdges) && explicitEdges.ValueKind == JsonValueKind.Array;
+        if (!hasExplicitGraph && metrics is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("prompts", out var prompts))
         {
             var edges = new List<object>();
             var splitNodes = prompts.EnumerateArray().Where(p => p.GetProperty("step").GetString() == "split-upload")
@@ -246,5 +249,99 @@ public sealed class MongoInstrumentation
         await Command("evaluation_runs", RunId, "update", new BsonDocument {
             { "status", failed == 0 ? "completed" : "completed_with_failures" }, { "completedAt", DateTime.UtcNow },
             { "documentsAttempted", total }, { "documentsFailed", failed }, { "summary", BsonDocument.Parse(JsonSerializer.Serialize(summary, Json)) } });
+    }
+
+    private async Task RecordObservationsAsync(string documentRunId, string resultFile, JsonElement payload)
+    {
+        if (expectations.TryGetValue(documentRunId, out var expected))
+            await Upsert("evaluation_observations", documentRunId, new {
+                runId = RunId, documentRunId, workflowId = WorkflowId, expectationId = expected.Id,
+                sampleId = expected.SampleId, sourceSha256 = expected.SourceSha256, partition = expected.Partition,
+                status = payload.GetProperty("status").GetString(), targets = ExpectedResults.Observe(expected, payload),
+                matching = "Document/target presence only; gold span counts are not independently matched clause counts.",
+                resultPath = Path.GetFullPath(resultFile) });
+    }
+
+    /// <summary>Attach versioned labels/observations to retained run IDs without rewriting measurements, graphs, or event times.</summary>
+    public static async Task<int> EnrichRunAsync(string settingsFile, string manifestPath, string resultFolder, string runId, string outputFolder, string partition = "development")
+    {
+        IMongoDatabase database;
+        try
+        {
+            var env = ReadSettings(settingsFile); var uri = env["MONGODB_URI"]; var url = new MongoUrl(uri);
+            var settings = MongoClientSettings.FromConnectionString(uri); settings.ApplicationName = "AIESummit.Evaluation.Enrichment";
+            settings.ServerSelectionTimeout = TimeSpan.FromSeconds(15); settings.ConnectTimeout = TimeSpan.FromSeconds(10);
+            if (env.GetValueOrDefault("MONGODB_TLS12") == "true") settings.SslSettings = new SslSettings { EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 };
+            database = new MongoClient(settings).GetDatabase(env.GetValueOrDefault("MONGODB_DATABASE", url.DatabaseName ?? "aiesummit_evaluation"));
+        }
+        catch { throw new InvalidOperationException("MongoDB enrichment configuration is unavailable; credentials are omitted."); }
+        BsonDocument run;
+        try { run = await database.GetCollection<BsonDocument>("evaluation_runs").Find(new BsonDocument("_id", runId)).SingleOrDefaultAsync()
+            ?? throw new InvalidDataException("Retained run was not found."); }
+        catch (InvalidDataException) { throw; }
+        catch { throw new InvalidOperationException("MongoDB retained-run lookup failed; credentials are omitted."); }
+        var store = new MongoInstrumentation(database, Path.GetFullPath(outputFolder), runId, run["workflowId"].AsString);
+        using var manifest = JsonDocument.Parse(await File.ReadAllTextAsync(manifestPath)); var count = 0;
+        // Validate all local payloads before any enrichment writes.
+        var items = new List<(string Id, string Source, string Gold, string File, JsonElement Result, ExpectedResultsSnapshot Snapshot)>();
+        foreach (var sample in manifest.RootElement.GetProperty("samples").EnumerateArray())
+        {
+            var id = sample.GetProperty("id").GetString()!; var source = sample.GetProperty("sha256").GetString()!.ToLowerInvariant();
+            var file = Path.Combine(resultFolder, id + ".json"); var gold = sample.GetProperty("gold").GetString()!;
+            using var result = JsonDocument.Parse(await File.ReadAllTextAsync(file));
+            var snapshot = ExpectedResults.Create(await File.ReadAllBytesAsync(gold), source, partition);
+            if (result.RootElement.TryGetProperty("originalPdfSha256", out var measuredHash) && measuredHash.GetString()?.ToLowerInvariant() != source)
+                throw new InvalidDataException("Retained result checksum differs from manifest.");
+            items.Add((id, source, gold, file, result.RootElement.Clone(), snapshot));
+        }
+        foreach (var item in items)
+        {
+            BsonDocument document;
+            try { document = await database.GetCollection<BsonDocument>("evaluation_documents").Find(new BsonDocument {
+                { "runId", runId }, { "sampleId", item.Id }, { "sourceSha256", item.Source } }).SingleOrDefaultAsync()
+                ?? throw new InvalidDataException("Retained document identity was not found."); }
+            catch (InvalidDataException) { throw; }
+            catch { throw new InvalidOperationException("MongoDB document identity lookup failed; credentials are omitted."); }
+            var documentId = document["_id"].AsString;
+            var artifact = await database.GetCollection<BsonDocument>("evaluation_artifacts").Find(new BsonDocument("_id", documentId + "/result")).SingleOrDefaultAsync();
+            if (artifact is null || !artifact.TryGetValue("sha256", out var artifactHash)
+                || !Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(item.File))).Equals(artifactHash.AsString, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Retained result failed its recorded artifact checksum.");
+            // Register the already-validated bytes to avoid rereading a concurrently changed label file.
+            store.expectations[documentId] = item.Snapshot;
+            await store.Upsert("evaluation_expectations", item.Snapshot.Id, item.Snapshot);
+            await store.Command("evaluation_documents", documentId, "update", new BsonDocument {
+                { "expectationId", item.Snapshot.Id }, { "partition", partition }, { "labelSha256", item.Snapshot.LabelSha256 } });
+            await store.RecordObservationsAsync(documentId, item.File, item.Result); count++;
+        }
+        await store.Command("evaluation_runs", runId, "update", new BsonDocument("partition", partition));
+        return count;
+    }
+
+    /// <summary>Persist the exact instantiated graph. Node IDs and edge endpoints are supplied by the workflow runner.</summary>
+    public async Task RecordGraphAsync(string documentRunId, object nodes, object edges)
+    {
+        var nodeArray = JsonSerializer.SerializeToElement(nodes, Json);
+        var edgeArray = JsonSerializer.SerializeToElement(edges, Json);
+        if (nodeArray.ValueKind != JsonValueKind.Array || edgeArray.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException("Graph nodes and edges must be arrays.");
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var node in nodeArray.EnumerateArray())
+        {
+            var id = node.GetProperty("id").GetString()!;
+            if (string.IsNullOrWhiteSpace(id) || !ids.Add(id)) throw new InvalidDataException("Graph node IDs must be nonempty and unique.");
+        }
+        foreach (var edge in edgeArray.EnumerateArray())
+            if (!ids.Contains(edge.GetProperty("from").GetString()!) || !ids.Contains(edge.GetProperty("to").GetString()!))
+                throw new InvalidDataException("Graph edge refers to a missing node.");
+        foreach (var node in nodeArray.EnumerateArray())
+        {
+            var record = ToBson(node); var id = record["id"].AsString; record["runId"] = RunId;
+            record["documentRunId"] = documentRunId; record["workflowId"] = WorkflowId;
+            record["_id"] = id; record["schemaVersion"] = SchemaVersion;
+            await Command("evaluation_steps", id, "replace", record);
+        }
+        await Command("evaluation_documents", documentRunId, "update", new BsonDocument("graph", new BsonDocument {
+            { "nodesCollection", "evaluation_steps" }, { "nodeIds", new BsonArray(ids) }, { "edges", BsonDocument.Parse("{\"edges\":" + edgeArray.GetRawText() + "}")["edges"] }, { "exact", true } }));
     }
 }
